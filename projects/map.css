@@ -178,7 +178,7 @@ textarea {
   stroke: var(--m-line);
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: max(var(--rw), calc(var(--px) * 0.7));
+  stroke-width: clamp(calc(var(--px) * 0.7), var(--rw), calc(var(--px) * var(--rcap, 10)));
 }
 
 .map-rivers .is-minor {
@@ -211,6 +211,12 @@ textarea {
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
+}
+
+/* A disputed stretch of border: dashed. */
+.map-borders.is-disputed {
+  stroke-dasharray: 5 4;
+  stroke-linecap: butt;
 }
 
 .map.is-z2 .map-borders {
@@ -2632,6 +2638,7 @@ body:not(.is-panel) .panel-tab .ic {
 .no-provinces .map-provinces,
 .no-provinces .map-admin,
 .no-terrain .map-image,
+.no-terrain .map-urban,
 .no-terrain .map-tiles {
   display: none;
 }

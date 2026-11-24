@@ -112,7 +112,24 @@ export function keepDry(pts, { curved, cls, water, river }) {
   };
   for (let i = 0; i < n; i++) { if (keep[i]) run.push(out[i]); else flush(); }
   flush();
-  return { pieces, bridges, changed: true };
+  // Last, every piece as it will be drawn (straight, point to point) is walked finely, and split wherever a step of
+  // it still touches the water off a bridge.
+  const onBridge = (x, y) => bridges.some((b) => b.some((p) => Math.abs(p[0] - x) < 0.2 && Math.abs(p[1] - y) < 0.2));
+  const clean = [];
+  for (const piece of pieces) {
+    let cur = [piece[0]];
+    for (let k = 1; k < piece.length; k++) {
+      const [x0, y0] = piece[k - 1], [x1, y1] = piece[k];
+      const m = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.03));
+      let bad = false;
+      for (let j = 0; j <= m && !bad; j++) { const x = x0 + ((x1 - x0) * j) / m, y = y0 + ((y1 - y0) * j) / m; if (wetAt(x, y) && !onBridge(x, y)) bad = true; }
+      if (bad) { if (cur.length > 1) clean.push(cur); cur = [piece[k]]; } else cur.push(piece[k]);
+    }
+    if (cur.length > 1) clean.push(cur);
+  }
+  const minLen = cls === 'street' || cls === 'minor' ? 0.5 : 1.2;
+  const long = clean.filter((pc) => { let l = 0; for (let k = 1; k < pc.length; k++) l += Math.hypot(pc[k][0] - pc[k - 1][0], pc[k][1] - pc[k - 1][1]); return l >= minLen; });
+  return { pieces: long, bridges, changed: true };
 }
 
 // Whether a polyline, drawn straight, stays dry (but for its bridges).

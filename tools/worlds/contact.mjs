@@ -24,17 +24,33 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // The inside of a world's drawing, in world units, for a given zoom.
 // detail (optional): the world's finer detail file, drawn from zoom 1.5.
 // tiles (optional): [{ x, y, w, h, png }] finer land-cover pictures over the base.
+// The water's blue by zoom, as the page draws it (map.js, WATER_BY_ZOOM): deeper when the whole world shows.
+const WATER_BY_ZOOM = [[1, [112, 211, 229]], [3, [127, 213, 233]], [6, [136, 215, 235]], [16, [144, 217, 237]]];
+export function waterAt(z) {
+  const Wz = WATER_BY_ZOOM, hex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+  if (z <= Wz[0][0]) return hex(Wz[0][1]);
+  for (let i = 1; i < Wz.length; i++) {
+    if (z > Wz[i][0] && i < Wz.length - 1) continue;
+    const a = Wz[i - 1], b = Wz[i], t = Math.round(Math.min(1, Math.log(z / a[0]) / Math.log(b[0] / a[0])) * 4) / 4;
+    return hex([0, 1, 2].map((k) => Math.round(a[1][k] + (b[1][k] - a[1][k]) * t)));
+  }
+  return hex(Wz[Wz.length - 1][1]);
+}
+
 export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], chunks = []) {
-  const { width: W, height: H, palette: P } = data;
+  const { width: W, height: H } = data;
+  const P = { ...data.palette, water: waterAt(zoom) };
   const px = 1 / zoom; // one screen pixel, in world units
   const parts = [];
   const D = zoom >= 1.5 ? detail : null;
   parts.push(`<image x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" image-rendering="optimizeQuality" href="data:image/png;base64,${pngBuffer.toString('base64')}"/>`);
   for (const t of tiles) parts.push(`<image x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" preserveAspectRatio="none" href="data:image/png;base64,${t.png.toString('base64')}"/>`);
+  // The built-up ground and the cities' cores, as outlines, close in.
+  for (const c of chunks || []) if (zoom >= 3.4) { if (c.built) parts.push(`<path d="${c.built}" fill="#eceef0" fill-rule="evenodd"/>`); if (c.core) parts.push(`<path d="${c.core}" fill="#e3e5e9" fill-rule="evenodd"/>`); }
   // Parks: only a faint edge, close in.
   if (D && zoom >= 3.9) for (const p of D.parks) parts.push(`<path d="${p.path}" fill="none" stroke="#5fae7d" stroke-opacity="0.45" stroke-width="${0.7 * px}"/>`);
   // Rivers and streams: the water's own blue, thin, no casing.
-  const RIVER = '#7fd5e9';
+  const RIVER = P.water;
   if (D && zoom >= 2.9 && D.wadis) parts.push(`<path d="${D.wadis}" fill="none" stroke="#e2dccd" stroke-width="${0.8 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   if (D && zoom >= 2.9 && D.streams) parts.push(`<path d="${D.streams}" fill="none" stroke="${RIVER}" stroke-width="${0.6 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   for (const r of data.rivers) {
@@ -55,11 +71,11 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
     const R = D.roads;
     const line = (d, colour, w) => d && parts.push(`<path d="${d}" fill="none" stroke="${colour}" stroke-width="${w * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
     for (const c of chunks || []) if (zoom >= 3.4 && c.parks) parts.push(`<path d="${c.parks}" fill="${P.citypark || '#a2debe'}"/>`);
-    for (const c of chunks || []) { if (zoom >= 5.85) line(c.minor, '#ffffff', 0.7); if (zoom >= 3.4) line(c.street, '#ffffff', 0.9); }
+    for (const c of chunks || []) { if (zoom >= 8.9) line(c.minor, '#ffffff', zoom >= 11.9 ? 1.3 : 0.8); if (zoom >= 4.9) line(c.street, '#ffffff', zoom >= 11.9 ? 2 : zoom >= 8.9 ? 1.4 : zoom >= 6.9 ? 1 : 0.7); }
     if (D.bridges) { if (zoom >= 3.4) line(D.bridges.minor, '#c9ced9', 3); line(D.bridges.major, '#c9ced9', zoom >= 3.9 ? 4.8 : 3.4); }
     if (zoom >= 3.4) line(R.local, '#c3c9dc', 0.9);
     if (zoom >= 2.4) line(R.secondary, '#b4bdd6', zoom >= 3.9 ? 1.4 : 1.1);
-    if (zoom >= 3.4) line(R.arterial, '#ffffff', zoom >= 4.9 ? 2 : 1.2);
+    if (zoom >= 3.4) line(R.arterial, '#ffffff', zoom >= 11.9 ? 3.2 : zoom >= 8.9 ? 2.4 : zoom >= 4.9 ? 1.6 : 1);
     line(R.ring, '#a6b2cf', zoom >= 3.9 ? 1.8 : 1.2);
     line(R.trunk, '#a6b2cf', zoom >= 3.9 ? 1.8 : 1.3);
     line(R.motorway, '#94a3c4', zoom >= 3.9 ? 2.6 : 1.8);
@@ -70,8 +86,9 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   if (data.provinceBorders) parts.push(`<path d="${data.provinceBorders}" fill="none" stroke="${P.province}" stroke-width="${0.8 * px}" stroke-dasharray="${3 * px} ${2.2 * px}" stroke-linejoin="round"/>`);
   if (data.borders) parts.push(`<path d="${data.borders}" fill="none" stroke="${P.border}" stroke-width="${1 * px}" stroke-linejoin="round" stroke-linecap="round"/>`);
 
+  if (data.disputed) parts.push(`<path d="${data.disputed}" fill="none" stroke="${P.border}" stroke-width="${1 * px}" stroke-dasharray="${4 * px} ${3 * px}" stroke-linejoin="round"/>`);
   const text = [];
-  const FILL = { range: '#6b6f72', province: P.province, park: '#1f6b45', region: '#6f7c74', island: '#5f6368', cape: '#5f6368', peak: '#4a4d52', village: '#3c3f44' };
+  const FILL = { range: '#6b6f72', province: P.province, park: '#1f6b45', region: '#6f7c74', island: '#5f6368', cape: '#5f6368', peak: '#4a4d52', village: '#3c3f44', district: '#6b7078', citypark: '#2e7d52' };
   const all = D ? [...data.labels, ...D.labels] : data.labels;
   for (const l of all) {
     if (l.minZoom > zoom) continue;

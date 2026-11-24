@@ -61,6 +61,15 @@
   opacity: 1;
 }
 
+/* Close in, a stream is drawn a little wider, so it leads into its river and not into a hairline. */
+.map.is-z9 .map-stream {
+  stroke-width: 1px;
+}
+
+.map.is-z12 .map-stream {
+  stroke-width: 1.5px;
+}
+
 /* Dry riverbeds (wadis) in the desert: faint lines a shade darker than the sand, from zoom 3. */
 .map-wadi {
   fill: none;
@@ -170,8 +179,9 @@
   fill: var(--m-peak);
 }
 
+/* (Bold only for capitals; a city's name is a shade lighter.) */
 .k-city text {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .k-village text,
@@ -271,34 +281,90 @@
   stroke-width: 1.6px;
 }
 
+.map.is-z9 .r-arterial {
+  stroke-width: 2.4px;
+}
+
+.map.is-z12 .r-arterial {
+  stroke-width: 3.2px;
+}
+
 .map.is-z3 .r-local {
   stroke-width: 1px;
 }
 
-/* Streets: thin white lines on the grey of the built-up ground, as a web map draws a city. */
+/* Streets: white lines on the grey of the built-up ground, as a web map draws a city. They come in as the city
+   opens up: the main streets from zoom 5, when their blocks are a few pixels across, and the streets between them
+   (which halve the blocks in a city's core) from zoom 9; all of them widen as the map closes in. */
 .r-street {
   stroke: #ffffff;
-  stroke-width: 0.6px;
+  stroke-width: 0.7px;
   opacity: 0;
 }
 
-.map.is-z35 .r-street {
+.map.is-z5 .r-street {
   opacity: 1;
 }
 
-.map.is-z5 .r-street {
-  stroke-width: 0.8px;
+.map.is-z7 .r-street {
+  stroke-width: 1px;
+}
+
+.map.is-z9 .r-street {
+  stroke-width: 1.4px;
+}
+
+.map.is-z12 .r-street {
+  stroke-width: 2px;
 }
 
 .r-minor {
   stroke: #ffffff;
-  stroke-width: 0.5px;
+  stroke-width: 0.8px;
   opacity: 0;
 }
 
-/* (Only at the closest zoom: in a city's core they halve the blocks.) */
-.map.is-z55 .r-minor {
+.map.is-z9 .r-minor {
   opacity: 1;
+}
+
+.map.is-z12 .r-minor {
+  stroke-width: 1.3px;
+}
+
+/* The roads widen close in, too. */
+.map.is-z9 .r-motorway {
+  stroke-width: 4px;
+}
+
+.map.is-z12 .r-motorway {
+  stroke-width: 5px;
+}
+
+.map.is-z9 .r-trunk,
+.map.is-z9 .r-ring {
+  stroke-width: 3px;
+}
+
+.map.is-z12 .r-trunk,
+.map.is-z12 .r-ring {
+  stroke-width: 3.8px;
+}
+
+.map.is-z9 .r-secondary {
+  stroke-width: 2.3px;
+}
+
+.map.is-z12 .r-secondary {
+  stroke-width: 2.9px;
+}
+
+.map.is-z9 .r-local {
+  stroke-width: 1.5px;
+}
+
+.map.is-z12 .r-local {
+  stroke-width: 2px;
 }
 
 /* Beyond a polar edge: the ice cap, running on. */
@@ -318,6 +384,14 @@
 .r-causeway {
   stroke: #b4bdd6;
   stroke-width: 1.2px;
+}
+
+.map.is-z9 .map-causeway {
+  stroke-width: 5.5px;
+}
+
+.map.is-z9 .r-causeway {
+  stroke-width: 2.3px;
 }
 
 /* The coast's islets: sandy cays, bars, and barrier islands (the larger cays green at heart), and bare rock for
@@ -369,6 +443,33 @@
   stroke-width: 4.8px;
 }
 
+.map.is-z9 .map-bridge.is-major {
+  stroke-width: 6.4px;
+}
+
+.map.is-z12 .map-bridge.is-major {
+  stroke-width: 8px;
+}
+
+.map.is-z9 .map-bridge.is-minor {
+  stroke-width: 4.2px;
+}
+
+.map.is-z12 .map-bridge.is-minor {
+  stroke-width: 5.4px;
+}
+
+/* The built-up ground and the cities' denser cores, as outlines over the picture's own (the same greys), so a
+   city's edge is crisp however close the map is drawn. */
+.map-built {
+  fill: #eceef0;
+  stroke: none;
+}
+
+.map-built.is-core {
+  fill: #e3e5e9;
+}
+
 /* The cities' parks: small green patches in the grey of the built-up ground, from zoom 3.5. */
 .map-citypark {
   fill: var(--m-citypark);
@@ -383,6 +484,12 @@
 
 .k-citypark text {
   fill: #2e7d52;
+  font-weight: 500;
+}
+
+/* A city's quarters: small grey names, from zoom 8. */
+.k-district text {
+  fill: #6b7078;
   font-weight: 500;
 }
 

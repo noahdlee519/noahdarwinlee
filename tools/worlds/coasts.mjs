@@ -354,9 +354,90 @@ export function buildIslets({ landAll, elev, width, height, rng, style = {}, hyd
       // The lagoon: between the islands and the shore, along the middle of the chain.
       const mid = line[line.length >> 1], [gx, gy] = grad(mid[0], mid[1]);
       const lx = mid[0] - gx * off * 0.5, ly = mid[1] - gy * off * 0.5;
-      const along = line.slice(Math.floor(line.length * 0.25), Math.ceil(line.length * 0.75)).map(([x, y]) => { const [hx, hy] = grad(x, y); return [Math.round((x - hx * off * 0.5) * 10) / 10, Math.round((y - hy * off * 0.5) * 10) / 10]; });
+      // (The whole chain's length, a half-lagoon in from it: the lagoon's name is set along this.)
+      const along = line.map(([x, y]) => { const [hx, hy] = grad(x, y); return [Math.round((x - hx * off * 0.5) * 10) / 10, Math.round((y - hy * off * 0.5) * 10) / 10]; });
       lagoons.push({ x: lx, y: ly, along, off });
       made++;
+    }
+  }
+  // ---- Atolls: in warm open water, a ring of low sandy islets on a reef round a lagoon (drawn as cays are). ----
+  {
+    const ar = r.fork('atolls');
+    let made = 0;
+    for (let t = 0; t < 400 && made < 3; t++) {
+      const x = ar.range(30 * S, W - 30 * S), y = ar.range(30 * S, H - 30 * S);
+      if (seaTemp(y) < 19 || !inSea(x, y) || SD(x, y) < 16 * S || SD(x, y) > 70 * S || aboutNear(x, y, 30 * S)) continue;
+      if (groups.some((g) => Math.hypot(g.x - x, g.y - y) < 50 * S)) continue;
+      const R0 = ar.range(1.6, 3.1) * S, st = ar.range(1, 1.5), lean = ar.range(0, Math.PI), gapAt = ar.range(0, TAU);
+      const at = (a, rr) => { const u = Math.cos(a) * rr * st, v = Math.sin(a) * rr / st; return [x + u * Math.cos(lean) - v * Math.sin(lean), y + u * Math.sin(lean) + v * Math.cos(lean)]; };
+      const pieces = [];
+      // Arcs of the rim, with passes between them, and a wider pass to leeward.
+      for (let a = 0; a < TAU - 0.05;) {
+        const span = ar.range(0.35, 1.0), pass = ar.range(0.12, 0.3);
+        let da = a - gapAt; da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) > 0.45) {
+          const line = [];
+          for (let q = 0; q <= 6; q++) line.push(at(a + (span * q) / 6, R0 * (1 + 0.06 * Math.sin(q * 1.7 + a * 3))));
+          pieces.push({ ring: strip(line, ar.range(0.11, 0.2) * S, true), mid: line[3] });
+        }
+        a += span + pass;
+      }
+      if (pieces.length < 3 || !pieces.every((pc) => ringClear(pc.ring, 3 * S)) || !clearOfPlaced(x, y, R0 * st, 1.5 * S)) continue;
+      for (const pc of pieces) put('cay', pc.ring, pc.mid[0], pc.mid[1], 0.3 * S);
+      placed.push([x, y, R0 * st]);
+      groups.push({ kind: 'atoll', x, y, n: pieces.length, r: R0 * st + 1.2 * S });
+      made++;
+    }
+  }
+
+  // ---- Spits: off low headlands, a sandspit that runs out with the shore's drift and hooks back at its end. And
+  // tidal islands: a small island a little way off a low shore, joined to it by a bar of sand at low tide. ----
+  {
+    const sr = r.fork('spits');
+    const cands = [];
+    const st = Math.max(1, Math.round(2 * S));
+    for (let y = 10; y < H - 10; y += st) for (let x = 10; x < W - 10; x += st) {
+      const i = y * W + x;
+      if (!landAll[i] || (landAll[i - 1] && landAll[i + 1] && landAll[i - W] && landAll[i + W])) continue;
+      if (seaTemp(y) < 3 || elev[i] > 0.05) continue;
+      let l = 0, ox = 0, oy = 0;
+      for (let k = 0; k < 16; k++) { const a = (k / 16) * TAU, qx = Math.floor(x + Math.cos(a) * 4 * S), qy = Math.floor(y + Math.sin(a) * 4 * S); if (qx >= 0 && qy >= 0 && qx < W && qy < H && landAll[qy * W + qx]) l++; else { ox += Math.cos(a); oy += Math.sin(a); } }
+      if (l < 5 || l > 8) continue;
+      cands.push({ x: x + 0.5, y: y + 0.5, ox, oy, v: sr.next() });
+    }
+    cands.sort((a, b) => a.v - b.v);
+    let spits = 0, tidal = 0;
+    for (const c of cands) {
+      if (spits >= 4 && tidal >= 3) break;
+      if (aboutNear(c.x, c.y, 10 * S) || groups.some((g) => Math.hypot(g.x - c.x, g.y - c.y) < 40 * S)) continue;
+      const ol = Math.hypot(c.ox, c.oy) || 1, ux = c.ox / ol, uy = c.oy / ol;
+      if (spits < 4 && (tidal >= 3 || sr.chance(0.6))) {
+        // Out along the shore's line (square to the seaward way), curving seaward, then hooked back toward land.
+        const side = sr.chance(0.5) ? 1 : -1, len = sr.range(3, 6) * S;
+        const line = [];
+        for (let q = 0; q <= 12; q++) {
+          const t = q / 12, hook = t > 0.72 ? ((t - 0.72) / 0.28) ** 2 : 0;
+          const along = len * (t - 0.35 * hook), out = (0.55 + 1.5 * Math.sin(t * Math.PI * 0.6)) * S - hook * 1.5 * S;
+          line.push([c.x + ux * out - uy * side * along, c.y + uy * out + ux * side * along]);
+        }
+        const ring = strip(line, sr.range(0.13, 0.2) * S, true);
+        // (Its root touches the shore; the rest stands clear in the water.)
+        if (!line.slice(3).every(([x, y]) => inSea(x, y) && SD(x, y) > 0.45 * S) || !clearOfPlaced(line[7][0], line[7][1], len / 2, 0.4 * S)) continue;
+        put('bar', ring, line[7][0], line[7][1], len / 2);
+        groups.push({ kind: 'spit', x: line[8][0] + ux * 1.6 * S, y: line[8][1] + uy * 1.6 * S, n: 1, r: 1.5 * S });
+        spits++;
+      } else if (tidal < 3) {
+        const off = sr.range(1.8, 3) * S, rad = sr.range(0.45, 0.8) * S;
+        const x = c.x + ux * off, y = c.y + uy * off;
+        const ring = blobRing(sr, x, y, rad, { stretch: sr.range(0, 0.5), lean: sr.range(0, Math.PI), wobble: 1.2, n: 12 });
+        if (!ringClear(ring, 0.5 * S) || !clearOfPlaced(x, y, rad, 0.5 * S)) continue;
+        const bar = [];
+        for (let q = 0; q <= 5; q++) { const t = q / 5; bar.push([c.x + ux * (0.2 * S + (off - rad * 0.6 - 0.2 * S) * t) - uy * Math.sin(t * Math.PI) * 0.25 * S, c.y + uy * (0.2 * S + (off - rad * 0.6 - 0.2 * S) * t) + ux * Math.sin(t * Math.PI) * 0.25 * S]); }
+        put('cay', ring, x, y, rad, { green: blobRing(sr, x, y, rad * 0.6, { stretch: 0.2, lean: 0, wobble: 1, n: 10 }).map(([a, b]) => [Math.round(a * 100) / 100, Math.round(b * 100) / 100]) });
+        put('bar', strip(bar, 0.07 * S), (c.x + x) / 2, (c.y + y) / 2, 0.2 * S);
+        groups.push({ kind: 'tidal', x, y: y - rad - 1.6 * S, n: 1, r: 0 });
+        tidal++;
+      }
     }
   }
   void N; void nB;

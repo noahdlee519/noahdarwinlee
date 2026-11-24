@@ -969,7 +969,7 @@
   var LAYER_KINDS = {
     names: ["country", "province", "region", "island", "cape", "range", "peak"],
     roads: ["shield"],
-    towns: ["capital", "city", "town", "village"],
+    towns: ["capital", "city", "town", "village", "district"],
     rivers: ["river", "lake"],
     parks: ["park", "citypark"],
     "water-names": ["ocean", "sea", "gulf", "bay", "strait", "channel", "sound", "fjord", "lagoon", "harbour", "inlet", "cove", "lake", "river"]
@@ -1001,7 +1001,7 @@
   function mapLink() {
     var m = state.map, r = m.rect(), W = state.world.width;
     var cx = (((r.l + r.w / 2 - m.tx) / m.s) % W + W) % W, cy = (r.t + r.h / 2 - m.ty) / m.s;
-    var q = "?world=" + state.world.slug + "&at=" + Math.round(cx) + "," + Math.round(cy) + "," + m.zoom().toFixed(2);
+    var q = "?world=" + state.world.slug + "&at=" + (Math.round(cx * 10) / 10) + "," + (Math.round(cy * 10) / 10) + "," + m.zoom().toFixed(2);
     if (state.view === "project" && state.project) q += "&project=" + state.project + (state.province ? "&province=" + state.province : "");
     return location.origin + ROOT + q;
   }

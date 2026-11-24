@@ -205,12 +205,17 @@ export function buildStreams({ land, hydro, width, height, style = {} }) {
 // placeDetailLabels({ labels, world, nations, settlements, roads, parks, projects, rng })
 //   => new labels (each with detail: true), clear of every label given and of each other.
 // Real parks for the New York and Chicago countries' towns, the largest first.
+// The quarters of the New York and Chicago countries' capitals.
+const REAL_DISTRICTS = {
+  nyc: ['Manhattan', 'Brooklyn', 'Queens', 'The Bronx', 'Staten Island', 'Harlem', 'Astoria', 'Flushing'],
+  chicago: ['The Loop', 'Hyde Park', 'Lincoln Park', 'Wicker Park', 'Pilsen', 'Bronzeville', 'Uptown', 'Logan Square'],
+};
 const REAL_PARKS = {
   nyc: ['Central Park', 'Prospect Park', 'Riverside Park', 'Bryant Park', 'Washington Square Park', 'Battery Park', 'Van Cortlandt Park', 'Pelham Bay Park', 'Fort Tryon Park', 'Flushing Meadows', 'Morningside Park', 'Tompkins Square Park', 'Inwood Hill Park', 'Carl Schurz Park', 'Marcus Garvey Park'],
   chicago: ['Grant Park', 'Lincoln Park', 'Jackson Park', 'Millennium Park', 'Washington Park', 'Humboldt Park', 'Garfield Park', 'Douglass Park', 'Burnham Park', 'Columbus Park', 'Marquette Park', 'McKinley Park', 'Sherman Park', 'Gage Park', 'Calumet Park'],
 };
 
-export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes = [], drawnRivers, islets = null, cityParks = [] }) {
+export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes = [], drawnRivers, islets = null, cityParks = [], urban = null }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('detail-names');
   const namer = makeNamer(r);
@@ -270,7 +275,19 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       const size = SIZE[rank] * S;
       // The smallest villages wait for the closest zoom.
       const minZoom = rank === RANK.VILLAGE && s.size < 0.55 ? 5 : ZOOM[rank];
-      beside({ id: `${KIND[rank]}-${out.length}`, kind: KIND[rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom }, s.x, s.y, size);
+      if (!beside({ id: `${KIND[rank]}-${out.length}`, kind: KIND[rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom }, s.x, s.y, size)) missed.push(s);
+    }
+  };
+  // Places whose names found no room at their own zoom are named closer in, smaller on the map (the page sets
+  // every name at a readable size), so no built-up patch is left without its dot and name at the closest zooms.
+  const missed = [];
+  const placeMissed = () => {
+    for (const s of missed.slice().sort((a, b) => a.rank - b.rank)) {
+      const text = s.name || namerAt(s.x, s.y).town();
+      for (const [k, z] of [[0.55, 7], [0.36, 10]]) {
+        const size = SIZE[s.rank] * S * k;
+        if (beside({ id: `${KIND[s.rank]}-${out.length}`, kind: KIND[s.rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom: z }, s.x, s.y, size)) break;
+      }
     }
   };
 
@@ -495,8 +512,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   // ---- The larger small lakes: finger lakes along their length, reservoirs, and the rest. ----
   const placeLakes = () => {
     if (!smallLakes) return;
-    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1.2 : 4) * S * S).sort((a, b) => b.area - a.area);
-    for (const l of list.slice(0, 40)) {
+    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1 : 2.5) * S * S).sort((a, b) => b.area - a.area);
+    for (const l of list.slice(0, 70)) {
       const w0 = wordAt(l.x, l.y);
       const text = l.kind === 'reservoir' ? `${w0} Reservoir` : l.kind === 'crater' ? `Crater Lake ${w0}` : `Lake ${w0}`;
       // Along the lake's long axis.
@@ -532,9 +549,13 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       let k = -1;
       for (let rad = 2; rad < 60 && k < 0; rad += 3) for (let a = 0; a < 12 && k < 0; a++) { const o = owner[px(g.x + Math.cos(a / 12 * Math.PI * 2) * rad * S, g.y + Math.sin(a / 12 * Math.PI * 2) * rad * S)]; if (o >= 0) k = o; }
       const w0 = k >= 0 && cultures ? cultures[k].namer.word() : namer.word();
-      const text = g.kind === 'cays' ? r.pick([(w) => `${w} Cays`, (w) => `${w} Keys`, (w) => `${w} Cays`])(w0) : r.pick([(w) => `${w} Skerries`, (w) => `${w} Rocks`])(w0);
+      const FORMS = {
+        cays: [(w) => `${w} Cays`, (w) => `${w} Keys`, (w) => `${w} Cays`], skerries: [(w) => `${w} Skerries`, (w) => `${w} Rocks`],
+        atoll: [(w) => `${w} Atoll`], spit: [(w) => `${w} Spit`, (w) => `${w} Spit`, (w) => `${w} Point`], tidal: [(w) => `${w} Holm`, (w) => `Isle of ${w}`, (w) => `${w} Island`],
+      };
+      const text = r.pick(FORMS[g.kind] || FORMS.skerries)(w0);
       const size = 3 * S;
-      const base = { id: `islets-${out.length}`, kind: 'island', text, lines: [text], x: g.x, y: g.y, size, angle: 0, spacing: 0.06, minZoom: 4 };
+      const base = { id: `islets-${out.length}`, kind: 'island', text, lines: [text], x: g.x, y: g.y, size, angle: 0, spacing: 0.06, minZoom: g.kind === 'atoll' ? 3 : 4 };
       if (!tryPut(base)) if (!tryPut({ ...base, y: g.y - (g.r || 6 * S) * 0.6 - size })) tryPut({ ...base, y: g.y + (g.r || 6 * S) * 0.6 + size });
     }
   };
@@ -551,8 +572,41 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
         text = r.pick([(w) => `${w} Park`, (w) => `${w} Park`, (w) => `${w} Gardens`, (w) => `${w} Green`, () => `${s.name} Common`])(w0);
       }
       const size = 2.25 * S;
-      tryPut({ id: `citypark-${out.length}`, kind: 'citypark', text, lines: lineBreaks(text)[text.length > 14 ? Math.min(1, lineBreaks(text).length - 1) : 0], x: p.x, y: p.y, size, angle: 0, spacing: 0, minZoom: 5.5 }, 0.3 * S);
+      tryPut({ id: `citypark-${out.length}`, kind: 'citypark', text, lines: lineBreaks(text)[text.length > 14 ? Math.min(1, lineBreaks(text).length - 1) : 0], x: p.x, y: p.y, size, angle: 0, spacing: 0, minZoom: p.big ? 6 : 9 }, 0.3 * S);
     }
+  };
+
+  // ---- Districts: the quarters of the larger cities, named for the closest zooms (a metropolis has half a dozen, a
+  // capital a few, a city one or two). New York's and Chicago's are their own. ----
+  const placeDistricts = () => {
+    if (!urban) return;
+    const dr = r.fork('districts');
+    settlements.forEach((s) => {
+      const id = projects[s.country].id;
+      if (s.rank > RANK.CITY || !(s.reach >= (REAL_DISTRICTS[id] ? 3 : 4.2) * S)) return;
+      const real = s.rank === RANK.CAPITAL && REAL_DISTRICTS[id] ? REAL_DISTRICTS[id].slice() : null;
+      // (In those two countries only the capitals have named quarters: their other names are all real towns'.)
+      if (REAL_DISTRICTS[id] && !real) return;
+      const want = s.metro ? 7 : s.rank === RANK.CAPITAL ? 4 : 2;
+      const spots = [];
+      let old = false;
+      for (let t = 0; t < (real ? 400 : want * 30) && spots.length < want; t++) {
+        const a = dr.next() * Math.PI * 2, rr = dr.range(0.28, 1.05) * s.reach;
+        const x = s.x + Math.cos(a) * rr, y = s.y + Math.sin(a) * rr;
+        if (!urban(x, y) || spots.some((p) => Math.hypot(p[0] - x, p[1] - y) < Math.max(2.4 * S, s.reach * 0.3))) continue;
+        let text;
+        if (real && real.length) text = real[0];
+        else {
+          const nm = cultures ? cultures[s.country].namer : namer, u = dr.next();
+          text = u < 0.72 ? nm.town() : u < 0.8 && !old && (s.layout === 'medieval' || s.layout === 'radial' || s.layout === 'port') ? 'Old Town' : dr.pick([(w) => `${w} Quarter`, (w) => `${w} Heights`, (w) => `${w} Hill`, (w) => `${w} Side`])(nm.word());
+        }
+        const size = 2.3 * S;
+        if (!tryPut({ id: `district-${out.length}`, kind: 'district', text, lines: lineBreaks(text)[text.length > 12 ? Math.min(1, lineBreaks(text).length - 1) : 0], x, y, size, angle: 0, spacing: 0.03, minZoom: 8 }, 0.3 * S)) continue;
+        if (real && real.length) real.shift();
+        if (text === 'Old Town') old = true;
+        spots.push([x, y]);
+      }
+    });
   };
 
   // Most important first: each later name must fit round the earlier ones.
@@ -571,6 +625,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   placeLakes();
   placeRank(RANK.VILLAGE);
   placeCityParks();
+  placeDistricts();
+  placeMissed();
 
   return out;
 }

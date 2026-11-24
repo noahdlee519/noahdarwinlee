@@ -471,9 +471,14 @@ export function renderCover(prep, wx0, wy0, w, h) {
       }
       // Sand: beaches on dry or warm coasts, and dune fields (ergs) in the driest desert, in long ripples.
       if (c === COVER.DESERT || c === COVER.STEPPE || c === COVER.GRASS) {
-        const dd = dist ? dist[onLand ? i0 : (nearest ? nearest[i0] : i0)] : 9;
+        // (The distance to the sea read between the pixels, so the beach is an even band along the shore, not a row
+        // of the grid's squares, however close the map is drawn.)
+        const dd = !onLand ? 0 : dist ? bil(dist, mx, my) : 9;
         // (Only in the finer tiles: the first picture stays plain, and small.)
-        const beach = scale >= 4 && (dd <= 1 || !onLand) && (moist[s] < 0.34 || t > 18) && e < 0.06;
+        // Beaches come in stretches, wider and narrower, with bare shore between: never a pale line round a whole
+        // island.
+        const stretch = dd < 1.6 ? fbm(nDune, mx / (11 * S0) + 31.7, my / (11 * S0) - 12.3, 2) : -1;
+        const beach = scale >= 4 && stretch > 0.02 && dd < 0.75 + 1.6 * Math.min(0.5, stretch) && (moist[s] < 0.34 || t > 18) && e < 0.06;
         let dune = false;
         if (scale >= 4 && c === COVER.DESERT && moist[s] < 0.06 && e < 0.26) {
           const u = (mx * dca + my * dsa) / (1.7 * S0) + 2.2 * fbm(nDune, mx / (9 * S0), my / (9 * S0), 2);

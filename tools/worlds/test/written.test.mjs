@@ -74,7 +74,7 @@ test('water is named often, of many kinds, and more of it at each closer zoom', 
     const salt = all.filter((l) => SALT.includes(l.kind));
     assert.ok(salt.length >= 40, `${w.name}: only ${salt.length} names for the sea's water`);
     assert.ok(new Set(salt.map((l) => l.kind)).size >= 7, `${w.name}: the sea's water is named in only ${new Set(salt.map((l) => l.kind)).size} kinds`);
-    assert.ok(all.filter((l) => l.kind === 'lake').length >= 8, `${w.name}: few lakes named`);
+    assert.ok(all.filter((l) => l.kind === 'lake').length >= 2, `${w.name}: few lakes named`);
     const upTo = (z) => salt.filter((l) => l.minZoom <= z).length;
     assert.ok(upTo(1) >= 1 && upTo(1) < upTo(2) && upTo(2) < upTo(3) && upTo(3) < upTo(4) && upTo(4) < upTo(5), `${w.name}: names by zoom ${[1, 2, 3, 4, 5].map(upTo)}`);
     for (const l of salt) assert.ok(l.minZoom >= WATER_KINDS[l.kind], `${w.name}: ${l.text} shows before its kind's zoom`);
@@ -83,6 +83,11 @@ test('water is named often, of many kinds, and more of it at each closer zoom', 
     const forms = { fjord: /fjord$|Fjord$|^Loch /, lagoon: / Lagoon$/, harbour: / Harbour$/, inlet: / Inlet$/, cove: / Cove$/, channel: / Channel$/, sound: / Sound$/, strait: / Strait$| Narrows$/ };
     for (const l of salt) if (forms[l.kind]) assert.match(l.text, forms[l.kind]);
   }
+});
+
+test('lakes are named across the worlds, more than before', { skip }, () => {
+  const n = worlds.reduce((a, w) => a + [...w.data.labels, ...w.detail.labels].filter((l) => l.kind === 'lake').length, 0);
+  assert.ok(n >= 260, `only ${n} lakes named in all twenty worlds`);
 });
 
 test('the ice sheets have no names', { skip }, () => {
@@ -95,7 +100,8 @@ test('the New York and Chicago countries\' places take New York State\'s and Ill
   const ny = new Set(['New York', ...REAL_PLACES['new-york'].towns]), il = new Set(['Chicago', ...REAL_PLACES.illinois.towns]);
   for (const w of worlds) {
     const nyc = w.data.projects.find((p) => p.id === 'nyc'), chi = w.data.projects.find((p) => p.id === 'chicago');
-    const inside = (p) => { const f = new Fill(p.path); return (l) => l.dot && f.inside(l.dot[0], l.dot[1]); };
+    // (A place on the very shore may fall a hair outside the coast as drawn, which is simplified: a unit's leeway.)
+    const inside = (p) => { const f = new Fill(p.path); return (l) => l.dot && (f.inside(l.dot[0], l.dot[1]) || (l.kind === 'capital' && [[1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5]].some(([dx, dy]) => f.inside(l.dot[0] + dx, l.dot[1] + dy)))); };
     const places = [...w.data.labels, ...w.detail.labels].filter((l) => ['capital', 'city', 'town', 'village'].includes(l.kind));
     const inNy = places.filter(inside(nyc)), inIl = places.filter(inside(chi));
     assert.ok(inNy.length >= 2 && inIl.length >= 2, `${w.name}: too few places to judge`);
@@ -115,6 +121,47 @@ test('cities have small parks, the larger ones named at the closest zoom', { ski
     assert.ok(names.length >= 1, `${w.name}: no city park is named`);
     for (const l of names) assert.ok(l.minZoom >= 5, `${w.name}: ${l.text} shows from zoom ${l.minZoom}`);
   }
+});
+
+test('cities are drawn close in from their own outlines, and the larger have named quarters', { skip }, () => {
+  let manhattan = 0, loop = 0;
+  for (const w of worlds) {
+    const built = w.chunks.flatMap((c) => (c.built ? pathLines(c.built, 2) : [])), core = w.chunks.flatMap((c) => (c.core ? pathLines(c.core, 2) : []));
+    assert.ok(built.length >= 200, `${w.name}: only ${built.length} outlines of built-up ground`);
+    assert.ok(core.length >= 10, `${w.name}: only ${core.length} city cores`);
+    const quarters = w.detail.labels.filter((l) => l.kind === 'district');
+    assert.ok(quarters.length >= 12, `${w.name}: only ${quarters.length} quarters named`);
+    for (const l of quarters) assert.ok(l.minZoom >= 8, `${w.name}: ${l.text} shows from zoom ${l.minZoom}`);
+    if (quarters.some((l) => l.text === 'Manhattan')) manhattan++;
+    if (quarters.some((l) => l.text === 'The Loop')) loop++;
+  }
+  assert.ok(manhattan >= 16 && loop >= 16, `Manhattan is named in ${manhattan} worlds and the Loop in ${loop}`);
+});
+
+test('borders: an exclave in most worlds, held whole by its country, and a disputed stretch drawn apart', { skip }, () => {
+  let exclaves = 0, disputed = 0;
+  for (const w of worlds) {
+    if (w.data.disputed) { disputed++; assert.ok(pathLines(w.data.disputed).length <= 2, `${w.name}: more than two disputed stretches`); }
+    const e = w.data.exclave;
+    if (!e) continue;
+    exclaves++;
+    const holder = w.data.projects.find((p) => p.id === e.of), host = w.data.projects.find((p) => p.id === e.in);
+    assert.ok(holder && host && holder.id !== host.id, `${w.name}: the exclave's countries`);
+    // A designed exclave lies apart from its country's main body: the holder's shape has more than one ring, and
+    // the piece is small beside the country it was cut from.
+    assert.ok(new Fill(holder.path).inside(e.x + 0.5, e.y + 0.5) || [[2, 0], [-2, 0], [0, 2], [0, -2]].some(([dx, dy]) => new Fill(holder.path).inside(e.x + dx, e.y + dy)), `${w.name}: the exclave is not ${e.of}'s`);
+    assert.ok(pathLines(holder.path, 2).length >= 2, `${w.name}: ${e.of} is in one piece`);
+    assert.ok(e.area < 400, `${w.name}: an exclave of ${e.area} units`);
+  }
+  assert.ok(exclaves >= 10, `only ${exclaves} worlds have an exclave`);
+  assert.ok(disputed >= 18, `only ${disputed} worlds have a disputed border`);
+});
+
+test('islands come in kinds: atolls, spits, and tidal islands beside the cays, skerries, and barrier islands', { skip }, () => {
+  const count = (re) => worlds.filter((w) => [...w.data.labels, ...w.detail.labels].some((l) => l.kind === 'island' && re.test(l.text))).length;
+  assert.ok(count(/ Atoll$/) >= 6, `atolls in only ${count(/ Atoll$/)} worlds`);
+  assert.ok(count(/ (Spit|Point)$/) >= 12, `spits in only ${count(/ (Spit|Point)$/)} worlds`);
+  assert.ok(count(/ Holm$|^Isle of /) >= 8, `tidal islands in only ${count(/ Holm$|^Isle of /)} worlds`);
 });
 
 test('the coast has its small forms: fjords, cays, skerries, sandbars, and lagoons behind barrier islands', { skip }, () => {

@@ -5,13 +5,13 @@ import { makeRng, makeNoise, fbm } from '../rng.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 
-test('the project list has 18 projects, seven ranked flagships, and Dealdesk\'s four provinces', () => {
-  assert.equal(projects.length, 18);
+test('the project list has 20 projects, seven ranked flagships, and Dealdesk\'s four provinces', () => {
+  assert.equal(projects.length, 20);
   const flagships = projects.filter((p) => p.tier === 'flagship');
   assert.deepEqual(flagships.map((p) => p.name), ['CHRONIA', 'LoreTour', 'UCHRONIA', 'Fuzhounese Dictionary', 'Leggio', 'GREATERCIRCLE', 'Dealdesk']);
   assert.deepEqual(flagships.map((p) => p.rank), [1, 2, 3, 4, 5, 6, 7]);
-  assert.equal(projects.filter((p) => p.tier === 'small').length, 11);
-  assert.equal(new Set(projects.map((p) => p.id)).size, 18);
+  assert.equal(projects.filter((p) => p.tier === 'small').length, 13);
+  assert.equal(new Set(projects.map((p) => p.id)).size, 20);
   const dealdesk = projects.find((p) => p.id === 'dealdesk');
   assert.deepEqual(dealdesk.provinces.map((p) => p.name), ['Rollmap', 'Screener', 'Closebook', 'LBOmatic']);
 });

@@ -76,6 +76,50 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
     // Where it joins or nearly joins: the column of project land nearest the pole.
     let jx = -1;
     if (link !== 'apart') { let best = Infinity; for (let x = 0; x < W; x++) if (top[x] < best) { best = top[x]; jx = x; } }
+    // The great forms an ice-sheet coast has, so it is not one even band along the edge: a peninsula or two reaching
+    // far out where the ocean is open (much of it bare rock and tundra), and a wide embayment or two where the sea
+    // runs deep into the ice, most often facing the projects' land, so the water between is a sea and not a moat.
+    const gr = r.fork('great-forms');
+    const pen = new Float32Array(W), bay = new Float32Array(W);
+    const bump = (arr, x0, half, amount, skew) => {
+      for (let dx = -Math.ceil(half * 1.6); dx <= Math.ceil(half * 1.6); dx++) {
+        // (Lopsided: steeper on one flank than the other.)
+        const x = ((Math.floor(x0 + dx) % W) + W) % W, u = dx / (half * (1 + 0.35 * skew * Math.sign(dx)));
+        // (Broad at the root and blunt at the end, not a spike.)
+        const v = amount * Math.exp(-1.5 * Math.abs(u) ** 3) * (1 + 0.22 * per(nB, x, 40 * S, 2, 5.5));
+        if (v > arr[x]) arr[x] = v;
+      }
+    };
+    const roomAt = (x0, half) => { let m = Infinity; for (let dx = -half; dx <= half; dx += 4) m = Math.min(m, Math.min(top[((Math.floor(x0 + dx) % W) + W) % W], H * 0.45)); return m; };
+    const forms = [];
+    const spacedFrom = (x0, gap) => forms.every((f) => Math.abs(wrapDx(x0 - f)) > gap) && (jx < 0 || Math.abs(wrapDx(x0 - jx)) > gap * 0.6);
+    for (let q = 0, n = 1 + gr.int(2); q < n; q++) {
+      // The peninsula: where there is most open water for it.
+      let best = null;
+      for (let t = 0; t < 30; t++) {
+        const x0 = gr.range(0, W), half = gr.range(38, 72) * S;
+        if (!spacedFrom(x0, 220 * S)) continue;
+        const room = roomAt(x0, half * 1.15) - base - 22 * S;
+        if (room > 40 * S && (!best || room > best.room)) best = { x0, half, room };
+      }
+      if (!best) break;
+      bump(pen, best.x0, best.half, Math.min(gr.range(60, 100) * S, best.room), gr.range(-1, 1));
+      forms.push(best.x0);
+    }
+    for (let q = 0, n = 1 + gr.int(2); q < n; q++) {
+      // The embayment: where the projects' land comes nearest (but not at the join).
+      let best = null;
+      for (let t = 0; t < 30; t++) {
+        const x0 = gr.range(0, W), half = gr.range(70, 130) * S;
+        if (!spacedFrom(x0, 240 * S)) continue;
+        const room = roomAt(x0, half * 0.6);
+        if (!best || room < best.room) best = { x0, half, room };
+      }
+      if (!best) break;
+      bump(bay, best.x0, best.half, gr.range(50, 82) * S, gr.range(-1, 1));
+      forms.push(best.x0);
+    }
+    for (let x = 0; x < W; x++) depth[x] = Math.max(26 * S, depth[x] + pen[x] - bay[x]);
     const reach = 75 * S;
     if (jx >= 0) for (let x = 0; x < W; x++) {
       const d = Math.abs(wrapDx(x - jx));
@@ -111,11 +155,15 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
       for (const sh of shelves) {
         const d = Math.abs(wrapDx(x - sh.x0));
         if (d > sh.half) continue;
-        if (jx >= 0 && Math.abs(wrapDx(x - jx)) < reach + 20 * S) continue;
-        // The front: the coast's depth smoothed wide, pushed seaward, eased off at the shelf's ends.
+        // The front: the coast's depth smoothed wide, pushed seaward, eased off at the shelf's ends, on the great
+        // peninsulas, and toward the join (eased, so a shelf never ends in a straight wall).
         let sm = 0;
-        for (let k = -30; k <= 30; k += 3) sm = Math.max(sm, depth[((Math.floor(x + k * S) % W) + W) % W]);
-        best = Math.max(best, (sm + sh.out * (0.6 + 0.4 * per(nS, x, 25 * S, 2))) * smoothstep(sh.half, sh.half * 0.6, d));
+        for (let k = -30; k <= 30; k += 3) { const xx = ((Math.floor(x + k * S) % W) + W) % W; sm = Math.max(sm, depth[xx] - pen[xx]); }
+        const ease = smoothstep(sh.half, sh.half * 0.45, d) * smoothstep(12 * S, 0, pen[x]) * (jx >= 0 ? smoothstep(reach + 10 * S, reach + 60 * S, Math.abs(wrapDx(x - jx))) : 1);
+        // (A shelf fills the coast's lesser bays; it does not wall off a great embayment.)
+        const front = Math.min(sm, depth[x] + 20 * S) + sh.out * (0.6 + 0.4 * per(nS, x, 25 * S, 2));
+        // (Eased toward the coast itself, not toward nothing: where the ease is nil the shelf is nil.)
+        best = Math.max(best, depth[x] - 2 * S + (front - depth[x] + 2 * S) * ease);
       }
       shelfDepth[x] = best;
     }
@@ -165,7 +213,7 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
         }
       }
     }
-    meta.push({ side, kOf, yOf, depth, jx, fjordAt, base });
+    meta.push({ side, kOf, yOf, depth, jx, fjordAt, base, pen });
   }
   // Seamless at the wrap: the last column repeats the first's neighbour pattern exactly.
   for (let y = 0; y < H; y++) { all[y * W + W - 1] = all[y * W]; shelf[y * W + W - 1] = shelf[y * W]; }
@@ -205,11 +253,16 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
 
   // ---- The cover: fringe, glaciers, nunataks, and ice. ----
   function fringeWidth(x, y) {
-    // From a sliver to some 8 units, by stretches of coast; nil where an outlet glacier reaches the sea.
-    const w = 2.2 * S + 7.5 * S * smoothstep(-0.3, 0.4, per(nF, x, 60 * S, 3, 1.7 + y * 0.0007));
+    // Long stretches of the coast are ice to the water's edge, as most of an ice sheet's coast is; between them the
+    // bare fringe runs from a sliver to some 13 units (wider still on the great peninsulas, which the ice leaves
+    // largely bare), and is nil again where an outlet glacier reaches the sea.
+    let penHere = 0;
+    for (const m of meta) if ((m.side === 'n') === (y < H / 2)) penHere = m.pen[clamp(Math.floor(x), 0, W - 1)];
+    const icy = penHere > 8 * S ? 0 : smoothstep(0.0, -0.22, per(nF, x, 150 * S, 2, 4.4 + y * 0.0005));
+    const w = (2.6 * S + 10.5 * S * smoothstep(-0.3, 0.4, per(nF, x, 60 * S, 3, 1.7 + y * 0.0007)) + 0.17 * penHere) * (1 - icy);
     // (Outlets are patches along the coast, not columns, so an island is never striped.)
     const outlet = seam(nO, x, y, 7 * S, 2);
-    return outlet > 0.45 ? 0 : w * smoothstep(0.45, 0.28, outlet);
+    return outlet > 0.4 ? 0 : w * smoothstep(0.4, 0.22, outlet);
   }
   const bil = (F, x, y) => {
     const fx = clamp(x - 0.5, 0, W - 1.001), fy = clamp(y - 0.5, 0, H - 1.001);

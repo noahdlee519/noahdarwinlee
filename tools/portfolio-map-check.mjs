@@ -5,7 +5,7 @@
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
 //   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|moved|all] [base URL]
-//       map: the world draws 18 countries and their labels, zoom stops at 16x, the water is the reference's blue at
+//       map: the world draws 20 countries and their labels, zoom stops at 16x, the water is the reference's blue at
 //       each zoom, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
@@ -84,7 +84,7 @@ function content() {
   console.log('content');
   const projects = JSON.parse(readFileSync(join(root, 'projects', 'projects.json'), 'utf8'));
   const exists = (src) => src.startsWith('/') && existsSync(join(root, src.split('?')[0]));
-  ok(projects.length === 18, `18 projects (${projects.length})`);
+  ok(projects.length === 20, `20 projects (${projects.length})`);
   const fileOf = (m) => [m.src, m.video, m.poster, ...(m.srcset ? m.srcset.split(',').map((s) => s.trim().split(/\s+/)[0]) : [])].filter(Boolean);
   for (const p of projects) {
     const missing = [];
@@ -196,7 +196,8 @@ async function hereStage(browser) {
     return { d: Math.hypot(cx - h[0], cy - h[1]), zoom: m.zoom() };
   });
   ok(near.d < 6 && near.zoom > 3, `it flies to the blue dot and zooms in on the island (${near.d.toFixed(1)} units off, at ${near.zoom.toFixed(1)}x)`);
-  await page.screenshot({ path: '/tmp/portfolio-map-here.png' });
+  // (A picture for review only: the page is about to leave for the about page, so it may not be taken.)
+  await page.screenshot({ path: '/tmp/portfolio-map-here.png', timeout: 2500 }).catch(() => {});
   await page.waitForURL(/\/#about$/, { timeout: 6000 }).catch(() => {});
   ok(/\/#about$/.test(page.url()) && Date.now() - t0 > 1200, `then, after a pause, it opens the about page (${page.url()})`);
   await page.close();
@@ -222,9 +223,9 @@ async function mapStage(browser) {
     world: window.__portfolioMap.map.world.slug,
   }));
   ok(counts.world === 'le-guin', '?world=le-guin opens Le Guin');
-  ok(counts.countries === 18, `18 country shapes (${counts.countries})`);
-  ok(counts.labels === 18, `18 country labels (${counts.labels})`);
-  ok(counts.shown >= 14, `most country labels show at the start (${counts.shown} of 18)`);
+  ok(counts.countries === 20, `20 country shapes (${counts.countries})`);
+  ok(counts.labels === 20, `20 country labels (${counts.labels})`);
+  ok(counts.shown >= 15, `most country labels show at the start (${counts.shown} of 20)`);
 
   const labelsAt = () => page.evaluate(() => [...document.querySelectorAll('.lbl.is-on')].map((e) => e.className.baseVal.match(/k-(\w+)/)[1]));
   const before = await labelsAt();

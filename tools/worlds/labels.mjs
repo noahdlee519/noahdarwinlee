@@ -452,6 +452,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   }
 
   const countryLabel = new Map();
+  const capitalDots = (extras.towns || []).filter((t) => t.capital);
   projects.forEach((project, index) => {
     const pixels = pixelsOf[index];
     if (!pixels.length) return;
@@ -489,6 +490,11 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       x: got.x, y: got.y, size: got.size, angle: got.angle, spacing: got.spacing || 0,
       minZoom: zoomFor(got.size, flagship ? 11 : 9.8),
     };
+    // A country's name never lies over a capital's dot (its own, most often, in a small country): it is set a little
+    // smaller until it clears it, so the capital can be named too.
+    const overDot = () => labelRects(label, 0.9 * S).some((rc) => capitalDots.some((t) => rectsOverlap(rc, { cx: t.x, cy: t.y, hw: 3.6 * S, hh: 3.6 * S, cos: 1, sin: 0 })));
+    for (let n = 0; n < 6 && label.size * 0.93 >= floor && overDot(); n++) label.size = Math.round(label.size * 0.93 * 100) / 100;
+    label.minZoom = zoomFor(label.size, flagship ? 11 : 9.8);
     commit(label);
     countryLabel.set(index, label);
   });
@@ -542,21 +548,27 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   // ---- Towns: a dot and a name beside it, capitals first (before the water's names, which give way to them). ----
   const dots = [];
   for (const town of towns) {
-    if (dots.some((d) => Math.hypot(d[0] - town.x, d[1] - town.y) < (town.capital ? 26 : 44) * S)) continue;
+    if (dots.some((d) => Math.hypot(d[0] - town.x, d[1] - town.y) < (town.capital ? 10 : 44) * S)) continue;
     const text = town.name || namer.town();
-    const size = (town.capital ? 4.9 : 3.5) * S;
-    const w = lineWidth(text, 0) * size, gap = size * 0.75;
-    // Beside the dot: right, left, above, below.
-    const spots = [[w / 2 + gap, 0], [-w / 2 - gap, 0], [0, -size * 1.05], [0, size * 1.05], [w / 2 + gap * 0.8, -size * 0.8], [w / 2 + gap * 0.8, size * 0.8]];
-    for (const [dx, dy] of spots) {
-      const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines: [text], x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: town.capital && projects.find((p) => p.id === town.id)?.tier === 'flagship' ? 1 : zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
-      if (town.capital) label.of = town.id;
-      const rects = labelRects(label, 0.9 * S);
-      if (rects.some((rc) => rc.cx - rc.hw < 2 || rc.cy - rc.hh < 2 || rc.cx + rc.hw > W - 2 || rc.cy + rc.hh > H - 2)) continue;
-      if (!clearOf(rects)) continue;
-      commit(label, 0.7 * S);
-      dots.push([town.x, town.y]);
-      break;
+    // Beside the dot: right, left, above, below, then the corners; smaller, if nothing else fits (a capital is
+    // always named).
+    let done = false;
+    for (const k of town.capital ? [1, 0.82, 0.68] : [1]) {
+      const size = (town.capital ? 4.9 : 3.5) * S * k;
+      const w = lineWidth(text, 0) * size, gap = size * 0.75;
+      const spots = [[w / 2 + gap, 0], [-w / 2 - gap, 0], [0, -size * 1.05], [0, size * 1.05], [w / 2 + gap * 0.8, -size * 0.8], [w / 2 + gap * 0.8, size * 0.8], [-w / 2 - gap * 0.8, -size * 0.8], [-w / 2 - gap * 0.8, size * 0.8]];
+      for (const [dx, dy] of spots) {
+        const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines: [text], x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: town.capital && projects.find((p) => p.id === town.id)?.tier === 'flagship' ? 1 : zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
+        if (town.capital) label.of = town.id;
+        const rects = labelRects(label, 0.9 * S);
+        if (rects.some((rc) => rc.cx - rc.hw < 2 || rc.cy - rc.hh < 2 || rc.cx + rc.hw > W - 2 || rc.cy + rc.hh > H - 2)) continue;
+        if (!clearOf(rects)) continue;
+        commit(label, 0.7 * S);
+        dots.push([town.x, town.y]);
+        done = true;
+        break;
+      }
+      if (done) break;
     }
   }
 
@@ -749,7 +761,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       for (const i of spots) {
         const x = (i % W) + 0.5, y = ((i / W) | 0) + 0.5, d = dist[i];
         // Small and untracked, as the reference sets its water names; an ocean a little larger.
-        const size = ocean ? clamp(d / 16, 6.5 * S, 8.5 * S) : clamp(d / 14, 4.6 * S, 5.6 * S);
+        const size = ocean ? clamp(d / 16, 6.5 * S, 8.5 * S) : clamp(d / 14, 4.95 * S, 5.6 * S);
         const spacing = 0;
         const options = ocean || lineWidth(text, spacing) * size > d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
         let done = false;
@@ -807,7 +819,8 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const who = mostShore(shoreCounts(c.x, c.y, c.d * 2.5 + 30 * S));
       const forms = kind === 'sea' ? SEA_FORMS : kind === 'gulf' ? [(w) => `Gulf of ${w}`] : [(w) => `${w} Bay`];
       const name = waterName(who, 'water', forms);
-      const base = kind === 'sea' ? clamp(c.d / 14, 4.6 * S, 5.6 * S) : kind === 'gulf' ? 4.2 * S : 3.5 * S;
+      // (Seas and the larger gulfs readable from zoom 2, the rest from 3.)
+      const base = kind === 'sea' ? clamp(c.d / 14, 4.95 * S, 5.6 * S) : kind === 'gulf' ? (c.d >= 16 * S ? 4.95 : 4.2) * S : 3.5 * S;
       const zoom0 = kind === 'bay' ? 3 : 2;
       let placed = false;
       for (const size of [base, base * 0.85]) {
@@ -938,9 +951,19 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const nordic = who >= 0 && extras.phonOf && extras.phonOf(who) === 'nordic';
       const name = waterName(who, 'water', nordic ? [(w) => `${w}fjord`] : [(w) => `${w} Fjord`, (w) => `${w} Fjord`, (w) => `Loch ${w}`]);
       const size = 3.2 * S;
-      if (lineWidth(name.text, 0) * size * 1.3 > len) continue;
-      const path = alongLine(f.pts, name.text, size);
-      if (!path) continue;
+      if (lineWidth(name.text, 0) * size * 0.8 > len) continue;
+      let path = alongLine(f.pts, name.text, size);
+      if (!path) {
+        // A fjord too crooked to letter along: a straight name over its middle reach, along its general line.
+        const a = f.pts[Math.floor(f.pts.length * 0.2)], b = f.pts[Math.floor(f.pts.length * 0.8)];
+        let ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        if (Math.cos(ang) < 0) ang += Math.PI;
+        if (ang > Math.PI) ang -= 2 * Math.PI;
+        if (Math.abs(ang) > 1.2) continue;
+        const L = lineWidth(name.text, 0) * size * 1.06, c = f.pts[f.pts.length >> 1];
+        path = [];
+        for (let k = 0; k <= 4; k++) { const t = -L / 2 + (k / 4) * L; path.push([Math.round((c[0] + Math.cos(ang) * t) * 10) / 10, Math.round((c[1] + Math.sin(ang) * t) * 10) / 10]); }
+      }
       const m2 = path[path.length >> 1];
       const label = { id: `fjord-${labels.length}`, kind: 'fjord', text: name.text, lines: [name.text], x: m2[0], y: m2[1], size, angle: 0, spacing: 0, minZoom: kindZoom('fjord', size) + (len < 22 * S ? 1 : 0), path };
       if (!claimsClear(m2[0], m2[1], f.width) || !spaced('fjord', m2[0], m2[1]) || !clearOf(labelRects(label, 0.8 * S))) continue;
@@ -955,14 +978,19 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     for (const g of extras.lagoons || []) {
       const who = nearestOwner(g.x, g.y, 14 * S);
       const name = waterName(who, 'water', [(w) => `${w} Lagoon`]);
-      const size = 3.0 * S;
-      const path = g.along.length > 3 ? alongLine(g.along, name.text, size, true) : null;
-      const label = path ? { id: `lagoon-${labels.length}`, kind: 'lagoon', text: name.text, lines: [name.text], x: path[path.length >> 1][0], y: path[path.length >> 1][1], size, angle: 0, spacing: 0, minZoom: kindZoom('lagoon', size), path } : null;
-      if (!label || !claimsClear(label.x, label.y, g.off) || !clearOf(labelRects(label, 0.6 * S))) continue;
+      const size = 2.8 * S;
+      const path = g.along.length > 3 ? alongLine(g.along, name.text, size) : null;
+      let label = path ? { id: `lagoon-${labels.length}`, kind: 'lagoon', text: name.text, lines: [name.text], x: path[path.length >> 1][0], y: path[path.length >> 1][1], size, angle: 0, spacing: 0, minZoom: kindZoom('lagoon', size), path } : null;
+      if (!label || !clearOf(labelRects(label, 0.6 * S))) {
+        // Else straight, over the lagoon's middle.
+        label = { id: `lagoon-${labels.length}`, kind: 'lagoon', text: name.text, lines: [name.text], x: g.x, y: g.y, size, angle: 0, spacing: 0, minZoom: kindZoom('lagoon', size) };
+        if (!clearOf(labelRects(label, 0.6 * S))) continue;
+      }
+      if (!claimsClear(label.x, label.y, g.off * 0.6)) continue;
       claim(label, name);
       commit(label, 0.6 * S);
-      label.waterRadius = g.off;
-      waterAreas.push({ x: label.x, y: label.y, r: g.off, kind: 'lagoon' });
+      label.waterRadius = g.off * 0.6;
+      waterAreas.push({ x: label.x, y: label.y, r: g.off * 0.6, kind: 'lagoon' });
     }
 
     // ---- Harbours: the sheltered water by a port city, in the city's name. ----
@@ -1067,10 +1095,10 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
         pixels.push(i);
         for (const n of [i - 1, i + 1, i - W, i + W]) if (n >= 0 && n < N && lakes[n] && !seen[n]) { seen[n] = 1; stack[top++] = n; }
       }
-      if (pixels.length >= 150 * S * S) found.push(pixels.sort((a, b) => a - b));
+      if (pixels.length >= 90 * S * S) found.push(pixels.sort((a, b) => a - b));
     }
     found.sort((a, b) => b.length - a.length || a[0] - b[0]);
-    for (const pixels of found.slice(0, 18)) {
+    for (const pixels of found.slice(0, 24)) {
       // The lake belongs to the country it lies in (or the one round most of its shore).
       const counts = new Map();
       for (const i of pixels) for (const n of [i, i - 2, i + 2, i - 2 * W, i + 2 * W]) {

@@ -155,6 +155,9 @@ export function makeWorld(name, projects, opts) {
   const nations = buildNations(world, projects);
   const { width, height, rng, land, elev, hydro, cover, fields, terrain, style } = world;
   const owner = nations.owner;
+  // An exclave, in most worlds: a small piece of a flagship's coast, far from its capital, held by one of the small
+  // countries beyond it (see exclaveFor). The flagship's main body stays whole and the size order stands.
+  const exclave = exclaveFor({ owner, nations, projects, land, dist: terrain.dist, width, height, rng });
   // An About island in a lake is in no country.
   if (world.about && world.about.kind === 'lake') for (let i = 0; i < owner.length; i++) if (world.about.mask[i]) owner[i] = -1;
   const cultures = assignCultures(projects, rng, neighbours(owner, projects.length, width, height));
@@ -170,7 +173,7 @@ export function makeWorld(name, projects, opts) {
     s.name = s.rank === RANK.CAPITAL && CAPITAL_NAMES[p.id] ? CAPITAL_NAMES[p.id] : cultures[s.country].namer.town();
   }
   const roads = buildRoads({ land, elev, hydro, owner, settlements, blocked: smallLakes.mask, cultures, projects, width, height, rng });
-  const { streets, builtKind, layouts, cityParks } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta, areas: nations.areas, projects });
+  const { streets, builtKind, layouts, cityParks, urbanRings } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta, areas: nations.areas, projects });
   settlements.forEach((s, k) => { s.layout = layouts[k].type; s.ringRoad = layouts[k].ring; s.shape = layouts[k].shape; });
   // The About island's own detail: a little town and its lighthouse, a causeway, or a ferry to the mainland.
   const about = world.about;
@@ -208,7 +211,7 @@ export function makeWorld(name, projects, opts) {
     const [mx, my] = pts[pts.length >> 1], mi = Math.floor(my) * width + Math.floor(mx);
     (fields.moist[mi] < 0.075 && fields.temp[mi] > 4 ? wadis : streams).push(pts.map(([x, y]) => warp(x, y)));
   }
-  const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers, islets, cityParks });
+  const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers, islets, cityParks, urban: builtKind });
   if (about && about.lighthouse) {
     const [lx, ly] = about.lighthouse, S1 = width / 1600;
     for (const [dx, dy] of [[0, 2.4], [0, -2.4], [6, 0], [-6, 0]]) {
@@ -220,14 +223,68 @@ export function makeWorld(name, projects, opts) {
   return {
     name, slug: world.slug, width: world.width, height: world.height,
     cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
-    settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar,
-    detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [], islets: islets.islets, cityParks },
+    settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar, exclave,
+    detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [], islets: islets.islets, cityParks, urbanRings },
     rivers: drawnRivers, riverMeta: world.hydro.riverMeta,
     owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,
     land: world.land, landAll: world.landAll, elev: world.elev, temp: world.fields.temp, plan: nations.plan,
     coverArgs: world.coverArgs,
   };
+}
+
+// A designed exclave: { of (the country that holds it), in (the flagship whose coast it lies on), x, y, area } or null.
+function exclaveFor({ owner, nations, projects, land, dist, width: W, height: H, rng }) {
+  const r = rng.fork('exclave'), S = W / 1600, N = W * H;
+  if (!r.chance(0.8)) return null;
+  const areas = nations.areas, capOf = (k) => nations.capitals.find((c) => c.id === projects[k].id);
+  const flag = projects.map((p, k) => k).filter((k) => projects[k].tier === 'flagship' && !projects[k].provinces).sort((a, b) => projects[a].rank - projects[b].rank);
+  const small = projects.map((p, k) => k).filter((k) => projects[k].tier !== 'flagship' && areas[k] > 300 * S * S);
+  if (!flag.length || !small.length) return null;
+  const smallCaps = small.map((k) => [k, capOf(k)]).filter((e) => e[1]);
+  for (let t = 0; t < 300; t++) {
+    const x = r.int(W - 40) + 20, y = r.int(H - 40) + 20, i = y * W + x, B = owner[i];
+    if (!land[i] || !flag.includes(B) || dist[i] > 2.5 * S) continue;
+    const cb = capOf(B);
+    if (!cb || Math.hypot(cb.x - x, cb.y - y) < 70 * S) continue;
+    if (nations.capitals.some((c) => Math.hypot(c.x - x, c.y - y) < 30 * S)) continue;
+    // Held by the small country whose capital is nearest, if that is neither next door nor a world away.
+    let A = -1, ad = Infinity;
+    for (const [k, c] of smallCaps) { const d = Math.hypot(c.x - x, c.y - y); if (d < ad) { ad = d; A = k; } }
+    if (A < 0 || ad < 60 * S || ad > 420 * S) continue;
+    // The piece: what of B lies within a few units of the point, ragged.
+    const R = r.range(6, 9) * S, piece = [];
+    for (let yy = Math.floor(y - R); yy <= y + R; yy++) for (let xx = Math.floor(x - R); xx <= x + R; xx++) {
+      if (xx < 1 || yy < 1 || xx >= W - 1 || yy >= H - 1) continue;
+      const j = yy * W + xx, d = Math.hypot(xx - x, yy - y);
+      if (owner[j] === B && d < R * (0.8 + 0.2 * Math.sin(xx * 0.9) * Math.cos(yy * 0.7))) piece.push(j);
+    }
+    if (piece.length < 60 * S * S || piece.length > areas[B] * 0.02) continue;
+    // No neighbour of A may touch it (it would be no exclave), and the size order must stand.
+    const set = new Set(piece);
+    if (piece.some((j) => [j - 1, j + 1, j - W, j + W].some((n) => owner[n] === A))) continue;
+    const next = flag[flag.indexOf(B) + 1];
+    if (next !== undefined && areas[B] - piece.length <= areas[next] * 1.02) continue;
+    // B's own land must stay in one piece as it was: flood it from its capital, without the piece.
+    const before = countFrom(owner, B, cb, W, N, null), after = countFrom(owner, B, cb, W, N, set);
+    if (after !== before - piece.length) continue;
+    for (const j of piece) owner[j] = A;
+    areas[B] -= piece.length; areas[A] += piece.length;
+    return { of: projects[A].id, in: projects[B].id, x, y, area: piece.length };
+  }
+  return null;
+}
+function countFrom(owner, k, cap, W, N, without) {
+  const s = Math.floor(cap.y) * W + Math.floor(cap.x);
+  if (owner[s] !== k) return -1;
+  const seen = new Uint8Array(N), stack = [s];
+  seen[s] = 1;
+  let n = 0;
+  while (stack.length) {
+    const i = stack.pop(); n++;
+    for (const j of [i - 1, i + 1, i - W, i + W]) if (j >= 0 && j < N && !seen[j] && owner[j] === k && !(without && without.has(j))) { seen[j] = 1; stack.push(j); }
+  }
+  return n;
 }
 
 // The About island's name, beside it.

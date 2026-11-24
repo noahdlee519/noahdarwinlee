@@ -292,6 +292,42 @@ export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cul
     if (!seen.has(key)) walk(c, e);
   }
 
+  // ---- Twin stretches: two roads between the same two junctions that run side by side all the way (a route laid
+  // a cell or two off a road already there) are one road; the better class stays. ----
+  {
+    const cxy = (c) => [c % CW, Math.floor(c / CW)];
+    const apart = (A, B) => {
+      let worst = 0;
+      for (const a of A) {
+        const [ax, ay] = cxy(a);
+        let best = Infinity;
+        for (const b of B) { const [bx, by] = cxy(b); const d = Math.hypot(ax - bx, ay - by); if (d < best) best = d; }
+        if (best > worst) worst = best;
+      }
+      return worst;
+    };
+    const groups = new Map();
+    stretches.forEach((st, k) => {
+      const a = st.cells[0], b = st.cells[st.cells.length - 1];
+      if (a === b) return;
+      const key = a < b ? a * CN + b : b * CN + a;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(k);
+    });
+    const drop = new Set();
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+        const A = stretches[list[i]], B = stretches[list[j]];
+        if (drop.has(list[i]) || drop.has(list[j])) continue;
+        if (Math.max(apart(A.cells, B.cells), apart(B.cells, A.cells)) > 2.3) continue;
+        const worse = A.cls !== B.cls ? (A.cls > B.cls ? list[i] : list[j]) : A.cells.length >= B.cells.length ? list[i] : list[j];
+        drop.add(worse);
+      }
+    }
+    if (drop.size) { const kept = stretches.filter((_, k) => !drop.has(k)); stretches.length = 0; stretches.push(...kept); }
+  }
+
   // ---- Straighten and round each stretch. ----
   const centre = (c) => {
     const s = nodeOf.get(c);

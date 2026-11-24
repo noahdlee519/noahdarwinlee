@@ -5,7 +5,25 @@
 
   var NS = "http://www.w3.org/2000/svg";
   var ROOT = "/projects/";
-  var MAX_ZOOM = 6;
+  // The closest zoom: 6x is a regional view, where a city is a grey patch with its main roads; from there to 16x the
+  // cities open up into their streets, cores, and parks.
+  var MAX_ZOOM = 16;
+  // The water's blue by zoom, as the reference draws it (measured on Noah's screenshots, read through their colour
+  // profiles into sRGB): deeper when the whole world shows, paler the closer in.
+  var WATER_BY_ZOOM = [[1, [112, 211, 229]], [3, [127, 213, 233]], [6, [136, 215, 235]], [16, [144, 217, 237]]];
+  function waterAt(z) {
+    var W = WATER_BY_ZOOM, n = W.length;
+    if (z <= W[0][0]) return hex(W[0][1]);
+    for (var i = 1; i < n; i++) {
+      if (z > W[i][0] && i < n - 1) continue;
+      var a = W[i - 1], b = W[i], t = Math.min(1, Math.log(z / a[0]) / Math.log(b[0] / a[0]));
+      // In a few steps a stop, so a moving zoom restyles the water only now and then.
+      t = Math.round(t * 4) / 4;
+      return hex([0, 1, 2].map(function (k) { return Math.round(a[1][k] + (b[1][k] - a[1][k]) * t); }));
+    }
+    return hex(W[n - 1][1]);
+  }
+  function hex(c) { return "#" + c.map(function (v) { return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   // ---------------------------------------------------------------- helpers
@@ -88,9 +106,9 @@
 
   // Each kind of label's smallest and largest size on screen, in pixels.
   // Water names are small, as on the reference: about a town's size, an ocean a little more.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, channel: 10.5, sound: 10.5, fjord: 10, lagoon: 10, harbour: 10, inlet: 10, cove: 10, river: 10.5, town: 11, village: 10, peak: 10, park: 11, citypark: 9.5, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
-  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 15, city: 14, province: 15, range: 13, lake: 12.5, strait: 12, channel: 12, sound: 12, fjord: 11.5, lagoon: 11.5, harbour: 11, inlet: 11, cove: 11, river: 12, town: 13, village: 12, peak: 12, park: 15, citypark: 11, region: 14, island: 13, cape: 12, shield: 11 };
-  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, channel: 80, sound: 80, fjord: 82, river: 85, lagoon: 86, harbour: 87, inlet: 88, town: 90, cape: 92, cove: 94, village: 96, citypark: 98 };
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 13.5, city: 12.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, channel: 10.5, sound: 10.5, fjord: 10, lagoon: 10, harbour: 10, inlet: 10, cove: 10, river: 10.5, town: 11.5, village: 10.5, peak: 10, park: 11, citypark: 9.5, district: 10, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
+  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 14.5, city: 13, province: 15, range: 13, lake: 12.5, strait: 12, channel: 12, sound: 12, fjord: 11.5, lagoon: 11.5, harbour: 11, inlet: 11, cove: 11, river: 12, town: 12, village: 11, peak: 12, park: 15, citypark: 11, district: 12, region: 14, island: 13, cape: 12, shield: 11 };
+  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, channel: 80, sound: 80, fjord: 82, river: 85, lagoon: 86, harbour: 87, inlet: 88, town: 90, cape: 92, cove: 94, village: 96, district: 97, citypark: 98 };
   // Water's names: the open sea's, the coast's, lakes', and rivers'.
   var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, channel: 1, sound: 1, fjord: 1, lagoon: 1, harbour: 1, inlet: 1, cove: 1, river: 1 };
 
@@ -250,6 +268,9 @@
     // The finer detail (parks, streams, roads, subdivisions, and small places' names) arrives once the map is zoomed
     // in; its layers wait, empty, in their places in the drawing order.
     this.detail = null; this.detailAsked = false;
+    // The built-up ground and the cities' cores as outlines (from the chunks), over the picture's own: close in, a
+    // city's edge stays crisp where the picture's pixels would show.
+    this.urbanLayer = layer("map-urban", true);
     this.parkLayer = layer("map-parks", true);
     // Streams and rivers, then the sea and lakes over them, and the estuaries: land meets water as two flat colours,
     // with no line between them.
@@ -260,6 +281,8 @@
     world.rivers.slice().sort(function (a, b) { return b.width - a.width; }).forEach(function (r) {
       var p = svg("path", { d: r.path }, rg);
       p.style.setProperty("--rw", r.width + "px");
+      // (A river widens with the zoom to a point, then keeps its width on screen, as a street does.)
+      p.style.setProperty("--rcap", (1.5 + 3.4 * r.width).toFixed(2));
       if (r.minZoom > 1) p.classList.add("is-minor");
     });
     // The sea: this copy's own strip of the map, less its land, so neighbouring copies meet edge to edge.
@@ -281,6 +304,8 @@
     this.adminTpl = svg("g", { class: "map-admin" }, Lb.tpl);
     if (world.provinceBorders) svg("path", { class: "map-provinces", d: world.provinceBorders }, Lb.tpl);
     svg("path", { class: "map-borders", d: world.borders }, Lb.tpl);
+    // Disputed stretches of border: dashed.
+    if (world.disputed) svg("path", { class: "map-borders is-disputed", d: world.disputed }, Lb.tpl);
     this.outlineLayer = layer("map-outline", true);
     // "You are here": a blue dot with a white ring and a soft pulsing halo, on the island called About. Drawn in
     // screen pixels whatever the zoom.
@@ -433,6 +458,9 @@
       var water = !!WATER[l.kind];
       var kind = l.kind;
       var floor = LABEL_FLOOR[kind] || 11, cap = Math.max(LABEL_CAP[kind] || 14, floor);
+      // A country's name grows no larger than it is with the whole world in view (zoom 1). Places' names keep one
+      // modest size on screen at every zoom, and their dots with them (see LABEL_FLOOR and LABEL_CAP).
+      if (kind === "country") cap = Math.max(floor, Math.min(cap, 0.977 * Math.pow(self.ref(), 0.78) * l.size));
       var item = { l: l, floor: floor, cap: cap, shown: false };
       if (kind === "country") {
         item.rank = l.minZoom > 1 ? 30 : (self._tier(l.id) === "flagship" ? self._rank(l.id) : 20 + (40 - l.size));
@@ -686,6 +714,15 @@
     this.host.classList.toggle("is-z4", z >= 3.9);
     this.host.classList.toggle("is-z5", z >= 4.9);
     this.host.classList.toggle("is-z55", z >= 5.85);
+    this.host.classList.toggle("is-z7", z >= 6.9);
+    this.host.classList.toggle("is-z9", z >= 8.9);
+    this.host.classList.toggle("is-z12", z >= 11.9);
+    var water = waterAt(z);
+    if (water !== this.water) {
+      this.water = water;
+      this.host.style.setProperty("--m-water", water);
+      this.host.style.setProperty("--m-river", water);
+    }
     if (z >= 3.3 && this.detail && !this.anim && !this.interacting) this._loadChunks();
     if (z >= 1.3 && !this.detailAsked && !this.anim && !this.interacting) this._loadDetail();
     this.placeLabels();
@@ -750,6 +787,9 @@
         if (c.minor) svg("path", { class: "map-road r-minor", d: c.minor }, self.streetTpl);
         if (c.street) svg("path", { class: "map-road r-street", d: c.street }, self.streetTpl);
         if (c.parks) svg("path", { class: "map-citypark", d: c.parks }, self.cityParkTpl);
+        if (c.built) svg("path", { class: "map-built", d: c.built, "fill-rule": "evenodd" }, self.urbanLayer.tpl);
+        if (c.core) svg("path", { class: "map-built is-core", d: c.core, "fill-rule": "evenodd" }, self.urbanLayer.tpl);
+        if (c.built || c.core) self._refresh(self.urbanLayer);
         if (c.lakes) svg("path", { class: "map-small-lakes", d: c.lakes }, self.reservoirTpl);
         self._refresh(self.roadLayer);
         self._refresh(self.waterLayer);

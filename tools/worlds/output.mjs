@@ -195,8 +195,11 @@ class PathText {
   move(p) {
     if (!this.out.length) { this.out.push('M' + join2(p[0], p[1])); this.x = p[0]; this.y = p[1]; this.last = 'M'; }
     else this.cmd('m', p);
+    this.sx = this.x; this.sy = this.y;
   }
-  close() { this.out.push('z'); this.last = 'z'; }
+  // (Closing a ring takes the pen back to where the ring began, as SVG does: an estuary's outline ends a river's
+  // width from where it began, and the next was drawn that far out of place.)
+  close() { this.out.push('z'); this.last = 'z'; this.x = this.sx; this.y = this.sy; }
   toString() { return this.out.join(''); }
 }
 const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
@@ -296,8 +299,10 @@ class FinePath {
   move(p) {
     if (!this.started) { const X = h100(p[0]), Y = h100(p[1]); const b = fmt100(Y); this.out.push('M' + fmt100(X) + (b[0] === '-' ? '' : ' ') + b); this.x = X; this.y = Y; this.started = true; this.last = 'M'; }
     else this.cmd('m', p);
+    this.sx = this.x; this.sy = this.y;
   }
-  close() { this.out.push('z'); this.last = 'z'; }
+  // (Closing a ring takes the pen back to where the ring began, as SVG does.)
+  close() { this.out.push('z'); this.last = 'z'; this.x = this.sx; this.y = this.sy; }
   toString() { return this.out.join(''); }
 }
 // Open lines drawn straight, point to point.
@@ -323,6 +328,20 @@ export function fineLoops(list) {
     path.move(mid(line[n - 1], line[0]));
     path.cmd('q', line[0], mid(line[0], line[1]));
     for (let k = 1; k < n; k++) path.cmd('t', mid(line[k], line[(k + 1) % n]));
+    path.close();
+  }
+  return path.toString();
+}
+
+// Closed rings drawn straight, side to side (for outlines already as fine as they will be drawn).
+export function finePolys(list) {
+  const path = new FinePath();
+  for (const ring of list) {
+    const line = [];
+    for (const p of ring) { const last = line[line.length - 1]; if (!last || h100(last[0]) !== h100(p[0]) || h100(last[1]) !== h100(p[1])) line.push(p); }
+    if (line.length < 3) continue;
+    path.move(line[0]);
+    for (const p of line.slice(1)) path.cmd('l', p);
     path.close();
   }
   return path.toString();
@@ -380,7 +399,20 @@ export function buildWorldFiles(world) {
   // the sea's even-odd fill turns to land and back to water.
   const A = world.about;
   if (A && A.kind !== 'lake') coast += rings([...A.rings, ...A.holes]);
-  const borders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right));
+  // A few stretches of border are disputed, and drawn dashed: one or two in a world, of middling length, chosen by
+  // the world's name.
+  const isBorder = (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right);
+  const lenOf = (l) => { let d = 0; for (let k = 1; k < l.length; k++) d += Math.hypot(l[k][0] - l[k - 1][0], l[k][1] - l[k - 1][1]); return d / 10; };
+  const eligible = arcs.map((a, k) => k).filter((k) => isBorder(arcs[k]) && !arcs[k].closed && lenOf(lines[k]) > 14 && lenOf(lines[k]) < 70);
+  const disputedSet = new Set();
+  if (eligible.length) {
+    let h = 0;
+    for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    disputedSet.add(eligible[h % eligible.length]);
+    if (eligible.length > 6 && h % 3) disputedSet.add(eligible[(h >>> 5) % eligible.length]);
+  }
+  const borders = linesPath(arcs, lines, (a) => isBorder(a) && !disputedSet.has(arcs.indexOf(a)));
+  const disputed = linesPath(arcs, lines, (a) => disputedSet.has(arcs.indexOf(a)));
   const provinceBorders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) === ownerOf(a.right) && a.left !== a.right);
 
   // An About island in a lake: the lake is traced whole, and the island cut from it by its own outline.
@@ -512,6 +544,8 @@ export function buildWorldFiles(world) {
     estuaries: { fill: estFill.toString(), edge: estEdge.toString() },
     rivers,
     borders,
+    disputed: disputed || undefined,
+    exclave: world.exclave || undefined,
     provinceBorders,
     projects: projects.map((project, index) => {
       const entry = { id: project.id, path: ringsPath(arcs, lines, (k) => ownerOf(k) === index) };
@@ -528,6 +562,13 @@ export function buildWorldFiles(world) {
   if (world.about) data.here = [Math.round(world.about.x * 10) / 10, Math.round(world.about.y * 10) / 10];
   const detail = world.detail ? buildDetail(world, data) : null;
   if (detail) data.detail = { src: `detail/${slug}.json`, chunks: detail.chunks.meta };
+  // Names that show only from zoom 4 (harbours, inlets, coves, and the like) go with the finer detail, which is
+  // loaded well before then: the first load stays light.
+  if (detail) {
+    const late = (l) => l.minZoom >= 4 && l.kind !== 'country' && l.kind !== 'capital' && l.kind !== 'province' && l.id !== 'about';
+    detail.coarse.labels = [...detail.coarse.labels, ...data.labels.filter(late)];
+    data.labels = data.labels.filter((l) => !late(l));
+  }
   return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail.coarse), chunks: detail && detail.chunks.files };
 }
 
@@ -724,15 +765,33 @@ export function buildDetail(world, data = null) {
   };
   // Chunks: streets, minor streets, the smallest lakes, and the cities' parks.
   const cols = Math.ceil(W / CHUNK), rows = Math.ceil(H / CHUNK);
-  const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [], parks: [] }));
+  const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [], parks: [], built: [], core: [] }));
   const binOf = (p) => Math.min(rows - 1, Math.floor(p[1] / CHUNK)) * cols + Math.min(cols - 1, Math.floor(p[0] / CHUNK));
   for (const st of D.streets) if (st.cls === 'street' || st.cls === 'minor') bins[binOf(st.pts[0])][st.cls].push(st.pts);
   for (const l of lakes) if (l.area < 0.6) bins[binOf([l.x, l.y])].lakes.push(l);
   for (const p of D.cityParks || []) bins[binOf([p.x, p.y])].parks.push(p.ring);
+  // The built-up ground and the cities' cores, as outlines: each ring whole, in the chunk its first point lies in (a
+  // hole in a town, round a pond or a park of open ground, goes with its town by the even-odd rule, so the rings of
+  // one chunk are one path).
+  const U = D.urbanRings || { built: [], core: [] };
+  const anchor = (ring) => { let x0 = Infinity, y0 = Infinity; for (const [x, y] of ring) { if (x < x0) x0 = x; if (y < y0) y0 = y; } return [x0, y0]; };
+  // (A hole is filed with the ring round it: by the outer ring's own corner, found by which outer ring holds it.)
+  const filed = (rings) => {
+    const boxes = rings.map((ring) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [x, y] of ring) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return [x0, y0, x1, y1]; });
+    return rings.map((ring, k) => {
+      let home = k;
+      for (let j = 0; j < rings.length; j++) { const a = boxes[home], b = boxes[j]; if (j !== k && b[0] <= boxes[k][0] && b[1] <= boxes[k][1] && b[2] >= boxes[k][2] && b[3] >= boxes[k][3] && (b[2] - b[0]) * (b[3] - b[1]) > (a[2] - a[0]) * (a[3] - a[1])) home = j; }
+      return binOf(anchor(rings[home]));
+    });
+  };
+  filed(U.built).forEach((b, k) => bins[b].built.push(U.built[k]));
+  filed(U.core).forEach((b, k) => bins[b].core.push(U.core[k]));
   const streetPath = (list, cls) => { const { plain, fine } = dryLines(list, cls, false); return segments(plain) + fineLines(fine); };
   const files = bins.map((b, k) => {
     const c = { street: streetPath(b.street, 'street'), minor: streetPath(b.minor, 'minor'), lakes: lakeRings(b.lakes) };
     if (b.parks.length) c.parks = fineLoops(b.parks);
+    if (b.built.length) c.built = finePolys(b.built);
+    if (b.core.length) c.core = finePolys(b.core);
     return { path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify(c) };
   });
   // The bridges, found while the roads and streets were kept dry.

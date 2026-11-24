@@ -155,7 +155,10 @@ test('towns and cities are laid out in many ways, and only the largest have ring
   assert.ok(new Set(big.map((s) => s.layout)).size >= 5, `the cities are of only ${new Set(big.map((s) => s.layout)).size} kinds`);
   assert.ok(new Set(towns.map((s) => s.layout)).size >= 3, 'the towns are all alike');
   assert.ok(villages.every((s) => s.layout === 'mainstreet' || s.layout === 'crossroads'), 'a village is a main street or a crossroads');
-  assert.ok(D.streets.filter((st) => st.cls === 'ring').length <= rings.length * 2, 'ring roads round places without one');
+  // A ring road belongs to a metropolis, and is a line or two (open where the city meets the sea), not dashes.
+  const ringRuns = D.streets.filter((st) => st.cls === 'ring');
+  assert.ok(ringRuns.every((st) => S[st.of] && S[st.of].ringRoad), 'ring roads round places without one');
+  for (const s of rings) assert.ok(ringRuns.filter((st) => S[st.of] === s).length <= 3, 'a ring road in pieces');
   // The built-up ground has an organic outline, not a disc: its reach varies round each city.
   const built = world.coverArgs.urban;
   let ragged = 0;

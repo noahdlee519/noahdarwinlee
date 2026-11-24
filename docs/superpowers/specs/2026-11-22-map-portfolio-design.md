@@ -89,7 +89,7 @@ Flagship (large mainland countries): CHRONIA, LoreTour, UCHRONIA, Fuzhounese Dic
 
 Flagship sizes are ranked in that order (Noah's call): CHRONIA is the largest country, Dealdesk the smallest flagship.
 
-Smaller (islands, city-states, small territories): citylayoutguessr, Flash Card Tool, 100 Architects of the Modern Era, Things to Do in New York City, Things to Do in Chicago, and, in place of a single "Miscellaneous" country, each entry on the current Miscellaneous page as its own: Expositions Magazine, Night of Ideas, Substack, UCGEO, Drill the canon, and Dragonfly Agency. That makes 18 countries.
+Smaller (islands, city-states, small territories): citylayoutguessr, Flash Card Tool, 100 Architects of the Modern Era, Things to Do in New York City, Things to Do in Chicago, and, in place of a single "Miscellaneous" country, each entry on the current Miscellaneous page as its own: Expositions Magazine, Night of Ideas, Substack, UCGEO, Drill the canon, and Dragonfly Agency. That makes 18 countries; Braidable and the portfolio site, added 23 November, make 20 (both small).
 
 Dealdesk has provinces for its tools (Rollmap, Screener, Closebook, and LBOmatic), drawn with internal borders; search finds them, and clicking one opens Dealdesk's panel at that tool (Noah's call).
 
@@ -151,7 +151,7 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - **Parks have no fill**, only a name and, close in, a faint edge. They lie in ice and high mountains, forests, wetlands, coasts, and deserts, under names of several kinds.
 - **Polar ice** belongs to no country, at the top or bottom of five worlds, seamless across the wrap.
 - **About:** every world has an island called About with a "you are here" dot. The location button flies there, then opens the about page.
-- **Zoom** goes to 6x, with tiles at 12 pixels a unit and the finest streets and lakes loaded in chunks for the view.
+- **Zoom** goes to 6x (later 16x; see below), with tiles at 12 pixels a unit and the finest streets and lakes loaded in chunks for the view.
 - **Colours and lettering** follow the reference, measured on rendered pixels.
   - The sea is `#7fd5e9` (see below), and the land-cover palette is unshaded at every zoom.
   - Labels are untracked. Country names are bold `#121315`; water names are upright teal `#34768e`, small, and curve along channels and bays.
@@ -176,6 +176,15 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - **Cities by size and shape.** A rank-size hierarchy: three metropolises (some 30 to 40 km across) with ring roads, then capitals, cities, towns, and villages, their built-up areas roughly 400 : 50 : 16 : 2.5 : 0.3. Each is compact, long (along a coast, river, or valley), star-shaped along its roads, a pair of twin towns across a river, or wrapped round a bay. The middle of each city is a darker grey (`#e3e5e9`), its streets closer together; the blocks grow larger outward, and minor streets show only at the closest zoom. Cities have small parks (`#a2debe`), the largest named at the closest zoom.
 - **Roads never run into the water.** Roads and streets are checked against the water as drawn; a short crossing of a river, narrows, or strait is a bridge (drawn with a pale deck), narrow straits between two landmasses are bridged rather than ferried, a road that grazes the shore is moved just inland, and any other is stopped at the water's edge.
 - **The water's blue, measured.** Noah's screenshots are tagged with a Display P3 profile, so their raw values are P3, not sRGB: the Brittany reference's sea, `#93d3e6` in P3, is `#7fd5e9` in sRGB. The old `#86cfe2` (sRGB, as the page draws it) shows in such a screenshot as `#96cde0`, greyer than the reference; `#7fd5e9` shows as `#93d3e6`, the reference's own. Sea, lakes, rivers, the pictures' water, and the contact sheets all use it.
+
+## Closer in, and truer to the reference (23 November, night)
+
+- **Zoom goes to 16x** (builder's call, to be confirmed by Noah). At 6x a city is a grey patch some 50 to 200 pixels across, as a web map's regional view shows it, and its plan cannot be read; from 6x to 16x the cities open up. Main streets show from zoom 5, the streets between them from 9, and roads, streets, and bridges widen as the map closes in. The finest tiles stay at 12 pixels a unit; the built-up ground and the cities' cores are also written as outlines (in the chunks) and drawn over the picture, so a city's edge is crisp at every zoom. A river widens with the zoom only to a point, then keeps its width on screen.
+- **The water's blue changes with the zoom, as the reference's does.** Read through their colour profiles into sRGB, Noah's screenshots give `#6dd1e5` and `#70d3e5` for the reference's world views, `#7fd5e9` for its regional view (Brittany), `#83d6eb` and `#88d7eb` closer (Alaska, Dhaka), and `#90d9ed` at a city zoom: one blue, paler the closer in. The page draws `#70d3e5` at zoom 1, `#7fd5e9` at 3, `#88d7eb` at 6, and `#90d9ed` at 16, stepping between them; sea, lakes, rivers, and the water names' halo follow. The pictures' own water (the PNG palette's `#7fd5e9`) lies wholly under the vector sea and lakes, and the PNGs carry no colour chunks (no gAMA, iCCP, sRGB, or cHRM), so the browser reads them as sRGB.
+- **Cities.** Sizes a little larger (a city 3.6 to 6 units in radius, a town 1.3 to 2.2). Ports and coastal strips are kept to about a third of a world's larger places, so a world of islands also has grid towns, old towns, and planned capitals on its shores; Chicago and New York are always grids. A metropolis's ring road is one rounded orbital, open where the city meets the sea. The larger cities have named quarters from zoom 8 (New York's are Manhattan, Brooklyn, Queens, and so on; Chicago's the Loop, Hyde Park, Lincoln Park, and so on); their largest park is named from zoom 6, the others from 9.
+- **Roads.** Two roads laid side by side between the same two junctions are one road.
+- **Polar land.** The ice sheet's coast has great forms: a peninsula or two reaching out where the ocean is open, largely bare rock and tundra, and a wide embayment or two, most often facing the projects' land, so the water between is a sea and not a moat. Long stretches of the coast are ice to the water's edge; between them the bare fringe is wider than before. Ice shelves fill the lesser bays only.
+- **Beaches** follow the shore as an even band (they were a row of the grid's squares, which showed close in).
 
 ## The page shell (builder's calls)
 

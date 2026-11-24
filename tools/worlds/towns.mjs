@@ -108,19 +108,19 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
   };
 
   // ---- Each place's size: a rank-size hierarchy, from a metropolis or three down to villages. ----
-  // Radii in map units (about 1.5 km each): a metropolis some 11 to 14, a capital 4 to 8, a city 3 to 5, a town
-  // about 1.1 to 1.9, a village under 0.7; so their built-up areas run roughly 400 : 50 : 16 : 2.5 : 0.3, as the
+  // Radii in map units (about 1.5 km each): a metropolis some 12 to 15, a capital 4 to 10, a city 3.6 to 6, a town
+  // about 1.3 to 2.2, a village under 0.75; so their built-up areas run roughly 400 : 60 : 20 : 3 : 0.35, as the
   // populations of real places of those ranks do.
   const maxArea = areas ? Math.max(...areas) : 1;
   const sz01 = (v) => clamp((v - 0.3) / 1.9, 0, 1);
   const baseR = settlements.map((s) => {
-    if (s.rank === RANK.CAPITAL) return (4.4 + 3.8 * Math.sqrt((areas ? areas[s.country] : maxArea) / maxArea)) * (projects && projects[s.country] && projects[s.country].tier === 'flagship' ? 1.08 : 0.88);
-    if (s.rank === RANK.CITY) return 3.1 + 2 * sz01(s.size);
-    if (s.rank === RANK.TOWN) return 1.15 + 0.75 * sz01(s.size);
-    return 0.4 + 0.28 * sz01(s.size);
+    if (s.rank === RANK.CAPITAL) return (4.8 + 4.2 * Math.sqrt((areas ? areas[s.country] : maxArea) / maxArea)) * (projects && projects[s.country] && projects[s.country].tier === 'flagship' ? 1.08 : 0.88);
+    if (s.rank === RANK.CITY) return 3.6 + 2.4 * sz01(s.size);
+    if (s.rank === RANK.TOWN) return 1.3 + 0.9 * sz01(s.size);
+    return 0.45 + 0.3 * sz01(s.size);
   });
   const metro = new Set(settlements.map((s, k) => [k, baseR[k] + r.next() * 0.5]).filter(([k]) => settlements[k].rank <= RANK.CITY).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 3).map((e) => e[0]));
-  settlements.forEach((s, k) => { s.reach = Math.round(baseR[k] * (metro.has(k) ? 1.65 : 1) * S * 100) / 100; s.metro = metro.has(k); });
+  settlements.forEach((s, k) => { s.reach = Math.round(baseR[k] * (metro.has(k) ? 1.6 : 1) * S * 100) / 100; s.metro = metro.has(k); });
   const reachOf = (s) => s.reach;
   // Ring roads for the metropolises only.
   const ringers = new Set(settlements.filter((s) => s.metro));
@@ -136,6 +136,7 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
   const cityParks = [];
 
   const layouts = [];
+  let bigCount = 0, shoreCount = 0;
   const typeOf = (s, style) => {
     const e0 = E(s.x, s.y), coast = D(s.x, s.y) < 3.2 * S;
     const relief = Math.max(...[[3, 0], [-3, 0], [0, 3], [0, -3]].map(([dx, dy]) => Math.abs(E(s.x + dx * S, s.y + dy * S) - e0)));
@@ -150,20 +151,24 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
       if (style === 'grid' && u < 0.55) return 'grid';
       return u < 0.75 ? 'mainstreet' : 'crossroads';
     }
-    if (coast) {
+    // The shore decides only some of the coast's cities: a world of islands would otherwise be all strips and
+    // harbours, where a real coast has grid towns, old towns, and planned capitals standing on it too. So ports and
+    // strips are kept to about a third of a world's larger places.
+    const shoreShare = bigCount ? shoreCount / bigCount : 0;
+    if (coast && (shoreShare < 0.34 || bigCount < 3)) {
       // A harbour wants a bay: count the sea round the place.
       let sea = 0;
       for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; if (D(s.x + Math.cos(a) * 5 * S, s.y + Math.sin(a) * 5 * S) < 0.5) sea++; }
-      if (sea >= 3 && sea <= 9 && u < 0.45) return 'port';
-      if (u < 0.6) return 'coastal';
+      if (sea >= 4 && sea <= 9 && u < 0.5) return 'port';
+      if (u < 0.32 || (sea >= 4 && sea <= 9 && u < 0.6)) return 'coastal';
     }
-    if (river && r.next() < 0.75) return 'river';
-    if (hilly && r.next() < 0.7) return 'hill';
-    if (r.next() < 0.22) return 'sprawl';
+    if (river && r.next() < 0.7) return 'river';
+    if (hilly && r.next() < 0.6) return 'hill';
+    if (r.next() < 0.2) return 'sprawl';
     if (style === 'grid') return s.rank === RANK.CAPITAL || r.next() < 0.3 ? 'planned' : 'grid';
-    if (style === 'radial') return 'radial';
-    if (style === 'organic') return 'medieval';
-    return coast ? 'coastal' : r.next() < 0.5 ? 'sprawl' : 'medieval';
+    if (style === 'radial') return r.next() < 0.75 ? 'radial' : 'medieval';
+    if (style === 'organic') return r.next() < 0.75 ? 'medieval' : 'radial';
+    return r.next() < 0.4 ? 'sprawl' : r.next() < 0.5 ? 'medieval' : 'grid';
   };
   // Each place's outline: compact, long (along a coast, a river, or a valley), star-shaped along its roads, twin
   // towns facing each other across a river, or wrapped round a bay.
@@ -192,12 +197,17 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
   };
 
   const streets = [];
-  const add = (cls, pts) => { if (pts.length >= 2) streets.push({ cls, pts: pts.map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]) }); };
+  let placeNow = -1;
+  const add = (cls, pts) => { if (pts.length >= 2) streets.push({ cls, of: placeNow, pts: pts.map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]) }); };
 
   settlements.forEach((s, si) => {
+    placeNow = si;
     const style = cultures[s.country].streets;
     const R = reachOf(s);
-    const type = typeOf(s, style);
+    // (Chicago and New York are laid out on their grids, whatever their sites.)
+    const drawn = typeOf(s, style);
+    const type = s.rank === RANK.CAPITAL && (s.name === 'Chicago' || s.name === 'New York') ? 'grid' : drawn;
+    if (s.rank <= RANK.CITY) { bigCount++; if (type === 'port' || type === 'coastal') shoreCount++; }
     const ring = ringers.has(s);
     const roadAngles = (exits.get(s) || []).map((e) => e.angle).sort((a, b) => a - b);
     const theta0 = roadAngles.length ? roadAngles[0] : r.next() * Math.PI;
@@ -571,24 +581,75 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
         if (pts.length > 3) add('arterial', pts);
       }
     }
-    // ---- A ring road, for the metropolises: it follows the city's own outline, some way in. ----
+    // ---- A ring road, for the metropolises: an orbital some way in from the city's edge, rounded (a road, not the
+    // outline's every bay), and open where the city meets the sea, as a coastal city's ring is. ----
     if (ring) {
-      const loop = [];
-      for (let k = 0; k <= 48; k++) {
-        const a = (k / 48) * Math.PI * 2;
-        let t = R * 0.2;
-        while (t < span && q(s.x + Math.cos(a) * t, s.y + Math.sin(a) * t) < 0.68) t += 0.2 * S;
-        t *= 0.9;
-        // Kept on land, a little in from the shore.
-        while (t > R * 0.15 && (!ground(s.x + Math.cos(a) * t, s.y + Math.sin(a) * t) || D(s.x + Math.cos(a) * t, s.y + Math.sin(a) * t) < 1.6 * S)) t -= 0.2 * S;
-        loop.push([s.x + Math.cos(a) * t, s.y + Math.sin(a) * t]);
+      const M = 72, rho = [];
+      for (let k = 0; k < M; k++) {
+        const a = (k / M) * Math.PI * 2;
+        let t = R * 0.25;
+        while (t < span && q(s.x + Math.cos(a) * t, s.y + Math.sin(a) * t) < 0.7) t += 0.2 * S;
+        rho.push(t * 0.85);
       }
-      const sm = loop.map((p, k) => { const a = loop[(k + 47) % 48], b = loop[(k + 1) % 48]; return [(a[0] + 2 * p[0] + b[0]) / 4, (a[1] + 2 * p[1] + b[1]) / 4]; });
-      sm[48] = sm[0];
-      addRuns('ring', sm, (p, qq) => segOk(p, qq, true));
+      const med = rho.slice().sort((a, b) => a - b)[M >> 1];
+      let sm = rho.map((v) => clamp(v, med * 0.7, med * 1.3));
+      for (let pass = 0; pass < 4; pass++) sm = sm.map((_, k) => (sm[(k + M - 2) % M] + sm[(k + M - 1) % M] * 2 + sm[k] * 3 + sm[(k + 1) % M] * 2 + sm[(k + 2) % M]) / 9);
+      const loop = sm.map((t, k) => { const a = (k / M) * Math.PI * 2; return [s.x + Math.cos(a) * t, s.y + Math.sin(a) * t]; });
+      // Start the walk on the seaward side, so the landward arc comes out as one line.
+      let k0 = 0, worst = Infinity;
+      for (let k = 0; k < M; k++) { const d = ground(loop[k][0], loop[k][1]) ? D(loop[k][0], loop[k][1]) : -1; if (d < worst) { worst = d; k0 = k; } }
+      const walk = [];
+      for (let k = 0; k <= M; k++) walk.push(loop[(k0 + k) % M]);
+      const inland = (p) => ground(p[0], p[1]) && D(p[0], p[1]) > 1.1 * S;
+      let run = [];
+      const flush = () => {
+        let len = 0;
+        for (let k = 1; k < run.length; k++) len += Math.hypot(run[k][0] - run[k - 1][0], run[k][1] - run[k - 1][1]);
+        if (len > med * 1.2) add('ring', run);
+        run = [];
+      };
+      for (const p of walk) {
+        if (!inland(p)) { flush(); continue; }
+        if (run.length && !segOk(run[run.length - 1], p, true)) flush();
+        run.push(p);
+      }
+      flush();
     }
   });
-  return { streets, built, builtKind, urbanAt, layouts, cityParks };
+  // ---- The built-up ground's own outline, and the cores': closed lines round where the fields pass a half, as the
+  // picture paints them, so the page can draw them as vectors close in, where the picture's pixels would show. ----
+  // (Drawn a hair outside the picture's own edge, and simplified to about a pixel at the closest zoom, so the
+  // outline covers the picture's and stays light.)
+  const LEVEL = 100;
+  const outline = (F) => {
+    const segs = [];
+    for (let fy = 0; fy < FH - 1; fy++) for (let fx = 0; fx < FW - 1; fx++) {
+      const k = fy * FW + fx;
+      const a = F[k] - LEVEL - 0.5, b = F[k + 1] - LEVEL - 0.5, c = F[k + FW + 1] - LEVEL - 0.5, d = F[k + FW] - LEVEL - 0.5;
+      const m = (a > 0 ? 1 : 0) + (b > 0 ? 1 : 0) + (c > 0 ? 1 : 0) + (d > 0 ? 1 : 0);
+      if (m === 0 || m === 4) continue;
+      const X = (t, u) => [(fx + 0.5 + t) / FS, (fy + 0.5 + u) / FS];
+      const pts = [];
+      if ((a < 0) !== (b < 0)) pts.push(X(a / (a - b), 0));
+      if ((b < 0) !== (c < 0)) pts.push(X(1, b / (b - c)));
+      if ((c < 0) !== (d < 0)) pts.push(X(1 - c / (c - d), 1));
+      if ((d < 0) !== (a < 0)) pts.push(X(0, 1 - d / (d - a)));
+      if (pts.length >= 2) segs.push([pts[0], pts[1]]);
+      if (pts.length === 4) segs.push([pts[2], pts[3]]);
+    }
+    const rings = [];
+    for (const line of chain(segs)) {
+      if (line.length < 6) continue;
+      // (A ring comes back to its start; a speck of a few samples is left to the picture.)
+      const first = line[0], last = line[line.length - 1];
+      if (Math.hypot(first[0] - last[0], first[1] - last[1]) > 0.3) continue;
+      const sim = simplifyLine(line, 0.09 * S).map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]);
+      if (sim.length >= 4) rings.push(sim.slice(0, -1));
+    }
+    return rings;
+  };
+  const urbanRings = { built: outline(field), core: outline(coreField) };
+  return { streets, built, builtKind, urbanAt, layouts, cityParks, urbanRings };
 }
 
 // Join marching-squares pieces into lines.
