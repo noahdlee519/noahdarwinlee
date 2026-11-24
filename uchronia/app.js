@@ -3812,6 +3812,11 @@
     }
     if (!noSettle) moving();
   }
+  // No page zoom on a touch screen (see the note on touch-action in app.css): Safari's own pinch events are refused wherever they
+  // begin. A Mac's trackpad, which sends them too, is left alone.
+  if (navigator.maxTouchPoints > 0) ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) {
+    document.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false });
+  });
   canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
     stopInertia(); stopFly(); hideTip();
