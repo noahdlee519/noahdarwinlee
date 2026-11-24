@@ -6157,7 +6157,7 @@
   function togglePlay(back) { if (playMode === playModeOf(back)) stopPlay(); else startPlay(back); }
   $("play").addEventListener("click", function () { togglePlay(false); });
   $("play-back").addEventListener("click", function () { togglePlay(true); });
-  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000, LAPSE_FLY = 1300, LAPSE_PAUSE = 400, LAPSE_SETTLE_MAX = 8000, LAPSE_MONTH = 50;
+  var lapseTagOf = null, tagList = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000, LAPSE_FLY = 1300, LAPSE_PAUSE = 400, LAPSE_SETTLE_MAX = 8000, LAPSE_MONTH = 50;
   function loadLapseTags() {
     fetchJSON("data/tags.json").then(function (d) {
       var byName = new Map();
@@ -6169,8 +6169,10 @@
         var tag = { name: t[0], ids: ids };
         ids.forEach(function (id) { lapseTagOf.set(id, tag); });
       });
+      tagList = d;
       syncLapseBtn();
-    }).catch(function () {});
+      syncComments();
+    }).catch(function () { tagList = []; syncComments(); });
   }
   function spanOf(id) {
     var e = catalogue[id], lo = Infinity, hi = -Infinity;
@@ -6437,6 +6439,7 @@
     selCity = null;
     clearTimeout(blurbTimer);
     card.hidden = true;
+    syncComments();
     if (phoneQuery.matches) layout();
     scheduleRender();
   }
@@ -6528,6 +6531,7 @@
     var click = cardClick;
     cardClick = false;
     syncLapseBtn();
+    syncComments();
     if (selCity) { renderCityCard(click); return; }
     if (selected < 0 || !catalogue[selected]) return;
     var e = catalogue[selected], p = current ? current.byId.get(selected) : null;
@@ -7681,11 +7685,14 @@
     if (!accountBtn) return;
     if (!savePanel.hidden && typeof checkTimelapse === "function") checkTimelapse();
     if (typeof premium === "object" && premium) premiumSeen();
-    var me = accountInfo(), ini = $("account-initial");
+    var me = accountInfo(), ini = $("account-initial"), pic = $("account-pic"), url = me ? keptPicture() : null;
     $("account-out").hidden = !!me;
     $("account-in").hidden = !me;
     accountBtn.classList.toggle("is-in", !!me);
-    ini.hidden = !me;
+    ini.hidden = !me || !!url;
+    pic.hidden = !url;
+    if (url && pic.getAttribute("src") !== url) pic.src = url;
+    if (comments && comments.ui) comments.ui.account();
     if (me) {
       ini.textContent = (me.name.trim().charAt(0) || "?").toUpperCase();
       $("account-name").textContent = me.name;
@@ -7709,10 +7716,13 @@
     if (about.classList.contains("is-open")) setAbout(false);
     hideInvite(false);
     $("account-note").textContent = "";
+    if (reportSession && !comments) loadComments();
     syncAccount();
     premiumAsk(false);
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
+  // A picture that can no longer be fetched (removed, or the network down) gives way to the initial.
+  $("account-pic").addEventListener("error", function () { $("account-pic").hidden = true; if (reportSession) $("account-initial").hidden = false; });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
   // under the top row where they are not. An account with CHRONIA Premium ($10, once, through Stripe; the function
   // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
@@ -9807,6 +9817,75 @@
       if (!r.ok) throw new Error("edits " + r.status);
       return r.json();
     }).then(function (b) { edits.loaded = true; edits.failed = false; setEdits(b.edits); }, function (e) { edits.failed = true; console.warn("edits", e); });
+  }
+
+  // Comments on a country's card and the profile they are written under (comments.js, loaded the first time a country's
+  // card opens, or the Account panel opens signed in; never with the page). They talk only to the chronia-comments
+  // function, through window.CHRONIA_COMMENTS; comments.js adds its own part to it as CHRONIA_COMMENTS.ui.
+  var COMMENTS_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-comments", PICTURE_STORE = "chronia-picture";
+  var comments = null;
+  // The open card's thread: its own name, its tag, and every name of the tag (at most 60), or null where the card is not
+  // a country's; undefined while the tags are still loading.
+  function commentsThread() {
+    if (card.hidden || selCity || selected < 0 || !catalogue || !catalogue[selected]) return null;
+    if (tagList === null) return undefined;
+    var name = catalogue[selected][0], t = tagList.find(function (x) { return x[1].indexOf(name) >= 0; });
+    if (!t) return { name: name, tag: "", names: [name] };
+    var names = t[1].slice(0, 60);
+    if (names.indexOf(name) < 0) names[names.length - 1] = name;
+    return { name: name, tag: t[0], names: names };
+  }
+  function syncComments() {
+    if (typeof card === "undefined") return;
+    var th = commentsThread();
+    if (!comments) { if (th) loadComments(); return; }
+    if (comments.ui && th !== undefined) comments.ui.card(th);
+  }
+  // The account's picture, kept from the function's last answer so the account button shows it from the start.
+  function keptPicture() {
+    try { var k = JSON.parse(localStorage.getItem("chronia-picture") || "null"); return k && k.who === accountId() && typeof k.url === "string" ? k.url : null; } catch (e) { return null; }
+  }
+  function loadComments() {
+    if (comments) return;
+    comments = window.CHRONIA_COMMENTS = {
+      url: COMMENTS_URL,
+      T: T,
+      // The Google session the report panel keeps: its access token (refreshed when near its end) or null, and the
+      // account's id ("" signed out). signIn() opens the Account panel, where the sign-in is.
+      token: function () { return reportToken().catch(function () { return null; }); },
+      who: accountId,
+      signIn: function () { setAccountOpen(true, false); },
+      // The map's date as the page writes it in the address ("1815", "1941-06", "1941-06-22"); a date so written as
+      // the page shows dates (the map's own date without one); and the map moved to a date, with the card of the
+      // name given (or the card that was open) opened there.
+      at: hashTime,
+      when: function (at) {
+        if (at === undefined) return fmtNow(now);
+        var p = parseDate(at);
+        if (!p) return String(at);
+        return p[2] ? fmtMDY(p[0], p[1], p[2]) : p[1] ? monthYear(p[0], p[1]) : fmtYear(p[0]);
+      },
+      goTo: function (at, name) {
+        var t = parseTime(at);
+        if (t === null) return;
+        var id = selected, k = catalogue.findIndex(function (e) { return e[0] === name; });
+        if (k >= 0) id = k;
+        stopPlay();
+        setTime(t);
+        if (id >= 0) select(id);
+      },
+      thread: function () { return commentsThread() || null; },
+      // The account's picture (a URL, or null for the initial), shown on the account button.
+      picture: function (url) {
+        try { localStorage.setItem(PICTURE_STORE, JSON.stringify({ who: accountId(), url: url || null })); } catch (e) {}
+        syncAccount();
+      },
+      ui: null
+    };
+    var sc = document.createElement("script");
+    sc.src = "comments.js" + (DATA_V ? "?v=" + DATA_V : "");
+    sc.onerror = function () { console.warn("comments.js could not be loaded"); };
+    document.head.appendChild(sc);
   }
 
   // The developer tools (dev.js) are loaded only when opened, with #dev in the address or Shift+D. They talk to the

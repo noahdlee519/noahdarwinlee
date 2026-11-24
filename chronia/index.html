@@ -144,6 +144,7 @@
         <button type="button" class="ch-ctl ch-account-btn" id="account-btn" aria-expanded="false" aria-controls="account" aria-label="Sign in" data-tip="Sign in">
           <svg class="ch-ico ch-account-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="12" r="4.6" /><path d="M7.7 24.9c1.3-4.2 4.6-6.4 8.3-6.4s7 2.2 8.3 6.4" /><circle cx="16" cy="16" r="12.2" /></svg>
           <span class="ch-account-initial" id="account-initial" aria-hidden="true" hidden></span>
+          <img class="ch-account-pic" id="account-pic" alt="" referrerpolicy="no-referrer" hidden />
           <span class="ch-ctl-label">Account</span>
         </button>
         </div>
@@ -228,6 +229,10 @@
           <div id="account-in" hidden>
             <p class="ch-account-name" id="account-name"></p>
             <p class="ch-account-email" id="account-email"></p>
+            <div class="ch-profile" id="account-profile" hidden>
+              <p class="ch-profile-row"><span class="ch-profile-face" id="account-face"></span><span class="ch-pf-user" id="account-username"></span><button type="button" class="ch-linkbtn ch-pf-edit" id="account-edit">Edit profile</button></p>
+              <div id="account-form"></div>
+            </div>
             <div class="ch-premium" id="premium-box" hidden>
               <p class="ch-account-text" id="premium-text"></p>
               <a class="ch-account-alt ch-premium-buy" id="premium-buy" href="premium/">See CHRONIA Premium</a>
@@ -325,6 +330,11 @@
         <summary>Sources</summary>
         <div class="ch-src-body" id="src-body"></div>
       </details>
+      <hr class="ch-cm-rule" id="cm-rule" hidden />
+      <section class="ch-cm" id="cm" aria-labelledby="cm-head" hidden>
+        <h4 class="ch-cm-head" id="cm-head">Comments</h4>
+        <div class="ch-cm-body" id="cm-body"></div>
+      </section>
     </section>
 
     <section class="ch-key" id="key" aria-label="Key to the map">

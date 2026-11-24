@@ -2264,6 +2264,453 @@ select.ch-save-input {
   cursor: pointer;
 }
 
+/* Comments, after the Sources section (comments.js): a rule, the heading, the composer, the order, and the comments, each
+   with its writer's picture (or initial, on the disc the account button uses), username, and the map's date. */
+.ch-cm-rule {
+  clear: both;
+  margin: 14px 0 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
+
+.ch-cm-rule[hidden],
+.ch-cm[hidden],
+.ch-cm [hidden],
+.ch-profile [hidden],
+.ch-profile[hidden] {
+  display: none;
+}
+
+.ch-cm {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ch-cm-head {
+  margin: 0;
+  font-family: var(--ch-sc);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.ch-cm p {
+  margin: 0;
+}
+
+.ch-cm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin: 12px 0 0 !important;
+  font-size: 13px;
+  color: var(--ch-muted);
+}
+
+.ch-cm-sort .ch-linkbtn[aria-pressed="true"] {
+  color: var(--ink);
+  text-decoration: none;
+  cursor: default;
+}
+
+.ch-cm-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ch-cm-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0 8px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 14%, transparent);
+}
+
+.ch-cm-item:first-child {
+  border-top: 0;
+}
+
+.ch-cm-item:focus {
+  outline: none;
+}
+
+.ch-cm-item:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-cm-face {
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+
+.ch-cm-pic,
+.ch-cm-initial {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 50%;
+  background: var(--ch-ivory, #f8f1dc);
+  box-shadow: var(--ch-well);
+  object-fit: cover;
+}
+
+.ch-cm-initial {
+  padding-top: 2px;
+  color: var(--ink);
+  font-family: var(--ch-sc);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ch-cm-meta {
+  font-size: 13px;
+  color: var(--ch-muted);
+}
+
+.ch-cm-user {
+  color: var(--ink);
+  font-family: var(--ch-sc);
+  font-size: 14.5px;
+  letter-spacing: 0.02em;
+}
+
+.ch-cm-date {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ch-cm-date:hover {
+  color: var(--ink);
+}
+
+.ch-cm-text {
+  margin: 2px 0 0 !important;
+  color: var(--ink);
+  font-size: 14.5px;
+  white-space: pre-wrap;
+}
+
+.ch-cm-acts {
+  margin: 3px 0 0 !important;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-cm-acts .ch-linkbtn:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+.ch-cm-date:focus-visible,
+.ch-cm .ch-linkbtn:focus-visible,
+.ch-profile .ch-linkbtn:focus-visible,
+.ch-pf a:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-cm-empty,
+.ch-cm-note {
+  margin: 10px 0 0 !important;
+  color: var(--ch-muted);
+}
+
+.ch-cm-note:empty {
+  display: none;
+}
+
+.ch-cm-more {
+  margin: 8px 0 0;
+}
+
+.ch-cm-compose {
+  margin: 10px 0 0;
+}
+
+.ch-cm-compose:empty {
+  display: none;
+}
+
+.ch-cm-box {
+  display: block;
+  min-height: 4.6em;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.ch-cm-box:focus-visible,
+.ch-pf-name:focus-visible {
+  outline: 2px solid var(--ch-lit);
+  outline-offset: 0;
+}
+
+.ch-cm-boxline {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-cm-left {
+  flex: none;
+  font-family: var(--ch-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-cm-post {
+  width: auto;
+  max-width: 100%;
+  padding: 6px 16px;
+  overflow-wrap: anywhere;
+}
+
+.ch-cm-today,
+.ch-cm-msg {
+  margin: 4px 0 0 !important;
+  font-size: 12.5px;
+}
+
+.ch-cm-today {
+  color: var(--ch-muted);
+}
+
+.ch-cm-msg {
+  color: var(--ink);
+}
+
+.ch-cm-msg:empty {
+  display: none;
+}
+
+/* The profile form, in the composer the first time and in the Account panel after. */
+.ch-pf {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.ch-pf p {
+  margin: 0;
+}
+
+.ch-pf-lead {
+  margin: 0 0 8px !important;
+  color: var(--ink);
+}
+
+.ch-pf-label {
+  display: block;
+  margin: 0 0 3px;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.ch-pf-rule,
+.ch-pf-status,
+.ch-pf-picnote,
+.ch-pf-terms {
+  margin: 4px 0 0 !important;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-pf-status {
+  color: var(--ink);
+}
+
+.ch-pf-status:empty,
+.ch-pf-msg:empty {
+  display: none;
+}
+
+.ch-pf-picrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0;
+}
+
+.ch-pf-preview .ch-cm-face {
+  width: 56px;
+  height: 56px;
+}
+
+.ch-pf-preview .ch-cm-initial {
+  font-size: 26px;
+}
+
+.ch-pf-picside {
+  min-width: 0;
+}
+
+.ch-pf-picacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.ch-pf-choose {
+  position: relative;
+  display: inline-block;
+}
+
+.ch-pf-choose:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-pf-remove {
+  font-size: 13px;
+}
+
+.ch-pf-agebox {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ch-pf-age {
+  position: relative;
+  box-sizing: border-box;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  border: 2px solid var(--ch-brass);
+  border-color: var(--ch-brass-lo) var(--ch-brass) var(--ch-brass-lt);
+  border-radius: 3px;
+  background: var(--ch-ivory);
+  box-shadow: 0 0 0 1px var(--ch-brass-deep), var(--ch-well);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ch-pf-age:checked {
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.4 8.4 6.6 11.6 12.8 3.6' fill='none' stroke='%233a2a1b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 13px 13px no-repeat var(--ch-ivory);
+}
+
+.ch-pf-age:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.ch-pf-terms {
+  margin-top: 10px !important;
+}
+
+.ch-pf-terms a {
+  color: var(--ink);
+}
+
+.ch-pf-msg {
+  margin: 8px 0 0 !important;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.ch-pf-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ch-pf-acts .ch-save-btn {
+  flex: 1;
+}
+
+.ch-pf-cancel {
+  margin: 8px 0 4px;
+}
+
+/* The profile in the Account panel. */
+.ch-profile {
+  margin: 4px 0 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(42, 28, 18, 0.18);
+}
+
+.ch-account .ch-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+}
+
+.ch-profile-face:empty {
+  display: none;
+}
+
+.ch-pf-user {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--ch-sc);
+  letter-spacing: 0.02em;
+}
+
+.ch-pf-edit {
+  font-size: 13.5px;
+}
+
+.ch-account .ch-pf {
+  margin-top: 2px;
+}
+
+/* The account button with the account's picture in place of the initial. */
+.ch-account-pic {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  box-sizing: border-box;
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 50%;
+  background: var(--ch-ivory, #f8f1dc);
+  object-fit: cover;
+}
+
+.ch-account-pic[hidden] {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .ch-account-pic {
+    top: 16px;
+  }
+}
+
+@media (max-width: 369px) {
+  .ch-account-pic {
+    top: 50%;
+  }
+}
+
 .ch-tip {
   position: fixed;
   z-index: 25;
