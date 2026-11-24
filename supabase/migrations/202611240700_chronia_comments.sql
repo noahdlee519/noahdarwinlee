@@ -24,6 +24,12 @@ create table if not exists public.chronia_profiles (
   blocked boolean not null default false,
   created_at timestamptz not null default now()
 );
+-- A picture a reviewer removes is kept aside for the team (its file's name and when), so that the removal can be
+-- undone, until chronia_avatars_expired forgets it and the function deletes the file. Added after the table was
+-- first made, hence the separate statements.
+alter table public.chronia_profiles add column if not exists avatar_removed text check (char_length(avatar_removed) between 1 and 200);
+alter table public.chronia_profiles add column if not exists avatar_removed_at timestamptz;
+create index if not exists chronia_profiles_kept on public.chronia_profiles (avatar_removed_at) where avatar_removed is not null;
 create index if not exists chronia_profiles_queue on public.chronia_profiles (user_id)
   where avatar_flags > 0 or avatar_state <> 'ok' or blocked;
 
@@ -86,6 +92,8 @@ $$;
 -- Makes a profile, or changes an existing one's username or picture. p_avatar null leaves the picture as it is,
 -- '' removes it, and a new name sets it; a new picture starts with a clean record. A first profile that comes with
 -- a picture counts as that day's first picture change (chronia_avatar_count lets an account with no profile pass).
+-- Any change of picture by its owner gives up one a reviewer removed and kept aside: its name comes back as
+-- removed_avatar, as old_avatar does, for the caller to delete the file.
 create or replace function public.chronia_profile_save(p_user uuid, p_username text, p_key text, p_avatar text,
                                                        p_age boolean, p_name_days integer)
 returns jsonb
@@ -96,6 +104,7 @@ declare
   p public.chronia_profiles;
   v_avatar text := nullif(p_avatar, '');
   v_old text;
+  v_kept text;
   v_rename boolean;
   v_left numeric;
 begin
@@ -119,7 +128,8 @@ begin
     exception when unique_violation then
       return jsonb_build_object('error', 'taken');
     end;
-    return jsonb_build_object('ok', true, 'username', p_username, 'avatar', v_avatar, 'old_avatar', null);
+    return jsonb_build_object('ok', true, 'username', p_username, 'avatar', v_avatar, 'avatar_state', 'ok',
+                              'old_avatar', null, 'removed_avatar', null);
   end if;
 
   if p.blocked then
@@ -146,14 +156,17 @@ begin
     end if;
     if p_avatar is not null then
       v_old := p.avatar;
-      update public.chronia_profiles set avatar = v_avatar, avatar_state = 'ok', avatar_flags = 0 where user_id = p_user;
+      v_kept := p.avatar_removed;
+      update public.chronia_profiles set avatar = v_avatar, avatar_state = 'ok', avatar_flags = 0,
+        avatar_removed = null, avatar_removed_at = null where user_id = p_user;
       delete from public.chronia_flags where target_user = p_user;
     end if;
   exception when unique_violation then
     return jsonb_build_object('error', 'taken');
   end;
   select * into p from public.chronia_profiles where user_id = p_user;
-  return jsonb_build_object('ok', true, 'username', p.username, 'avatar', p.avatar, 'old_avatar', v_old);
+  return jsonb_build_object('ok', true, 'username', p.username, 'avatar', p.avatar, 'avatar_state', p.avatar_state,
+                            'old_avatar', v_old, 'removed_avatar', v_kept);
 end;
 $$;
 
@@ -357,27 +370,64 @@ begin
 end;
 $$;
 
--- A reviewer turns a picture on (in good standing again, its reports erased) or off (removed; the old file's
--- name is returned for the caller to delete).
+-- A reviewer turns a picture on (in good standing again, its reports erased, and a removed one put back while its
+-- file is still kept) or off (removed from view, its file's name kept aside with the time, for chronia_avatars_expired
+-- to give up later). Returns the picture's name, and in removed_avatar any file the caller should delete now.
 create or replace function public.chronia_avatar_set(p_user uuid, p_on boolean)
 returns jsonb
 language plpgsql
 set search_path = ''
 as $$
 declare
-  v_old text;
+  p public.chronia_profiles;
+  v_drop text;
 begin
-  select avatar into v_old from public.chronia_profiles where user_id = p_user for update;
+  select * into p from public.chronia_profiles where user_id = p_user for update;
   if not found then
     return jsonb_build_object('error', 'missing');
   end if;
   if p_on then
-    update public.chronia_profiles set avatar_state = 'ok', avatar_flags = 0 where user_id = p_user;
+    update public.chronia_profiles set avatar = coalesce(p.avatar, p.avatar_removed), avatar_state = 'ok', avatar_flags = 0,
+      avatar_removed = null, avatar_removed_at = null where user_id = p_user;
     delete from public.chronia_flags where target_user = p_user;
-    return jsonb_build_object('ok', true, 'avatar', v_old);
+    return jsonb_build_object('ok', true, 'avatar', coalesce(p.avatar, p.avatar_removed), 'removed_avatar', null);
   end if;
-  update public.chronia_profiles set avatar_state = 'removed', avatar = null where user_id = p_user;
-  return jsonb_build_object('ok', true, 'avatar', v_old);
+  if p.avatar is null then
+    update public.chronia_profiles set avatar_state = 'removed' where user_id = p_user;
+    return jsonb_build_object('ok', true, 'avatar', p.avatar_removed, 'removed_avatar', null);
+  end if;
+  -- A picture already kept aside can't be here (a new picture gives it up), but if it were, it goes now.
+  v_drop := p.avatar_removed;
+  update public.chronia_profiles set avatar_state = 'removed', avatar = null, avatar_removed = p.avatar,
+    avatar_removed_at = now() where user_id = p_user;
+  return jsonb_build_object('ok', true, 'avatar', p.avatar, 'removed_avatar', v_drop);
+end;
+$$;
+
+-- Gives up the removed pictures kept aside longer than p_days: returns their file names, for the caller to delete,
+-- and forgets them. The account is then simply without a picture, and leaves the team's list.
+create or replace function public.chronia_avatars_expired(p_days integer)
+returns jsonb
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_names jsonb;
+  v_ids uuid[];
+begin
+  with gone as (
+    update public.chronia_profiles set avatar_removed = null, avatar_removed_at = null,
+      avatar_state = case when avatar is null then 'ok' else avatar_state end,
+      avatar_flags = case when avatar is null then 0 else avatar_flags end
+    from (select user_id as id, avatar_removed as name from public.chronia_profiles
+          where avatar_removed is not null and avatar_removed_at < now() - make_interval(days => p_days)
+          for update) old
+    where user_id = old.id
+    returning old.name, old.id)
+  select coalesce(jsonb_agg(name order by name), '[]'::jsonb), array_agg(id) into v_names, v_ids from gone;
+  delete from public.chronia_flags f where f.target_user = any(v_ids)
+    and exists (select 1 from public.chronia_profiles p where p.user_id = f.target_user and p.avatar is null);
+  return v_names;
 end;
 $$;
 
@@ -399,7 +449,7 @@ $$;
 
 -- Erases an account's profile, comments, and reports (and the reports of its comments), for an account deleted
 -- on request or found to be under age, and recounts what it had reported. The sign-in account is left alone.
--- Returns the picture's file name for the caller to delete. Erasing an account with no profile is harmless.
+-- Returns the picture's file name, and that of a removed one kept aside, for the caller to delete. Erasing an account with no profile is harmless.
 create or replace function public.chronia_account_erase(p_user uuid)
 returns jsonb
 language plpgsql
@@ -407,12 +457,13 @@ set search_path = ''
 as $$
 declare
   v_avatar text;
+  v_kept text;
   v_comments bigint[];
   v_pictures uuid[];
 begin
-  select avatar into v_avatar from public.chronia_profiles where user_id = p_user for update;
+  select avatar, avatar_removed into v_avatar, v_kept from public.chronia_profiles where user_id = p_user for update;
   if not found then
-    return jsonb_build_object('ok', true, 'avatar', null);
+    return jsonb_build_object('ok', true, 'avatar', null, 'removed_avatar', null);
   end if;
   select array_agg(comment_id) filter (where comment_id is not null), array_agg(target_user) filter (where target_user is not null)
   into v_comments, v_pictures
@@ -422,7 +473,7 @@ begin
   where c.id = any(v_comments);
   update public.chronia_profiles p set avatar_flags = (select count(*) from public.chronia_flags f where f.target_user = p.user_id)
   where p.user_id = any(v_pictures);
-  return jsonb_build_object('ok', true, 'avatar', v_avatar);
+  return jsonb_build_object('ok', true, 'avatar', v_avatar, 'removed_avatar', v_kept);
 end;
 $$;
 
@@ -466,7 +517,7 @@ end;
 $$;
 
 -- The team's list: every reported or not-live comment (newest first, at most 500), every reported or not-ok
--- picture, every blocked account (so a block can be undone), and every name comments are stored under (so the
+-- picture (a removed one shown from its kept file while it is kept), every blocked account (so a block can be undone), and every name comments are stored under (so the
 -- page can find those the map no longer has).
 create or replace function public.chronia_queue()
 returns jsonb
@@ -480,7 +531,7 @@ as $$
       from (select id, sent_at from public.chronia_comments where flags > 0 or state <> 'live'
             order by sent_at desc, id desc limit 500) q), '[]'::jsonb),
     'pictures', coalesce((
-      select jsonb_agg(jsonb_build_object('username', username, 'avatar', avatar, 'user', user_id,
+      select jsonb_agg(jsonb_build_object('username', username, 'avatar', coalesce(avatar, avatar_removed), 'user', user_id,
                                           'flags', avatar_flags, 'state', avatar_state) order by username_key)
       from public.chronia_profiles where avatar_flags > 0 or avatar_state <> 'ok'), '[]'::jsonb),
     'blocked', coalesce((
@@ -525,6 +576,7 @@ begin
     'public.chronia_account_erase(uuid)',
     'public.chronia_thread(text[], text, numeric, integer, integer, uuid, boolean)',
     'public.chronia_queue()',
+    'public.chronia_avatars_expired(integer)',
     'public.chronia_me(uuid, integer)']::regprocedure[] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);

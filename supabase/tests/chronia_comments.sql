@@ -67,6 +67,7 @@ declare
     'select public.chronia_account_erase(t.u(1))',
     'select public.chronia_thread(array[''x''], ''new'', 0, 0, 20, null, false)',
     'select public.chronia_queue()',
+    'select public.chronia_avatars_expired(30)',
     'select public.chronia_me(t.u(1), 100)'];
   who text;
 begin
@@ -412,6 +413,79 @@ begin
     'turning a picture on clears its state and flags: ' || j::text;
   assert not exists (select 1 from public.chronia_flags where target_user = t.u(2)), 'turning a picture on deletes its flags';
   assert public.chronia_avatar_set(t.u(19), true)->>'error' = 'missing', 'a picture of no profile is missing';
+end $$;
+
+-- A picture a reviewer removes is kept for the team for a while, so the removal can be undone, then forgotten.
+
+do $$
+declare j jsonb;
+begin
+  j := public.chronia_avatar_set(t.u(2), false);
+  assert (j->>'ok')::boolean and j->>'avatar' = 'b2.webp' and j->'removed_avatar' = 'null',
+    'turning a picture off keeps its file, with nothing to delete: ' || j::text;
+  assert (select avatar is null and avatar_removed = 'b2.webp' and avatar_removed_at > now() - interval '1 minute'
+          from public.chronia_profiles where user_id = t.u(2)), 'a removed picture''s file name is kept, with the time';
+  assert public.chronia_thread(array['Athens'], 'new', 0, 0, 20, null, false)->'comments'->0->'avatar' = 'null',
+    'the thread shows no removed picture';
+  assert exists (select 1 from jsonb_array_elements(public.chronia_queue()->'pictures') e
+                 where e->>'user' = t.u(2)::text and e->>'state' = 'removed' and e->>'avatar' = 'b2.webp'),
+    'the queue shows the team a removed picture while it is kept';
+  j := public.chronia_avatar_set(t.u(2), false);
+  assert (j->>'ok')::boolean and (select avatar_removed = 'b2.webp' from public.chronia_profiles where user_id = t.u(2)),
+    'turning a removed picture off again keeps the same file: ' || j::text;
+  j := public.chronia_avatar_set(t.u(2), true);
+  assert (j->>'ok')::boolean and j->>'avatar' = 'b2.webp', 'turning a kept picture on restores it: ' || j::text;
+  assert (select avatar = 'b2.webp' and avatar_state = 'ok' and avatar_removed is null and avatar_removed_at is null
+          from public.chronia_profiles where user_id = t.u(2)), 'a restored picture is live and no longer kept aside';
+  assert public.chronia_thread(array['Athens'], 'new', 0, 0, 20, null, false)->'comments'->0->>'avatar' = 'b2.webp',
+    'the thread shows a restored picture';
+
+  perform public.chronia_avatar_set(t.u(2), false);
+  j := public.chronia_profile_save(t.u(2), null, null, 'b4.webp', null, 30);
+  assert (j->>'ok')::boolean and j->>'avatar' = 'b4.webp' and j->>'avatar_state' = 'ok' and j->>'removed_avatar' = 'b2.webp'
+         and j->'old_avatar' = 'null', 'a new picture from its owner gives up the kept one, to be deleted: ' || j::text;
+  assert (select avatar_removed is null and avatar_removed_at is null from public.chronia_profiles where user_id = t.u(2)),
+    'a new picture clears the kept one';
+  j := public.chronia_profile_save(t.u(2), null, null, null, null, 30);
+  assert j->'removed_avatar' = 'null', 'a save with no picture has nothing to delete: ' || j::text;
+  j := public.chronia_avatar_set(t.u(2), false);
+  j := public.chronia_profile_save(t.u(2), null, null, '', null, 30);
+  assert j->>'removed_avatar' = 'b4.webp' and j->'avatar' = 'null', 'its owner removing the picture gives up the kept one too: ' || j::text;
+  perform public.chronia_profile_save(t.u(2), null, null, 'b2.webp', null, 30);
+end $$;
+
+do $$
+declare j jsonb;
+begin
+  perform public.chronia_flag_add(t.u(1), null, t.u(9), 20, 3);
+  perform public.chronia_avatar_set(t.u(2), false);
+  perform public.chronia_avatar_set(t.u(9), false);
+  assert (select avatar_removed = 'p0.webp' from public.chronia_profiles where user_id = t.u(9)), 'a second picture is kept';
+  j := public.chronia_avatars_expired(30);
+  assert j = '[]'::jsonb, 'no kept picture is expired on its first day: ' || j::text;
+end $$;
+
+reset role;
+update public.chronia_profiles set avatar_removed_at = now() - interval '31 days' where user_id = t.u(2);
+set role service_role;
+
+do $$
+declare j jsonb;
+begin
+  j := public.chronia_avatars_expired(30);
+  assert j = '["b2.webp"]'::jsonb, 'a picture kept over 30 days is expired and returned to be deleted: ' || j::text;
+  assert (select avatar is null and avatar_removed is null and avatar_removed_at is null
+          from public.chronia_profiles where user_id = t.u(2)), 'an expired picture is forgotten';
+  assert (select avatar_removed = 'p0.webp' from public.chronia_profiles where user_id = t.u(9)), 'a recent one is still kept';
+  assert exists (select 1 from public.chronia_flags where target_user = t.u(9))
+         and (select avatar_state = 'removed' and avatar_flags = 1 from public.chronia_profiles where user_id = t.u(9)),
+    'a recent kept picture keeps its state and its reports';
+  assert public.chronia_avatars_expired(30) = '[]'::jsonb, 'an expired picture is returned only once';
+  j := public.chronia_avatar_set(t.u(2), true);
+  assert (j->>'ok')::boolean and j->'avatar' = 'null', 'an expired picture cannot be turned on again: ' || j::text;
+  j := public.chronia_account_erase(t.u(9));
+  assert (j->>'ok')::boolean and j->'avatar' = 'null' and j->>'removed_avatar' = 'p0.webp',
+    'erase returns a kept picture''s file too: ' || j::text;
 end $$;
 
 -- ---------------------------------------------------------------- threads
