@@ -11,14 +11,15 @@ import { buildTerrain } from './terrain.mjs';
 import { buildFields, classifyCover, findOases } from './climate.mjs';
 import { buildHydro } from './hydro.mjs';
 import { buildCountries } from './political.mjs';
-import { placeLabels, labelRects, rectsOverlap } from './labels.mjs';
+import { placeLabels, labelRects, rectsOverlap, lineWidth } from './labels.mjs';
 import { buildSettlements, RANK } from './settlements.mjs';
 import { buildRoads } from './roads.mjs';
 import { buildStreets } from './towns.mjs';
 import { buildParks, buildAdmin, buildStreams, placeDetailLabels } from './features.mjs';
 import { assignCultures, capitalName } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
-import { buildPolar, placeAbout } from './polar.mjs';
+import { buildPolar } from './polar.mjs';
+import { placeAbout } from './about.mjs';
 import { coastDistance } from './terrain.mjs';
 import { carveFjords, buildIslets, buildIslandArcs } from './coasts.mjs';
 import { shapeFrontiers, jogRoundTowns, jogAtRiverBends } from './frontiers.mjs';
@@ -37,16 +38,16 @@ export const TILE_LEVELS = [{ scale: 4, size: 1024 }, { scale: 8, size: 1024 }, 
 // land: nudges the land share up or down. mountains, lakes, ponds, roughness: 1 is usual. warm: degrees
 // warmer. ice: a polar landmass along the top ('n') or bottom ('s') edge; polar: how it meets the projects' land
 // ('isthmus', 'strait', or 'apart'). volcanoes: how many. about: the setting of the island called About (see
-// polar.mjs: volcano, atoll, crescent, fjord, lake, lighthouse, causeway, or ferry).
+// about.mjs: volcano, atoll, crescent, fjord, loch, lighthouse, causeway, or ferry), always in the open sea.
 export const WORLDS = [
   { name: 'Le Guin', layout: 'archipelago', masses: 4, latTop: 62, latBottom: 12, wet: 1.1, islands: 0.24, land: -0.02, about: 'lighthouse' },
   { name: 'Asimov', layout: 'trio', masses: 3, latTop: 66, latBottom: -30, wet: 1.1, about: 'crescent' },
   { name: 'Butler', layout: 'twins', masses: 2, latTop: 38, latBottom: -42, wet: 0.95, mountains: 0.8, roughness: 0.85, about: 'causeway' },
-  { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2, about: 'lake' },
+  { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2, about: 'loch' },
   { name: 'Bradbury', layout: 'crescent', masses: 2, latTop: 58, latBottom: 14, wet: 0.74, warm: 2, about: 'volcano' },
   { name: 'Clarke', layout: 'quad', masses: 4, latTop: 50, latBottom: -50, wet: 1.05, mountains: 0.75, roughness: 1.25, about: 'ferry' },
   { name: 'Zelazny', layout: 'northsouth', masses: 2, latTop: 70, latBottom: -20, wet: 1.05, ice: 'n', about: 'fjord', polar: 'isthmus' },
-  { name: 'Heinlein', layout: 'spine', masses: 2, latTop: 74, latBottom: 20, mountains: 1.6, about: 'lake' },
+  { name: 'Heinlein', layout: 'spine', masses: 2, latTop: 74, latBottom: 20, mountains: 1.6, about: 'loch' },
   { name: 'Gibson', layout: 'archipelago', masses: 3, latTop: 52, latBottom: 8, wet: 1.15, islands: 0.28, land: -0.04, about: 'atoll' },
   { name: 'Banks', layout: 'quad', masses: 4, latTop: 30, latBottom: -62, wet: 1.1, roughness: 1.2, ice: 's', about: 'crescent', polar: 'strait' },
   { name: 'Lem', layout: 'twins', masses: 2, latTop: 64, latBottom: -10, wet: 1.2, islands: 0.22, land: -0.035, about: 'causeway' },
@@ -107,19 +108,25 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const { cover, ponds } = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, basins, oases, polar: polar.cover });
   // Land no project holds: polar ice in some worlds, and the island called About in every one.
   const ice = polar.ice;
-  const about = placeAbout({ land, ice, lakes: hydro.lakes, width, height, rng, kind: style.about, temp: fields.temp });
+  // The countries, drawn now (from their own stream of numbers, so nothing else changes) so the About island can be
+  // sized to them: about the size of a small project's island, or a little less (Noah, 24 November 2026).
+  const nations = buildCountries({ land, elev, width, height, projects, rng, hydro });
+  const smallAreas = projects.map((p, k) => (p.tier === 'flagship' ? -1 : nations.areas[k])).filter((a) => a > 0).sort((a, b) => a - b);
+  // (The two smallest of them, UCGEO and Substack as the projects stand, are the measure; three quarters of theirs.)
+  const smallArea = smallAreas.length >= 2 ? (smallAreas[0] + smallAreas[1]) / 2 : 2600 * (width / 1600) ** 2;
+  const about = placeAbout({ land, ice, width, height, rng, kind: style.about, temp: fields.temp, area: clamp(0.75 * smallArea, 1400, 3000) });
   const landAll = new Uint8Array(width * height);
   for (let i = 0; i < landAll.length; i++) landAll[i] = land[i] || ice[i] || (about && about.mask[i]) ? 1 : 0;
-  // An island in a lake: the lake's water goes on round it, and the island is in no country.
-  if (about && about.kind === 'lake') for (let i = 0; i < landAll.length; i++) if (about.mask[i]) hydro.lakes[i] = 0;
   // The picture is drawn in makeWorld, once the towns, lakes, and roads are known; it is carried a little way out to
   // sea so the vector coast drawn over it never shows a gap.
   const coverArgs = { fields, elev, land: landAll, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2, ice, flow: hydro.acc, dist: terrain.dist, basins, oases, polar: polar.cover, about: about && about.cover };
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases, fjords, arcs };
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases, fjords, arcs, nations };
 }
 
 // The land divided among the projects.
 export function buildNations(world, projects) {
+  // (Drawn already by buildLand, and handed on once; any later call draws them afresh, to the same result.)
+  if (world.nations) { const n = world.nations; world.nations = null; return n; }
   const { land, elev, width, height, rng, hydro } = world;
   return buildCountries({ land, elev, width, height, projects, rng, hydro });
 }
@@ -169,8 +176,6 @@ export function makeWorld(name, projects, opts) {
   // An exclave, in most worlds: a small piece of a flagship's coast, far from its capital, held by one of the small
   // countries beyond it (see exclaveFor). The flagship's main body stays whole and the size order stands.
   const exclave = exclaveFor({ owner, nations, projects, land, dist: terrain.dist, width, height, rng });
-  // An About island in a lake is in no country.
-  if (world.about && world.about.kind === 'lake') for (let i = 0; i < owner.length; i++) if (world.about.mask[i]) owner[i] = -1;
   const cultures = assignCultures(projects, rng, neighbours(owner, projects.length, width, height));
   // Rivers as drawn: smoothed, and meandering on the lowland.
   const { rivers: drawnRivers, warp } = warpRivers(hydro.rivers, hydro.riverMeta, { land, elev, dist: terrain.dist, width, height, rng });
@@ -241,26 +246,9 @@ export function makeWorld(name, projects, opts) {
     b = [ti.x + ux * t, ti.y + uy * t];
     if (t < bd) roads.ferries.push([a.map((v) => Math.round(v * 10) / 10), b.map((v) => Math.round(v * 10) / 10)]);
   }
-  // The About island's own detail: a little town and its lighthouse, a causeway, or a ferry to the mainland.
+  // The About island's own detail: its villages' streets and the road between them, and a ferry to the mainland.
   const about = world.about;
-  if (about && about.town) {
-    const [tx, ty, tr] = about.town, ar = rng.fork('about-town');
-    const th = ar.next() * Math.PI, c = Math.cos(th), sn = Math.sin(th);
-    const ok = (p) => about.mask[Math.floor(p[1]) * width + Math.floor(p[0])] && Math.hypot(p[0] - tx, p[1] - ty) < tr * 1.1;
-    const km = Math.max(2, Math.round(tr / 0.55));
-    for (let k = -km; k <= km; k++) for (const along of [0, 1]) {
-      const pts = [];
-      for (let t = -tr; t <= tr; t += 0.25) { const u = along ? t : k * 0.55, v = along ? k * 0.55 : t; pts.push([tx + c * u - sn * v, ty + sn * u + c * v]); }
-      let run = [];
-      for (const p of pts) { if (ok(p)) run.push(p); else { if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run }); run = []; } }
-      if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run });
-    }
-  }
-  if (about && about.kind === 'ferry' && about.dock) {
-    let best = null, bd = Infinity;
-    for (const s of settlements) { if (s.rank > RANK.TOWN) continue; const d = Math.hypot(s.x - about.dock[0], s.y - about.dock[1]); if (d < bd) { bd = d; best = s; } }
-    if (best) roads.ferries.push([about.dock, [best.x, best.y]]);
-  }
+  if (about) aboutWays(about, roads, streets, settlements, width);
   // The picture: the land cover with the built-up ground and the small lakes painted in.
   world.coverArgs.urban = (x, y) => builtKind(x, y);
   world.coverArgs.lakes = smallLakes.index.inside;
@@ -279,23 +267,9 @@ export function makeWorld(name, projects, opts) {
     (fields.moist[mi] < 0.075 && fields.temp[mi] > 4 ? wadis : streams).push(pts.map(([x, y]) => warp(x, y)));
   }
   const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers, islets, cityParks, urban: builtKind });
-  // The About island's hill, named, with its height.
-  if (about && about.peak) {
-    const [hx, hy, h] = about.peak, S1 = width / 1600, name = rng.fork('about-peak').pick(['Mount Hello', 'Lookout Hill', 'Signal Hill', 'Beacon Hill']);
-    for (const [dx, dy] of [[0, -3.2], [0, 3.6], [7, 0], [-7, 0]]) {
-      const l = { id: 'about-peak', kind: 'peak', text: name, lines: [name, `${h} m`], x: Math.round((hx + dx * S1) * 10) / 10, y: Math.round((hy + dy * S1) * 10) / 10, size: 2.6 * S1, angle: 0, spacing: 0, minZoom: 4, dot: [Math.round(hx * 10) / 10, Math.round(hy * 10) / 10] };
-      const rects = labelRects(l, 0.3 * S1);
-      if ([...labels, ...detailLabels].every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) { detailLabels.push(l); break; }
-    }
-  }
-  if (about && about.lighthouse) {
-    const [lx, ly] = about.lighthouse, S1 = width / 1600;
-    for (const [dx, dy] of [[0, 2.4], [0, -2.4], [6, 0], [-6, 0]]) {
-      const l = { id: 'about-light', kind: 'cape', text: 'Lighthouse', lines: ['Lighthouse'], x: Math.round((lx + dx * S1) * 10) / 10, y: Math.round((ly + dy * S1) * 10) / 10, size: 2.6 * S1, angle: 0, spacing: 0, minZoom: 4, dot: [Math.round(lx * 10) / 10, Math.round(ly * 10) / 10] };
-      const rects = labelRects(l, 0.3 * S1);
-      if ([...labels, ...detailLabels].every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) { detailLabels.push(l); break; }
-    }
-  }
+  // The About island's places, named: its hill, its pond, its villages, its lighthouse and cape, its bays, and its
+  // islets.
+  if (about) detailLabels.push(...aboutLabels(about, [...labels, ...detailLabels], width, height));
   return {
     name, slug: world.slug, width: world.width, height: world.height,
     cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
@@ -363,19 +337,125 @@ function countFrom(owner, k, cap, W, N, without) {
   return n;
 }
 
-// The About island's name, beside it.
+// The About island's name, beside it: below it, above it, or to one side.
 function labelAbout(world, labels) {
   const a = world.about;
   if (!a) return null;
   const S = world.width / 1600, size = 3.6 * S;
-  const R = (a.r || 6.5 * S) / S, cx = a.cx ?? a.x, cy = a.cy ?? a.y;
-  let spots = [[0, R + 2.4], [0, -R - 2.4], [R + 6.5, 0], [-R - 6.5, 0], [0, 7.5], [0, -7.5]];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ring of a.rings) for (const [x, y] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  let spots = [[mx, y1 + 4 * S], [mx, y0 - 4 * S], [x1 + 7 * S, my], [x0 - 7 * S, my], [mx, y1 + 9 * S], [mx, y0 - 9 * S]];
   // Clear of the causeway or the ferry: on the side away from the mainland.
-  if (a.dock) { const ux = a.dock[0] - cx, uy = a.dock[1] - cy; spots = spots.map((p, k) => [p, k]).sort((p, q) => p[0][0] * ux + p[0][1] * uy - (q[0][0] * ux + q[0][1] * uy) || p[1] - q[1]).map((e) => e[0]); }
-  for (const [dx, dy] of spots) {
-    const l = { id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round((cx + dx * S) * 10) / 10, y: Math.round((cy + dy * S) * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 };
+  if (a.dock) { const ux = a.dock[0] - a.x, uy = a.dock[1] - a.y; spots = spots.map((p, k) => [p, k]).sort((p, q) => (p[0][0] - a.x) * ux + (p[0][1] - a.y) * uy - ((q[0][0] - a.x) * ux + (q[0][1] - a.y) * uy) || p[1] - q[1]).map((e) => e[0]); }
+  for (const [x, y] of spots) {
+    const l = { id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 };
     const rects = labelRects(l, 0.5 * S);
     if (labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) return l;
   }
   return null;
+}
+
+// The About island's ways: its villages' streets (a crossroads each), the road from one village to the other and the
+// track to the lighthouse, and, where it has one, the ferry from its harbour to the nearest town across the water.
+function aboutWays(about, roads, streets, settlements, width) {
+  const S = width / 1600;
+  // (The road between the villages as a country's minor highway is drawn, the track to the lighthouse as a lane.)
+  about.roads.forEach((pts, n) => roads.roads.push({ cls: n === 0 && about.villages.length === 2 ? 'secondary' : 'local', pts }));
+  const onIsland = (p) => about.mask[Math.floor(p[1]) * width + Math.floor(p[0])] === 1 && about.field(p[0], p[1]) > 0.02;
+  for (const v of about.villages) {
+    // Along the road where it leaves the village, and across it.
+    let th = 0;
+    for (const pts of about.roads) for (const end of [pts[0], pts[pts.length - 1]]) if (Math.hypot(end[0] - v.x, end[1] - v.y) < 0.5 * S) {
+      const q = end === pts[0] ? pts[Math.min(3, pts.length - 1)] : pts[Math.max(0, pts.length - 4)];
+      th = Math.atan2(q[1] - v.y, q[0] - v.x);
+    }
+    for (const [a, len, cls] of [[th, v.r * 1.1, 'street'], [th + Math.PI / 2, v.r * 0.85, 'street'], [th + Math.PI / 4, v.r * 0.6, 'minor']]) {
+      const pts = [];
+      for (let t = -len; t <= len + 1e-6; t += 0.25 * S) pts.push([Math.round((v.x + Math.cos(a) * t) * 100) / 100, Math.round((v.y + Math.sin(a) * t) * 100) / 100]);
+      let run = [];
+      for (const p of pts) { if (onIsland(p)) run.push(p); else { if (run.length > 1) streets.push({ cls, pts: run }); run = []; } }
+      if (run.length > 1) streets.push({ cls, pts: run });
+    }
+  }
+  if (about.kind === 'ferry' && about.dock) {
+    let best = null, bd = Infinity;
+    for (const s of settlements) { if (s.rank > RANK.TOWN) continue; const d = Math.hypot(s.x - about.dock[0], s.y - about.dock[1]); if (d < bd) { bd = d; best = s; } }
+    if (best) roads.ferries.push([about.dock.map((v) => Math.round(v * 10) / 10), [best.x, best.y]]);
+  }
+}
+
+// The About island's places, named (see about.mjs for the names): each kept clear of the names already placed.
+function aboutLabels(a, taken, W, H) {
+  const S = W / 1600, out = [];
+  const placed = taken.map((l) => labelRects(l, 0.3 * S));
+  // (Nor over the blue dot, which is drawn above the names.)
+  placed.push([{ cx: a.x, cy: a.y, hw: 2.4 * S, hh: 2.4 * S, cos: 1, sin: 0 }]);
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const put = (l) => {
+    const rects = labelRects(l, 0.3 * S);
+    if (rects.some((rc) => rc.cx - rc.hw < 1 || rc.cx + rc.hw > W - 1 || rc.cy - rc.hh < 1 || rc.cy + rc.hh > H - 1)) return false;
+    if (placed.some((p) => p.some((b) => rects.some((q) => rectsOverlap(q, b))))) return false;
+    l.x = r1(l.x); l.y = r1(l.y);
+    if (l.dot) l.dot = l.dot.map(r1);
+    placed.push(labelRects(l, 0.3 * S));
+    out.push(l);
+    return true;
+  };
+  const widthOf = (lines, size) => Math.max(...lines.map((ln) => lineWidth(ln))) * size;
+  // A name beside a point: right, left, above, below, then the corners.
+  const beside = (base, x, y, gap = 0.7) => {
+    const size = base.size, w = widthOf(base.lines, size), hh = ((base.lines.length - 1) * 1.12 + 1) * size / 2, g = size * gap;
+    for (const [dx, dy] of [[w / 2 + g, 0], [-w / 2 - g, 0], [0, -hh - g], [0, hh + g], [w / 2 + g * 0.6, -hh - g * 0.4], [-w / 2 - g * 0.6, hh + g * 0.4], [w / 2 + g * 0.6, hh + g * 0.4], [-w / 2 - g * 0.6, -hh - g * 0.4]]) {
+      if (put({ ...base, x: x + dx, y: y + dy, dot: base.dot ? [x, y] : undefined })) return true;
+    }
+    return false;
+  };
+  const N = a.names, size = 2.6 * S;
+  const mk = (id, kind, text, extra = {}) => ({ id, kind, text, lines: [text], size, angle: 0, spacing: 0, minZoom: 4, ...extra });
+  // The villages first, and the hill: what the island is known by. (A village is always named: if no place beside it
+  // is clear, its name goes to its right, and the map hides whichever name ranks lower.)
+  const always = (l, x, y, gap = 0.7) => {
+    if (beside(l, x, y, gap)) return;
+    const w = widthOf(l.lines, l.size), hh = ((l.lines.length - 1) * 1.12 + 1) * l.size / 2;
+    // (Below its point, if not beside it: never over the blue dot's own place.)
+    const spot = Math.hypot(x + w / 2 + l.size * gap - a.x, y - a.y) > w / 2 + 2.4 * S ? [x + w / 2 + l.size * gap, y] : [x, y + hh + l.size * gap];
+    const f = { ...l, x: r1(spot[0]), y: r1(spot[1]), dot: [r1(x), r1(y)] };
+    placed.push(labelRects(f, 0.3 * S));
+    out.push(f);
+  };
+  a.villages.forEach((v, n) => always(mk(`about-village-${n}`, 'village', N.villages[n], { size: 2.75 * S, dot: true }), v.x, v.y));
+  const [hx, hy, h] = a.peak;
+  always({ ...mk('about-peak', 'peak', N.peak, { minZoom: 3, dot: true, ...(a.kind === 'volcano' ? { volcano: true } : {}) }), lines: [N.peak, `${h.toLocaleString('en-US')} m`] }, hx, hy, 0.55);
+  if (a.lighthouse) always(mk('about-light', 'cape', N.light, { dot: true }), a.lighthouse[0], a.lighthouse[1]);
+  if (a.pond) {
+    // On the water if it fits, else beside it.
+    const l = mk('about-pond', 'lake', N.pond, { minZoom: 3 }), w = widthOf(l.lines, size);
+    if (!(w < a.pond.r * 1.7 && put({ ...l, x: a.pond.x, y: a.pond.y }))) {
+      const r = a.pond.r;
+      const spots = [[0, r + size * 0.8], [0, -r - size * 0.8], [r + w / 2 + size * 0.4, 0], [-r - w / 2 - size * 0.4, 0]];
+      if (!spots.some(([dx, dy]) => put({ ...l, x: a.pond.x + dx, y: a.pond.y + dy }))) out.push({ ...l, x: r1(a.pond.x), y: r1(a.pond.y + r + size * 0.8) });
+    }
+  }
+  if (a.lagoon) put(mk('about-lagoon', 'lagoon', N.lagoon, { x: a.lagoon.x, y: a.lagoon.y }));
+  // The bays' names, out on their water.
+  a.bays.forEach((b, n) => {
+    const kind = b.big || n === 0 ? 'bay' : /Cove$/.test(N.bays[n]) ? 'cove' : 'bay';
+    for (const k of [0, 0.5, -0.5, 1]) {
+      // (A cove is named from zoom 5, as the rest of the map's are.)
+      const l = mk(`about-bay-${n}`, kind, N.bays[n], { x: b.x + Math.cos(b.a) * k * 2 * S, y: b.y + Math.sin(b.a) * k * 2 * S, minZoom: kind === 'cove' ? 5 : 4 });
+      if (a.field(l.x, l.y) <= 0 && put(l)) break;
+    }
+  });
+  // The cape's name, out past its point.
+  if (a.cape) {
+    const l = mk('about-cape', 'cape', N.cape), w = widthOf(l.lines, size) / 2, ux = Math.cos(a.cape.a), uy = Math.sin(a.cape.a);
+    for (const k of [1, 1.5, 2.2]) {
+      const off = (w * Math.abs(ux) + size * 0.6 * Math.abs(uy)) * k + 0.8 * S;
+      if (put({ ...l, x: a.cape.x + ux * off, y: a.cape.y + uy * off })) break;
+    }
+  }
+  if (a.fjords.length) put(mk('about-fjord', 'inlet', N.fjords[0], { x: a.fjords[0][0], y: a.fjords[0][1] }));
+  a.islets.forEach((p, n) => beside(mk(`about-islet-${n}`, 'island', N.islets[n], { size: 2.4 * S, minZoom: 5 }), p.x, p.y, 0.4 + p.r / (2.4 * S)));
+  return out;
 }

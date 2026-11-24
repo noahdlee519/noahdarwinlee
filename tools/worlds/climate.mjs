@@ -402,28 +402,29 @@ export function renderCover(prep, wx0, wy0, w, h) {
       const mx = (x + 0.5) / scale, my = (y + 0.5) / scale;
       // Small lakes are water in the picture too, under their vector outlines.
       if (onLand && lakes && lakes(mx, my)) { cover[i] = COVER.WATER; continue; }
-      // The About island and the polar land, each in its own manner (see polar.mjs); seamless across the wrap.
-      if (aboutCover) { const c = aboutCover(mx, my); if (c >= 0) { cover[i] = c; continue; } }
-      if (polarCover) { const c = polarCover(mx, my); if (c >= 0) { cover[i] = c; continue; } }
-      if (ice && !onLand && ice[nearest[i0]]) continue;
-      if (ice && ice[i0]) { cover[i] = COVER.SNOW; continue; }
       const b = broadId[i];
       const useA = broadPick[b] < 0.5;
       const mesh = useA ? fineA : fineB;
       const f = useA ? fineAId[i] : fineBId[i];
-      // The facet's class comes from the climate at its centre, so the whole
-      // facet is one colour. A facet centred in the sea reads its own pixel.
-      let s = onLand ? i0 : nearest[i0];
-      const fx = Math.floor(mesh.cx[f] / scale), fy = Math.floor(mesh.cy[f] / scale);
-      if (fx >= 0 && fy >= 0 && fx < W0 && fy < H0 && land[fy * W0 + fx]) s = fy * W0 + fx;
       const jf = useA ? fineJA[f] : fineJB[f];
       const kf = useA ? fineKA[f] : fineKB[f];
-      const t = temp[s], e = elev[s];
       // Jitter: broad patches drift a little; one facet in five jumps a class.
       let j = (broadJ[b] - 0.5) * 0.7;
       if (jf < 0.09) j -= 0.55 + kf * 0.9;
       else if (jf > 0.91) j += 0.55 + kf * 0.9;
       else j += (jf - 0.5) * 0.35;
+      // The About island and the polar land, each in its own manner (see about.mjs and polar.mjs); seamless across the
+      // wrap. (The About island is given its facet's centre and jitter, so it is painted in the same facets.)
+      if (aboutCover) { const c = aboutCover(mx, my, mesh.cx[f] / scale, mesh.cy[f] / scale, j, tinyJ[tinyId[i]], scale); if (c >= 0) { cover[i] = c; continue; } }
+      if (polarCover) { const c = polarCover(mx, my); if (c >= 0) { cover[i] = c; continue; } }
+      if (ice && !onLand && ice[nearest[i0]]) continue;
+      if (ice && ice[i0]) { cover[i] = COVER.SNOW; continue; }
+      // The facet's class comes from the climate at its centre, so the whole
+      // facet is one colour. A facet centred in the sea reads its own pixel.
+      let s = onLand ? i0 : nearest[i0];
+      const fx = Math.floor(mesh.cx[f] / scale), fy = Math.floor(mesh.cy[f] / scale);
+      if (fx >= 0 && fy >= 0 && fx < W0 && fy < H0 && land[fy * W0 + fx]) s = fy * W0 + fx;
+      const t = temp[s], e = elev[s];
 
       let m = moist[s];
       if (bank && bank[s] > 0.02) m += Math.min(0.5, bank[s] * 1.6);

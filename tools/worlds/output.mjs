@@ -374,8 +374,8 @@ export function buildWorldFiles(world) {
   // Land no project holds (polar ice, the About island) is its own region: part of the coast, in no country.
   const ICE = 1 << 20;
   const landAll = world.landAll || world.land;
-  // (The About island is drawn from its own outline, below, unless it lies in a lake.)
-  const aboutMask = world.about && world.about.kind !== 'lake' ? world.about.mask : null;
+  // (The About island is drawn from its own outline, below.)
+  const aboutMask = world.about ? world.about.mask : null;
   for (let i = 0; i < N; i++) key[i] = owner[i] >= 0 ? owner[i] * 64 + (provinces[i] + 1) : landAll && landAll[i] && !(aboutMask && aboutMask[i]) ? ICE : -1;
   const ownerOf = (k) => (k < 0 || k === ICE ? -1 : k >> 6);
   const arcs = traceArcs(key, W, H, -1);
@@ -399,7 +399,7 @@ export function buildWorldFiles(world) {
   // The About island, from its own outline: its land, and the water within it (a lagoon or a crater lake), as rings
   // the sea's even-odd fill turns to land and back to water.
   const A = world.about;
-  if (A && A.kind !== 'lake') coast += rings([...A.rings, ...A.holes]);
+  if (A) coast += rings([...A.rings, ...A.holes]);
   // A few stretches of border are disputed, and drawn dashed: one or two in a world, of middling length, chosen by
   // the world's name.
   const isBorder = (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right);
@@ -418,19 +418,9 @@ export function buildWorldFiles(world) {
   const disputed = linesPath(arcs, lines, (a) => disputedSet.has(arcs.indexOf(a)));
   const provinceBorders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) === ownerOf(a.right) && a.left !== a.right);
 
-  // An About island in a lake: the lake is traced whole, and the island cut from it by its own outline.
-  let lakeMask = lakes;
-  if (A && A.kind === 'lake') { lakeMask = Uint8Array.from(lakes); for (let i = 0; i < N; i++) if (A.mask[i]) lakeMask[i] = 1; }
-  const lakeArcs = traceArcs(lakeMask, W, H, 0);
+  const lakeArcs = traceArcs(lakes, W, H, 0);
   const lakeLines = lakeArcs.map((arc) => arcLine(arc, 0.5));
   let lakePath = ringsPath(lakeArcs, lakeLines, (k) => k === 1);
-  if (A && A.kind === 'lake') {
-    // Wound against the lakes' own rings, so the nonzero fill leaves it land.
-    const k0 = lakeArcs.findIndex((arc, k) => arc.closed && lakeLines[k].length > 2 && (arc.left === 1 || arc.right === 1));
-    const written = k0 < 0 ? null : lakeArcs[k0].right === 1 ? lakeLines[k0] : lakeLines[k0].slice().reverse();
-    const lakeSign = written ? Math.sign(signedArea(written)) : 1;
-    lakePath += rings(A.rings.map((g) => (Math.sign(signedArea(g)) === lakeSign ? g.slice().reverse() : g)));
-  }
 
   // Where a great river parts round an island: the arms' water, drawn with the lakes at every zoom.
   for (const l of (world.smallLakes && world.smallLakes.lakes) || []) {

@@ -13,6 +13,7 @@ import { pathLines } from '../geom.mjs';
 import { THEMED_PLACES } from '../cultures.mjs';
 import { placeLabels, wrappedMiddle, labelRects, rectsOverlapWrapped } from '../labels.mjs';
 import { makeRng } from '../rng.mjs';
+import { ringArea } from '../lakes.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const idx = (id) => projects.findIndex((p) => p.id === id);
@@ -93,16 +94,34 @@ test('an ocean that runs across the map\'s edge is named in its middle, measured
   for (const l of labels) if (l !== ocean) for (const a of labelRects(l)) for (const b of labelRects(ocean)) assert.ok(!rectsOverlapWrapped(a, b, W) && !rectsOverlapWrapped(b, a, W), `${l.text} lies under the ocean's name`);
 });
 
-test('the About island is larger, with bays, a town, a lighthouse cape, and a hill, a pond, or a crater lake', () => {
-  for (const name of ['Le Guin', 'Bradbury', 'Zelazny', 'Clarke']) {
-    const a = buildLand(name, projects).about;
+test('the About island is in the open sea, about the size of a small project, with its villages, hill, pond, and lighthouse', () => {
+  for (const name of ['Heinlein', 'Asimov', 'Clarke', 'Zelazny']) {
+    const world = buildLand(name, projects), a = world.about, W = world.width, H = world.height;
     let n = 0;
-    for (const v of a.mask) n += v;
-    assert.ok(n > 150, `${name}: the About island is only ${n} pixels`);
-    assert.ok(a.town && a.lighthouse, `${name}: no town or lighthouse`);
-    assert.ok(a.peak || a.pond || a.crater, `${name}: no hill, pond, or crater lake`);
-    // The dot is on dry land, in no hole.
-    assert.ok(a.mask[Math.floor(a.y) * 1600 + Math.floor(a.x)], `${name}: the dot is in the water`);
+    for (let i = 0; i < W * H; i++) if (a.mask[i]) { n++; assert.ok(!world.land[i] && !world.hydro.lakes[i], `${name}: the island lies on other land or in a lake`); }
+    // Clear of other land all round: no project's land (nor lake) within a few units of its coast.
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      if (!a.mask[y * W + x]) continue;
+      for (let dy = -4; dy <= 4; dy += 2) for (let dx = -4; dx <= 4; dx += 2) assert.ok(!world.land[(y + dy) * W + x + dx], `${name}: other land beside the island at ${x + dx},${y + dy}`);
+    }
+    // Roughly the area of the two smallest projects, or a little less.
+    const areas = buildNations(world, projects).areas;
+    const small = projects.map((p, k) => (p.tier === 'flagship' ? -1 : areas[k])).filter((v) => v > 0).sort((p, q) => p - q);
+    assert.ok(n > 1200 && n > 0.55 * (small[0] + small[1]) / 2 && n < 1.4 * (small[0] + small[1]) / 2, `${name}: the island is ${n} pixels, the two smallest projects ${small[0]} and ${small[1]}`);
+    // Its coast: one main island, with bays and a cape (its outline is far longer than a circle's of the same area).
+    const main = a.rings.reduce((p, q) => (ringArea(q) > ringArea(p) ? q : p));
+    let len = 0;
+    for (let k = 0; k < main.length; k++) len += Math.hypot(main[k][0] - main[(k + 1) % main.length][0], main[k][1] - main[(k + 1) % main.length][1]);
+    assert.ok(len > 1.25 * 2 * Math.sqrt(Math.PI * ringArea(main)), `${name}: the coast is too plain (${len.toFixed(0)} units round)`);
+    assert.ok(a.bays.filter((b) => b.head).length >= 2, `${name}: fewer than two bays`);
+    assert.ok(a.villages.length >= 1 && a.villages.length <= 2 && a.lighthouse && a.cape && a.pond && a.peak[2] > 100, `${name}: a village, a lighthouse on a cape, a pond, or a hill is missing`);
+    if (a.villages.length === 2) assert.ok(a.roads.length >= 1, `${name}: no road between the villages`);
+    // The dot on dry land, near the middle.
+    assert.ok(a.mask[Math.floor(a.y) * W + Math.floor(a.x)], `${name}: the dot is in the water`);
+    assert.ok(Math.hypot(a.x - a.cx, a.y - a.cy) < 0.5 * a.R, `${name}: the dot is far from the middle`);
+    // Names from one theme: no "Saint", and none used twice.
+    const all = [a.names.peak, a.names.pond, a.names.light, a.names.cape, ...a.names.villages, ...a.names.bays, ...a.names.islets];
+    assert.ok(all.every((t) => t && !/\bSaint\b|\bSt\.? /.test(t)) && new Set(all).size === all.length, `${name}: names ${all.join(', ')}`);
   }
 });
 

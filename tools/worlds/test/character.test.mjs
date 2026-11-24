@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { WORLDS, buildLand, buildNations } from '../world.mjs';
 import { classifyCover, prepareCover, renderCover, COVER, DRY_CLASSES } from '../climate.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from '../lakes.mjs';
-import { ABOUT_KINDS } from '../polar.mjs';
+import { ABOUT_KINDS } from '../about.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const lands = new Map();
@@ -143,20 +143,17 @@ test('polar land: a thick ice sheet off the map\'s edge, seamless, with a rocky 
 test('the About island differs from world to world', () => {
   const kinds = WORLDS.map((w) => w.about);
   assert.ok(kinds.every((k) => ABOUT_KINDS.includes(k)), 'every world names a known setting');
+  assert.ok(!ABOUT_KINDS.includes('lake'), 'an island in a lake is no longer one of the settings');
   assert.ok(new Set(kinds).size >= 7, `only ${new Set(kinds).size} settings across the twenty worlds`);
   const seen = {};
   for (const name of ['Bradbury', 'Gibson', 'Le Guin', 'Butler', 'Herbert']) {
     const a = landOf(name).about;
     assert.ok(a, `${name} has no About island`);
-    // (Of each kind, the one with the most pieces: an atoll may be one ring of land or several islets.)
-    if (!seen[a.kind] || a.rings.length > seen[a.kind].rings.length) seen[a.kind] = a;
-    let n = 0;
-    for (const v of a.mask) n += v;
-    assert.ok(n > 20, `${name}'s island is only ${n} pixels`);
+    seen[a.kind] = a;
   }
-  assert.ok(seen.volcano.holes.length === 1 && seen.volcano.crater, 'a volcano with a crater lake');
-  assert.ok(seen.atoll.rings.length >= 2 && seen.atoll.lagoon, 'an atoll of islets round a lagoon');
-  assert.ok(seen.lighthouse.town && seen.lighthouse.lighthouse, 'a lighthouse town');
-  assert.ok(seen.causeway.causeway, 'a causeway to the coast');
-  assert.ok(seen.lake.kind === 'lake' && landOf('Herbert').hydro.lakes[Math.floor(seen.lake.cy + 0.5) * 1600 + Math.floor(seen.lake.cx)] === 0, 'an island in a lake');
+  assert.ok(seen.volcano.pond && seen.volcano.pond.crater && seen.volcano.crater, 'a volcano with a crater lake');
+  assert.ok(seen.atoll.lagoon && seen.atoll.lagoon.r > 4, 'a lagoon within the island');
+  assert.ok(seen.lighthouse.islets.length >= 1 && seen.lighthouse.lighthouse, 'a lighthouse, with stacks off its point');
+  assert.ok(seen.causeway.causeway && seen.causeway.islets.some((p) => p.causeway), 'a causeway to an islet of its own');
+  assert.ok(seen.loch.pond.r > seen.volcano.pond.r * 1.8, 'a larger lake in the middle of a loch island');
 });

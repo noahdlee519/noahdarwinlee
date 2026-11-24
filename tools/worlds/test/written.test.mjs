@@ -174,3 +174,47 @@ test('the coast has its small forms: fjords, cays, skerries, sandbars, and lagoo
   assert.ok(has((w) => named(w, 'lagoon')) >= 4, 'few worlds have lagoons');
   assert.ok(has((w) => isl(w, 'sand')) >= 12 && has((w) => isl(w, 'rock')) >= 8, 'few worlds have islets');
 });
+
+test('in every world the About island is a real island of its own in the open sea, with a village and a named hill', { skip }, () => {
+  for (const w of worlds) {
+    const { data, detail } = w, [hx, hy] = data.here;
+    const coast = new Fill(data.coast, 'evenodd'), lakes = data.lakes ? new Fill(data.lakes) : null;
+    const land = (x, y) => coast.inside(x, y) && !(lakes && lakes.inside(x, y));
+    assert.ok(land(hx, hy), `${w.name}: the blue dot is not on land`);
+    // The land joined to the dot, on a grid a third of a unit apart: its area, and what lies round it.
+    const g = 1 / 3, R = 90, n = Math.round((2 * R) / g), seen = new Uint8Array(n * n), stack = [];
+    const at = (i, j) => [hx - R + i * g, hy - R + j * g];
+    const i0 = Math.round(R / g);
+    seen[i0 * n + i0] = 1; stack.push(i0 * n + i0);
+    let cells = 0, edgeLake = 0, edgeSea = 0, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    while (stack.length) {
+      const k = stack.pop(), i = k % n, j = (k - i) / n;
+      cells++;
+      const [x, y] = at(i, j);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      assert.ok(i > 0 && j > 0 && i < n - 1 && j < n - 1, `${w.name}: the About island runs on into other land`);
+      for (const q of [k - 1, k + 1, k - n, k + n]) {
+        if (seen[q]) continue;
+        const [qx, qy] = at(q % n, Math.floor(q / n));
+        if (land(qx, qy)) { seen[q] = 1; stack.push(q); }
+        else if (coast.inside(qx, qy)) edgeLake++;
+        else edgeSea++;
+      }
+    }
+    const area = cells * g * g;
+    assert.ok(area > 1200, `${w.name}: the About island is only ${area.toFixed(0)} square units`);
+    assert.ok(x1 - x0 > 35 && y1 - y0 > 30, `${w.name}: the About island is only ${(x1 - x0).toFixed(0)} by ${(y1 - y0).toFixed(0)} units`);
+    // In the open sea, not a lake: its shore is the sea's (but for its own pond).
+    assert.ok(edgeSea > 8 * edgeLake, `${w.name}: the About island's shore is a lake's (${edgeLake} lake, ${edgeSea} sea)`);
+    // In no country.
+    for (const p of data.projects) assert.ok(!new Fill(p.path, 'evenodd').inside(hx, hy), `${w.name}: the About island lies in ${p.id}`);
+    // Its places, named, as the rest of the map's are.
+    const mine = [...data.labels, ...detail.labels].filter((l) => l.id.startsWith('about'));
+    assert.ok(mine.some((l) => l.id === 'about' && l.text === 'About' && l.minZoom === 1), `${w.name}: the island has no name`);
+    assert.ok(mine.some((l) => l.kind === 'village' && l.dot), `${w.name}: no village named on the island`);
+    assert.ok(mine.some((l) => l.kind === 'peak' && l.dot && l.lines && / m$/.test(l.lines[1])), `${w.name}: no hill named, with its height, on the island`);
+    assert.ok(mine.some((l) => l.kind === 'lake'), `${w.name}: no pond named on the island`);
+    assert.ok(mine.some((l) => /Lighthouse$/.test(l.text) && l.dot), `${w.name}: no lighthouse on the island`);
+    assert.ok(mine.every((l) => !/\bSaint\b|\bSt\.? /.test(l.text)), `${w.name}: a "Saint" on the island`);
+  }
+});

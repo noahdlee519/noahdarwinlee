@@ -140,8 +140,8 @@ test('the island called About lies in open water, in no country, with its dot', 
   const a = world.about;
   assert.ok(a, 'no About island');
   let n = 0;
-  for (let i = 0; i < W * H; i++) if (a.mask[i]) { n++; assert.equal(owner[i], -1); if (a.kind !== 'lake') assert.equal(land[i], 0); }
-  assert.ok(n > 20, `the island is only ${n} pixels`);
+  for (let i = 0; i < W * H; i++) if (a.mask[i]) { n++; assert.equal(owner[i], -1); assert.equal(land[i], 0); assert.equal(lakes[i], 0); }
+  assert.ok(n > 1200, `the island is only ${n} pixels`);
   const files = buildWorldFiles(world).data;
   assert.deepEqual(files.here, [Math.round(a.x * 10) / 10, Math.round(a.y * 10) / 10]);
   assert.ok(world.labels.some((l) => l.id === 'about' && l.text === 'About'), 'the island has no name');
