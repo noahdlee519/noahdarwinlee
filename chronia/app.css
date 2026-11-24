@@ -565,6 +565,28 @@ body.ch-page {
   font-size: 12px;
 }
 
+/* The questions, each folded to its line until it is opened; shown on touch screens too, unlike the keys. */
+.ch-about-tip .ch-faq {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+  font-size: 13px;
+}
+.ch-about-tip .ch-faq details {
+  margin: 0 0 4px;
+}
+.ch-about-tip .ch-faq summary {
+  cursor: pointer;
+  list-style-position: outside;
+  margin-left: 1em;
+}
+.ch-about-tip .ch-faq summary::marker {
+  color: var(--ch-muted);
+}
+.ch-about-tip .ch-faq details p {
+  margin: 4px 0 6px 1em;
+}
+
 .ch-about-tip .ch-keys-head {
   margin: 0 0 5px;
   font-family: var(--ch-sc);

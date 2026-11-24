@@ -7305,6 +7305,8 @@
   applyPaletteChoice();
   function syncLayerInputs() {
     layersPanel.querySelectorAll("input[data-layer]").forEach(function (el) { el.checked = !!layers[el.getAttribute("data-layer")]; });
+    var fc = $("faq-control");
+    if (fc) fc.textContent = layers.control ? T("Turn zones of control off") : T("Turn zones of control on");
   }
   function setLayer(name, on) {
     if (!(name in layers)) return false;
@@ -8102,6 +8104,8 @@
   $("tour-back").addEventListener("click", function () { showTourStep(tourAt - 1); });
   $("tour-skip").addEventListener("click", closeTour);
   $("tour-again").addEventListener("click", function () { setAbout(false); openTour(); });
+  // The about note's question on zones of control turns the layer on or off from there.
+  $("faq-control").addEventListener("click", function () { setLayer("control", !layers.control); });
   window.addEventListener("keydown", function (e) {
     if ($("tour").hidden) return;
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
