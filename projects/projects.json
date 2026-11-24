@@ -753,5 +753,64 @@
     "blurb": "My portfolio with the Dragonfly Agency’s development division.",
     "tagline": "My portfolio with the Dragonfly Agency’s development division.",
     "media": []
+  },
+  {
+    "id": "braidable",
+    "name": "Braidable",
+    "tier": "small",
+    "names": {
+      "water": [
+        "Strands",
+        "Braids",
+        "Weave"
+      ],
+      "river": [
+        "Strand"
+      ],
+      "lake": [
+        "Plait"
+      ]
+    },
+    "url": "https://braidable.ai/",
+    "domain": "braidable.ai",
+    "blurb": "My AI consulting practice. I work alongside a company's management to map how the work gets done, find what can be automated, build the tools where they can be built, and teach the teams to use them.",
+    "tagline": "My AI consulting practice: I find the work AI can take off a team's plate, and build it.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-braidable-800.webp",
+        "srcset": "/art/web/materials/shot-braidable-800.webp 800w, /art/web/materials/shot-braidable-1440.webp 1440w",
+        "alt": "The braidable.ai front page, its name over a blue braided pattern",
+        "caption": "The front page"
+      }
+    ]
+  },
+  {
+    "id": "portfolio",
+    "name": "Portfolio",
+    "tier": "small",
+    "names": {
+      "water": [
+        "Portfolio",
+        "Works"
+      ],
+      "river": [
+        "Folio"
+      ],
+      "lake": [
+        "Sketchbook"
+      ]
+    },
+    "url": "https://noahdarwinlee.com/portfolio/",
+    "domain": "noahdarwinlee.com/portfolio",
+    "blurb": "My portfolio of products I designed and built with AI, with the stories behind them.",
+    "tagline": "My portfolio of products I designed and built with AI.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-portfolio-800.webp",
+        "srcset": "/art/web/materials/shot-portfolio-800.webp 800w, /art/web/materials/shot-portfolio-1440.webp 1440w",
+        "alt": "The portfolio's front page: \"Hi, my name is Noah\" beside a portrait made of coloured dots",
+        "caption": "The front page"
+      }
+    ]
   }
 ]
