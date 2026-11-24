@@ -48,9 +48,6 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   without waiting; the last eight routes are kept, so going back to one, or
   undoing an avoid, answers both at once. Loaded as a plain script instead when
   the browser will not start a worker, answering through the same messages.
-  With each route it sends which avoided countries it bends round and which
-  countries those bends lie over, for the line under the distance ("Bends 12
-  times round the 50 mi buffer of Russia, over Azerbaijan and China").
 - **panel.js** — the result card, its tabs, the flight plan's timeline, the
   countries crossed, the warnings, the options card, and Share, given what it
   needs from app.js when the page starts (`GreatCirclePanel(app)`).
@@ -64,7 +61,8 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   round is longer), and Flight plan, each with its distance; the chosen one is
   drawn solid on the globe and the others dashed. Below it, the flight plan's
   timeline of beacons grouped by country (hover or tap a leg to light it on
-  the globe), the countries crossed (tap one to avoid it), and Share. Warnings
+  the globe), the countries crossed in order with arrows between them (tap
+  one to avoid it), and Share. Warnings
   (A inside what is avoided, no way round, no chain of beacons) are small cards
   with the action that fixes them. Flight times are the distance at 850 km/h
   plus half an hour. With A and B set, clicking a country opens a small card
@@ -114,17 +112,30 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   closed along it), and everything off the screen skipped; the routes, the
   buffers, and the regions go through d3-geo, which cuts them at the edge.
   Dragging pans it, east and west all the way round; the satellite view is
-  the globe's only. Country names are placed in the land: each country's
-  label sits at the pole of inaccessibility of its largest piece
-  (polylabel, worked out once in idle time), centred on the stretch of its
-  parallel inside the border, sized by its area on the screen, and shown
-  only where it fits that stretch and clears the names already placed,
-  largest countries first; the city names then keep clear of them. On the
-  globe each letter is set along the parallel, so the names curve with the
-  latitude lines and turn as the globe does; on the flat map, where the
-  parallels are straight, they are straight. Zoomed into a large country
-  whose label point is off the screen, its name follows the middle of the
-  view. Long names are shortened (DR Congo, Central African Rep.).
+  the globe's only. Country names are placed in the land. For each country's largest piece,
+  worked out once in idle time, the parallels across it are sampled and each
+  scored by the longest run inside the border (in kilometres, so the widest
+  part of the country wins) and by how near the middle of the country it is,
+  with the pole of inaccessibility (polylabel) as a favoured extra; the best
+  few are kept. On screen, a name's size is the smaller of a cap that grows
+  with the logarithm of the country's area on screen, so the hierarchy stays
+  even as you zoom, and what fills 68% of the run at that parallel; when the
+  cap is reached the spare room goes into wider letter spacing, as atlases
+  spread the names of large countries. A name that will not fit on one line
+  tries two, split at the most balanced word break, each on its own parallel;
+  failing that the next parallel is tried. Names fade in as they gain room
+  and fade near the globe's edge instead of popping. They are placed largest
+  country first, clear of each other, the city dots, and the panel, legend,
+  and buttons. On the globe each letter is set along its parallel, so the
+  names curve with the latitude lines; on the flat map, where the parallels
+  are straight, they are straight. Zoomed into a large country whose
+  parallels are all off the screen, its name follows the middle of the view.
+  Long names are shortened (DR Congo, Central African Rep.).
+
+  City and airport names try four places, right, left, above, and below,
+  and take the first that clears the other names and every dot and plane;
+  cities go first, and if a city's name can only go where an airport is, the
+  airport is left out rather than the city.
 
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its
@@ -133,7 +144,7 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   goes up a height, then back down. It rides above the on-screen keyboard.
   The globe is kept in the space above the sheet.
 
-  Motion: the other routes' dashes run from A to B, and a dot the width of
+  Motion: the other routes' dashes run from A to B, and a dot a little wider than
   the line runs along the chosen route from A to B, again and again. The
   globe under the routes is kept in a second canvas while it does not
   change, so each of those frames only draws the routes and markers again.

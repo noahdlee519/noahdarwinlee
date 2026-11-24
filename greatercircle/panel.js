@@ -73,7 +73,7 @@
 
     function renderBusy() {
       if (!state.busy) return;
-      var what = !state.ready ? "Starting the route finder…" : avoiding() ? "Finding the way round " + avoidLabel() + "…" : "Measuring…";
+      var what = !state.ready ? "Starting the route finder…" : avoiding() ? "Finding the way around " + avoidLabel() + "…" : "Measuring…";
       ui.result.hidden = false;
       ui.result.classList.add("is-busy");
       ui.result.setAttribute("aria-busy", "true");
@@ -214,29 +214,28 @@
         warning("There is no way from " + endName("a") + " to " + endName("b") + " that stays out of " + joinNames(avoidedNames()) + ".", acts);
       } else if (tab === "direct") {
         big = fmt(res.directKm); time = hoursText(timeFor("direct")).text; bigKm = res.directKm;
-        if (res.antipodal) delta = endName("a") + " and " + endName("b") + " are antipodes: every way round is this long";
-        else delta = "The great circle, the shortest way there is";
+        if (res.antipodal) delta = endName("a") + " and " + endName("b") + " are antipodes: every way around is this long";
+        else delta = "in great circle distance (the shortest possible path)";
         if (avoiding() && !detourOf(res)) note = "Already stays out of " + avoidLabel() + (state.bufferKm > 0 ? " | " + fmtBuffer(state.bufferKm) + " buffer" : "");
         if (detourOf(res)) {
           var over = (res.directCrosses || []).map(String).filter(function (id) { return state.avoid.has(id); }).map(function (id) { return state.avoid.get(id); });
-          warning(over.length ? "Flies over " + joinNames(over) + ", which you are avoiding." : "Goes through what you are avoiding.", [{ label: "Go round it", fn: function () { setTab("avoid", true); } }]);
+          warning(over.length ? "Flies over " + joinNames(over) + ", which you are avoiding." : "Goes through what you are avoiding.", [{ label: "Go around it", fn: function () { setTab("avoid", true); } }]);
         }
       } else if (tab === "avoid") {
         var ex = res.lengthKm - res.directKm;
         big = fmt(res.lengthKm); time = hoursText(timeFor("avoid")).text; bigKm = res.lengthKm;
-        delta = "+" + fmt(ex) + " (" + pctOf(ex, res.directKm) + ") to go round " + avoidLabel();
-        note = whyLine(res);
+        delta = "+" + fmt(ex) + " (" + pctOf(ex, res.directKm) + ") to go around " + avoidLabel();
       } else if (tab === "plan") {
         var pl = state.plan || { status: "pending" };
         if (pl.status === "done") {
           big = fmt(pl.km); time = hoursText(timeFor("plan")).text; bigKm = pl.km;
-          delta = "+" + fmt(pl.overKm) + " (" + pctOf(pl.overKm, res.lengthKm) + ") over the shortest way" + (detourOf(res) ? " round" : "");
+          delta = "+" + fmt(pl.overKm) + " (" + pctOf(pl.overKm, res.lengthKm) + ") over the shortest way" + (detourOf(res) ? " around" : "");
           note = "From one radio beacon to the next, as a flight plan does";
         } else if (pl.status === "pending") {
           big = "…"; note = "Finding radio beacons along the way…";
         } else if (pl.status === "none") {
           big = fmt(res.lengthKm);
-          warning("No chain of radio beacons reaches from " + endName("a") + " to " + endName("b") + " here.", [{ label: detourOf(res) ? "Show the way round" : "Show the shortest way", fn: function () { setTab(detourOf(res) ? "avoid" : "direct", true); } }]);
+          warning("No chain of radio beacons reaches from " + endName("a") + " to " + endName("b") + " here.", [{ label: detourOf(res) ? "Show the way around" : "Show the shortest way", fn: function () { setTab(detourOf(res) ? "avoid" : "direct", true); } }]);
         } else {
           big = fmt(res.lengthKm);
           warning("The radio beacons could not be loaded.", [{ label: "Try again", fn: function () { requestRoute(); } }]);
@@ -382,15 +381,22 @@
       ui.crossList.dataset.key = key;
       setText(ui.crossTitle, list.length ? "Crosses " + list.length + (list.length === 1 ? " country" : " countries") : "Crosses nothing: open sea all the way");
       ui.crossList.innerHTML = "";
-      list.forEach(function (id) {
+      list.forEach(function (id, n) {
         var f = featureById.get(id), li = document.createElement("li");
+        li.className = "gc-cross";
         if (!state.avoid.has(id) && id !== ANTARCTICA && ends.indexOf(id) < 0) {
           var b = document.createElement("button"); b.type = "button"; b.className = "gc-chip gc-chip-add";
           b.dataset.id = id; b.textContent = f.properties.name; b.title = "Avoid " + f.properties.name; b.setAttribute("aria-label", "Avoid " + f.properties.name);
           li.appendChild(b);
         } else {
-          li.className = "gc-chip" + (state.avoid.has(id) ? " is-avoided" : "");
-          li.textContent = f.properties.name;
+          var sp = document.createElement("span");
+          sp.className = "gc-chip" + (state.avoid.has(id) ? " is-avoided" : "");
+          sp.textContent = f.properties.name;
+          li.appendChild(sp);
+        }
+        if (n < list.length - 1) {
+          var ar = document.createElement("span"); ar.className = "gc-cross-arrow"; ar.setAttribute("aria-hidden", "true"); ar.textContent = "\u2192";
+          li.appendChild(ar);
         }
         ui.crossList.appendChild(li);
       });
@@ -405,13 +411,6 @@
       ui.crossTitle.focus();
     });
 
-    function whyLine(res) {
-      var round = names(res.roundIds || []), over = res.bendsOver || [];
-      var what = round.length ? joinNames(round) : avoidLabel();
-      var text = "Bends " + (res.bends === 1 ? "once" : res.bends + " times") + " round " + (state.bufferKm > 0 ? "the " + fmtBuffer(state.bufferKm) + " buffer of " : "") + what;
-      if (over.length) text += ", over " + (over.length > 4 ? over.slice(0, 4).join(", ") + ", and " + (over.length - 4) + " more" : joinNames(over));
-      return text;
-    }
     function setTab(tab, focus) {
       var prev = currentTab();
       state.tab = tab;
@@ -567,7 +566,7 @@
       if (!res || res.status !== "done") return;
       var km = tabKm(tab) || res.directKm;
       var line = (tab === "avoid" ? "Avoiding " + avoidLabel() : tab === "plan" ? "Flight plan, " + (state.plan.points.length - 2) + " radio beacons" : "The great circle") + " | " + hoursText(timeFor(tab) || km / 850 + 0.5).text;
-      var sub = tab === "direct" ? "the shortest way there is" : tab === "avoid" ? "+" + fmt(res.lengthKm - res.directKm) + " over the direct way" : "+" + fmt(state.plan.overKm) + " over the shortest way";
+      var sub = tab === "direct" ? "the shortest possible path" : tab === "avoid" ? "+" + fmt(res.lengthKm - res.directKm) + " over the direct way" : "+" + fmt(state.plan.overKm) + " over the shortest way";
       var names = shortName(state.a) + " to " + shortName(state.b);
       var name = "greatercircle-" + (endName("a") + "-" + endName("b")).toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png";
       app.makeCard({ from: endName("a"), to: endName("b"), names: names.length > 44 ? names.slice(0, 43) + "…" : names, km: fmt(km), line: line, sub: sub }).then(function (blob) {

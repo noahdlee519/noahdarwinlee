@@ -206,6 +206,14 @@
   --gc-buffer-edge: rgba(255, 255, 255, 0.85);
   --gc-hover-route: #ffcf5c;
 }
+:root[data-theme="dark"].gc-sat-on {
+  --gc-flow: #b6b4ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]).gc-sat-on {
+    --gc-flow: #b6b4ff;
+  }
+}
 
 body.gc-page {
   margin: 0;
@@ -1483,8 +1491,18 @@ body.gc-page {
 .gc-chips > li:not(.gc-chip) {
   display: inline-flex;
 }
-.gc-crosses-card li.gc-chip {
+.gc-crosses-card .gc-cross {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gc-crosses-card .gc-cross > span.gc-chip {
   padding: 0 12px;
+}
+.gc-cross-arrow {
+  color: var(--gc-muted);
+  font-size: 13px;
+  line-height: 1;
 }
 .gc-chip.is-avoided {
   padding: 0 12px;

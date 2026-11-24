@@ -167,16 +167,6 @@ function route(m) {
       result.waypoints = s.waypoints.map(function (v) { return G.toLonLat(v); });
       result.lengthKm = s.length * G.EARTH_RADIUS_KM;
       result.bends = s.waypoints.length - 2;
-      var roundIds = [], over = [];
-      (s.corners || []).forEach(function (c) {
-        var v = obs.corners.wPrev[obs.corners.wStart[c]];
-        var f = obs.features[obs.rings[obs.ringOf[v]].feature];
-        var base = String(f.id).split("~")[0];
-        if (roundIds.indexOf(base) < 0) roundIds.push(base);
-      });
-      s.waypoints.slice(1, -1).forEach(function (v) { var n = nameOf(v); if (n && over.indexOf(n) < 0) over.push(n); });
-      result.roundIds = roundIds;
-      result.bendsOver = over;
       result.antipodal = !!s.antipodal;
       result.routeCrosses = countriesAlong(s.waypoints);
     }
