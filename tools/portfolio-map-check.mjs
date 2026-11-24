@@ -499,25 +499,29 @@ async function interfaceStage(browser) {
   page = await open(browser, '?world=le-guin', { context: phone });
   const sheet = () => page.evaluate(() => document.querySelector('#panel').getAttribute('data-sheet'));
   ok(await sheet() === 'peek', 'the sheet starts lowered, under the map');
-  ok(await panelTitle(page) === 'Le Guin' && (await page.evaluate(() => !!document.querySelector('.peek-links a[href="/terms/"]'))), "the lowered sheet names the world and carries the footer's links");
+  ok(await panelTitle(page) === 'Projects' && (await page.evaluate(() => !!document.querySelector('.peek-links a[href="/terms/"]') && !document.querySelector('.peek-links').textContent.includes(window.__portfolioMap.map.world.name) && !document.title.includes(window.__portfolioMap.map.world.name))), "the lowered sheet is headed Projects and carries the footer's links, with the world's name nowhere on the phone");
   // The phone's look, after a mapping app's: pill, round buttons at the right, no zoom buttons, a three-tab bar.
   const look = await page.evaluate(() => {
     const vis = (q) => { const e = document.querySelector(q); return !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0; };
-    const loc = document.querySelector('.locate').getBoundingClientRect(), fab = document.querySelector('.fab-world').getBoundingClientRect();
+    const loc = document.querySelector('.locate').getBoundingClientRect();
     const sheetTop = innerHeight - parseFloat(getComputedStyle(document.body).getPropertyValue('--map-bottom'));
     const tabs = [...document.querySelectorAll('.rail > *')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.querySelector('.rail-text').textContent.trim());
     return {
       pill: document.querySelector('.search-box').getBoundingClientRect().height, menuLeft: document.querySelector('.search-menu').getBoundingClientRect().left < 40,
-      round: getComputedStyle(document.querySelector('.locate')).borderRadius === '50%' && getComputedStyle(document.querySelector('.fab-world')).borderRadius === '50%',
-      order: loc.bottom <= fab.top && fab.bottom <= sheetTop && loc.right > innerWidth - 24 && fab.right > innerWidth - 24,
+      round: parseFloat(getComputedStyle(document.querySelector('.locate')).borderRadius) >= 12 && !document.querySelector('.fab-world, [aria-label="Show the next world"]') && !vis('.drawer-next') && !vis('.drawer-note'),
+      order: loc.bottom <= sheetTop && sheetTop - loc.bottom < 24 && loc.right > innerWidth - 24,
+      large: [...document.querySelectorAll('#panel-body .block-title')].every((t) => !/large countries/i.test(t.textContent)),
+      dual: vis('.scale-corner .scale-dual') && /mile/.test(document.querySelector('.scale-mi').textContent) && / km$/.test(document.querySelector('.scale-km').textContent),
       zoom: vis('.zoom'), hintOverMap: vis('#hint'), tabs: tabs.join(','),
       radius: parseFloat(getComputedStyle(document.querySelector('.panel')).borderTopLeftRadius), sub: document.querySelector('.head-world .sub').textContent,
     };
   });
   ok(look.pill >= 52 && look.menuLeft, `a large search pill (${look.pill} px) with ≡ at its left and the portrait at its right`);
-  ok(look.round && look.order && !look.zoom, 'round white buttons at the right, the location button above the next-world one, both above the sheet; no zoom buttons');
+  ok(look.round && look.order && !look.zoom, 'one rounded-square location button at the right, just above the sheet; no next-world button and no zoom buttons');
+  ok(look.large, 'no "The large countries" heading in the sheet');
+  ok(look.dual, 'the corner scale gives miles above the line and kilometres below it');
   ok(look.tabs === 'Explore,Saved,Resume', `three tabs: ${look.tabs}`);
-  ok(look.radius >= 24 && look.sub === 'Click on a project to learn more.' && !look.hintOverMap, 'the sheet, with large rounded corners, carries "Click on a project to learn more." under the world\'s name, not over the map');
+  ok(look.radius >= 24 && look.sub === 'Click on a project to learn more.' && !look.hintOverMap, 'the sheet, with large rounded corners, carries "Click on a project to learn more." under its heading, not over the map');
   ok(await page.evaluate(() => document.querySelector('.search-me').getAttribute('href') === '/#about'), "the portrait in the search pill links to the site's about page");
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.rail')).flexDirection === 'row' && document.querySelector('.rail').getBoundingClientRect().bottom >= innerHeight - 1), 'the rail is a tab bar at the bottom');
   await page.screenshot({ path: '/tmp/portfolio-map-phone.png' });
@@ -570,11 +574,7 @@ async function interfaceStage(browser) {
   await page.screenshot({ path: '/tmp/portfolio-map-phone-saved.png' });
   await page.tap('.tab-explore');
   await page.waitForTimeout(500);
-  ok(await sheet() === 'peek' && (await panelTitle(page)) === (await page.evaluate(() => window.__portfolioMap.map.world.name)), 'the Explore tab lowers the sheet to the world');
-  const w0 = (await selected(page)).world;
-  await page.tap('#fab-world');
-  await page.waitForTimeout(1600);
-  ok((await selected(page)).world !== w0, 'the round button shows the next world');
+  ok(await sheet() === 'peek' && (await panelTitle(page)) === 'Projects', 'the Explore tab lowers the sheet to the projects');
   ok(page.errors.length === 0, `no errors on the phone${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
   await phone.close();
 }
@@ -683,8 +683,8 @@ async function menuStage(browser) {
   ok(pd >= 300 && pd <= 360, `on a phone, the pill's ≡ opens the drawer, ${pd.toFixed(0)} px wide`);
   await pp.screenshot({ path: '/tmp/portfolio-map-phone-drawer.png' });
   await pp.tap('#drawer-scrim', { position: { x: 370, y: 400 } });
-  const ppc = await pp.evaluate(() => { const a = document.querySelector('.controls').getBoundingClientRect(), f = document.querySelector('.fab-world').getBoundingClientRect(), sh = document.querySelector('.panel').getBoundingClientRect(); return { aboveSheet: a.bottom <= sh.top + 1 + parseFloat(getComputedStyle(document.querySelector('.panel')).getPropertyValue('--sheet-y') || 0), clearOfFab: a.top > f.bottom, aboveFab: a.bottom <= f.top && f.top - a.bottom < 24 }; });
-  ok(ppc.aboveFab, 'on a phone the location button sits just above the next-world button');
+  const ppc = await pp.evaluate(() => { const a = document.querySelector('.controls').getBoundingClientRect(); const top = innerHeight - parseFloat(getComputedStyle(document.body).getPropertyValue('--map-bottom')); return { above: a.bottom <= top + 1 && top - a.bottom < 24 }; });
+  ok(ppc.above, 'on a phone the location button sits just above the sheet');
   const pv = await open(browser, '?world=le-guin&project=loretour', { context: phone });
   await pv.tap('.hero-open');
   await pv.waitForTimeout(300);
