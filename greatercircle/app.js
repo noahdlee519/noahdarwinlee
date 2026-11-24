@@ -592,10 +592,15 @@
     var saved = { lon: view.lon, lat: view.lat, zoom: view.zoom }, t = fitTarget();
     if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = Math.min(t.zoom, 1.6); applyView(); }
     flatOnly = true;
+    var keepDpr = dpr;
+    dpr = Math.max(dpr, 2.5);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     render("full");
-    var Wc = 1200, Hc = 630, out = document.createElement("canvas");
-    out.width = Wc; out.height = Hc;
+    var Wc = 1200, Hc = 630, SC = 2, out = document.createElement("canvas");
+    out.width = Wc * SC; out.height = Hc * SC;
     var c = out.getContext("2d"), cs = getComputedStyle(document.documentElement);
+    c.scale(SC, SC);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
     var v = function (n, f) { return cs.getPropertyValue(n).trim() || f; };
     var font = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
     c.fillStyle = v("--gc-ocean", "#e68019"); c.fillRect(0, 0, Wc, Hc);
@@ -604,6 +609,8 @@
     var gs = 600;
     c.drawImage(canvas, sx * dpr, sy * dpr, side * dpr, side * dpr, Wc - gs + 30, (Hc - gs) / 2, gs, gs);
     flatOnly = false;
+    dpr = keepDpr;
+    layout();
     if (wasFlat) setProjection(true);
     view.lon = saved.lon; view.lat = saved.lat; view.zoom = saved.zoom; applyView();
     render("full");
@@ -1468,8 +1475,24 @@
     zoomAt(view.zoom * f, e.clientX, e.clientY);
   }, { passive: false });
 
-  $("zoom-in").addEventListener("click", function () { stopFly(); zoomAt(view.zoom * 1.5, cx, cy); });
-  $("zoom-out").addEventListener("click", function () { stopFly(); zoomAt(view.zoom / 1.5, cx, cy); });
+  var zoomAnim = null;
+  function zoomSmooth(factor, btn) {
+    var base = zoomAnim ? zoomAnim.to : view.zoom;
+    stopFly(); stopInertia();
+    if (btn) { btn.classList.remove("is-pulse"); void btn.offsetWidth; btn.classList.add("is-pulse"); }
+    var from = view.zoom, to = Math.max(flat ? FLAT_MIN : MIN_ZOOM, Math.min(MAX_ZOOM, base * factor));
+    if (reduceMotion) { zoomAt(to, cx, cy); return; }
+    zoomAnim = { from: from, to: to, t0: performance.now(), ms: 240 };
+    var step = function () {
+      if (!zoomAnim) return;
+      var t = Math.min(1, (performance.now() - zoomAnim.t0) / zoomAnim.ms), e = 1 - Math.pow(1 - t, 3);
+      zoomAt(zoomAnim.from * Math.pow(zoomAnim.to / zoomAnim.from, e), cx, cy);
+      if (t < 1) requestAnimationFrame(step); else zoomAnim = null;
+    };
+    requestAnimationFrame(step);
+  }
+  $("zoom-in").addEventListener("click", function () { zoomSmooth(1.5, this); });
+  $("zoom-out").addEventListener("click", function () { zoomSmooth(1 / 1.5, this); });
   $("fit").addEventListener("click", function () { fitRoute(true); });
   function renderSat() {
     if (flat) return;
@@ -1849,7 +1872,7 @@
     scheduleRender("coarse");
     requestAnimationFrame(flyStep);
   }
-  function stopFly() { if (fly) { fly = null; interacting = 0; } }
+  function stopFly() { zoomAnim = null; if (fly) { fly = null; interacting = 0; } }
 
   function fitRoute(always) {
     var t = fitTarget();

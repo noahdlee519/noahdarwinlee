@@ -481,6 +481,50 @@ body.gc-page {
   display: flex;
   gap: 6px;
 }
+.gc-draw-tools:not([hidden]) .gc-tool {
+  animation: gc-tool-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.gc-draw-tools .gc-tool:nth-child(3) { animation-delay: 0ms; }
+.gc-draw-tools .gc-tool:nth-child(2) { animation-delay: 40ms; }
+.gc-draw-tools .gc-tool:nth-child(1) { animation-delay: 80ms; }
+@keyframes gc-tool-in {
+  from { opacity: 0; transform: translateX(14px) scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+.gc-ctl {
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.gc-ctl:active {
+  transform: scale(0.9);
+}
+.gc-ctl.is-pulse {
+  animation: gc-pulse 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes gc-pulse {
+  0% { transform: scale(0.88); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-draw-tools:not([hidden]) .gc-tool,
+  .gc-ctl.is-pulse {
+    animation: none;
+  }
+}
+@media (min-width: 641px) {
+  .gc-panel > .gc-result {
+    position: sticky;
+    top: -12px;
+    z-index: 3;
+    transition: box-shadow 160ms ease;
+  }
+  .gc-panel.has-result.is-scrolled {
+    --fade-top: 0px;
+  }
+  .gc-panel.is-scrolled > .gc-result {
+    box-shadow: var(--gc-card-edge), 0 10px 24px rgba(0, 0, 0, 0.22);
+  }
+}
 .gc-globe.is-drawing {
   cursor: crosshair;
 }
