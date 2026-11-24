@@ -1580,7 +1580,7 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_EDGE_PX = 7, ISLAND_EDGE = 0.3, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
   var canOff = typeof OffscreenCanvas === "function";
   var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
   var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
@@ -1615,11 +1615,21 @@
     c.lineJoin = "round"; c.lineCap = "round";
     return c;
   }
+  // An island too small for the full band but big enough to show an edge (Corsica or Mallorca seen across the
+  // Mediterranean) gets a band of its own, narrower in step with its size, so it keeps a coloured border and a lighter
+  // inside like the mainland; until 24 November 2026 every island under BAND_ISLAND bands was tinted all over. Only the
+  // smallest, under ISLAND_EDGE_PX, are still tinted all over.
   function paintCoastMask(list, landPath, n, m, line, res) {
-    var k = resetLayer(maskCanvas, res);
+    var k = resetLayer(maskCanvas, res), kp = kmPx(), i;
     k.beginPath(); traceCoast(k, list, n); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
+    for (i = n; i < m; i++) {
+      var p = list[i], px = p.km * kp;
+      if (px < ISLAND_EDGE_PX) break;
+      if (!inView(p)) continue;
+      k.beginPath(); traceArcs(k, p.coast); k.lineWidth = Math.min(line, Math.max(1.5, px * ISLAND_EDGE)); k.stroke();
+    }
     k.beginPath();
-    for (var i = n; i < m; i++) traceFeature(k, list[i]);
+    for (; i < m; i++) traceFeature(k, list[i]);
     k.fillStyle = "rgba(0,0,0," + ISLAND_TINT + ")"; k.fill();
     k.globalCompositeOperation = "destination-in"; k.fillStyle = "#000"; k.fill(landPath);
     k.globalCompositeOperation = "source-over";
@@ -3853,15 +3863,24 @@
       var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
       if (prev !== null) {
         var da = Math.abs(ang - prev); da = Math.min(da, TAU - da);
-        if (da > 0.6) return null;
+        if (da > RIVER_TURN) return null;
         turn += da;
       }
       prev = ang;
-      glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+      var g = [p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang];
+      // The letters sit beside the line, not on it, so on the inside of a bend they crowd together and on the outside they
+      // spread apart; a spot where two neighbours end up much nearer or farther than their widths ask is passed over
+      // (24 November 2026; before then such names were drawn with their letters run into each other).
+      if (glyphs.length && ws[j - 1] && ws[j]) {
+        var gp = glyphs[glyphs.length - 1], want = (ws[j - 1] + ws[j]) / 2 + sp, got = Math.hypot(g[0] - gp[0], g[1] - gp[1]);
+        if (got < want * RIVER_SQUEEZE || got > want / RIVER_SQUEEZE) return null;
+      }
+      glyphs.push(g);
       d += ws[j] + sp;
     }
-    return turn < 1.6 ? { glyphs: glyphs, turn: turn } : null;
+    return turn < RIVER_TURNS ? { glyphs: glyphs, turn: turn } : null;
   }
+  var RIVER_TURN = 0.6, RIVER_TURNS = 1.6, RIVER_SQUEEZE = 0.75;
   function glyphBox(glyphs, f) {
     var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
     glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
@@ -6445,6 +6464,25 @@
     scheduleRender();
   }
   $("card-close").addEventListener("click", closeCard);
+  // The pinned bar: once the card's name has scrolled above the top of the card, the bar shows it again, with a button back
+  // to the top and the close button.
+  var cardPinned = false;
+  function syncCardPin() {
+    var nameEl = $("card-name"), on = !card.hidden && card.scrollTop > nameEl.offsetTop + nameEl.offsetHeight - 6;
+    if (on) $("card-pin-name").textContent = nameEl.textContent;
+    if (on === cardPinned) return;
+    cardPinned = on;
+    card.classList.toggle("is-pinned", on);
+    ["card-top", "card-pin-close"].forEach(function (id) { $(id).tabIndex = on ? 0 : -1; });
+    $("card-pin").setAttribute("aria-hidden", on ? "false" : "true");
+  }
+  card.addEventListener("scroll", syncCardPin, { passive: true });
+  $("card-top").addEventListener("click", function () {
+    card.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    $("card-close").focus({ preventScroll: true });
+  });
+  $("card-pin-close").addEventListener("click", closeCard);
+  $("card-pin").setAttribute("aria-hidden", "true");
   function polityButton(id) {
     var b = document.createElement("button");
     b.type = "button";
@@ -6529,6 +6567,7 @@
     }, [c.lon, c.lat]);
   }
   function renderCard() {
+    if (typeof syncCardPin === "function") syncCardPin();
     var click = cardClick;
     cardClick = false;
     syncLapseBtn();
