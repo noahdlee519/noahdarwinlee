@@ -1580,7 +1580,7 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_EDGE_PX = 7, ISLAND_EDGE = 0.3, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
   var canOff = typeof OffscreenCanvas === "function";
   var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
   var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
@@ -1615,11 +1615,21 @@
     c.lineJoin = "round"; c.lineCap = "round";
     return c;
   }
+  // An island too small for the full band but big enough to show an edge (Corsica or Mallorca seen across the
+  // Mediterranean) gets a band of its own, narrower in step with its size, so it keeps a coloured border and a lighter
+  // inside like the mainland; until 24 November 2026 every island under BAND_ISLAND bands was tinted all over. Only the
+  // smallest, under ISLAND_EDGE_PX, are still tinted all over.
   function paintCoastMask(list, landPath, n, m, line, res) {
-    var k = resetLayer(maskCanvas, res);
+    var k = resetLayer(maskCanvas, res), kp = kmPx(), i;
     k.beginPath(); traceCoast(k, list, n); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
+    for (i = n; i < m; i++) {
+      var p = list[i], px = p.km * kp;
+      if (px < ISLAND_EDGE_PX) break;
+      if (!inView(p)) continue;
+      k.beginPath(); traceArcs(k, p.coast); k.lineWidth = Math.min(line, Math.max(1.5, px * ISLAND_EDGE)); k.stroke();
+    }
     k.beginPath();
-    for (var i = n; i < m; i++) traceFeature(k, list[i]);
+    for (; i < m; i++) traceFeature(k, list[i]);
     k.fillStyle = "rgba(0,0,0," + ISLAND_TINT + ")"; k.fill();
     k.globalCompositeOperation = "destination-in"; k.fillStyle = "#000"; k.fill(landPath);
     k.globalCompositeOperation = "source-over";
