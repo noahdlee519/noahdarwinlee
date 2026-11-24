@@ -390,11 +390,18 @@
       ctx.lineJoin = "round"; ctx.strokeStyle = pal.glow;
       ctx.lineWidth = 14; ctx.globalAlpha = 0.45; ctx.stroke(); ctx.lineWidth = 6; ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1;
       ctx.fillStyle = pal.ocean; ctx.fill();
-    } else if (r * 1.07 < Math.hypot(W, H)) {
-      var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.07);
-      glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
+    } else {
+      var far = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy));
+      var ga = Math.max(0, Math.min(1, (far - r) / (0.12 * r + 40)));
+      if (ga > 0.01) {
+        var gw = Math.min(r * 0.07, 60) + 6;
+        var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r + gw);
+        glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.globalAlpha = ga * 0.8;
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(cx, cy, r + gw, 0, 2 * Math.PI); ctx.arc(cx, cy, r, 0, 2 * Math.PI, true); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
     }
     var live = !flat && !flatOnly && satOn && !!sat && sat.ready();
     if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
@@ -471,6 +478,7 @@
     collectUi();
     collectCities();
     drawCountryLabels(feats);
+    updateScale();
     if (flat) { ctx.restore(); ctx.beginPath(); path({ type: "Sphere" }); }
     else { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); }
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
@@ -584,10 +592,15 @@
     var saved = { lon: view.lon, lat: view.lat, zoom: view.zoom }, t = fitTarget();
     if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = Math.min(t.zoom, 1.6); applyView(); }
     flatOnly = true;
+    var keepDpr = dpr;
+    dpr = Math.max(dpr, 2.5);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     render("full");
-    var Wc = 1200, Hc = 630, out = document.createElement("canvas");
-    out.width = Wc; out.height = Hc;
+    var Wc = 1200, Hc = 630, SC = 2, out = document.createElement("canvas");
+    out.width = Wc * SC; out.height = Hc * SC;
     var c = out.getContext("2d"), cs = getComputedStyle(document.documentElement);
+    c.scale(SC, SC);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
     var v = function (n, f) { return cs.getPropertyValue(n).trim() || f; };
     var font = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
     c.fillStyle = v("--gc-ocean", "#e68019"); c.fillRect(0, 0, Wc, Hc);
@@ -596,6 +609,8 @@
     var gs = 600;
     c.drawImage(canvas, sx * dpr, sy * dpr, side * dpr, side * dpr, Wc - gs + 30, (Hc - gs) / 2, gs, gs);
     flatOnly = false;
+    dpr = keepDpr;
+    layout();
     if (wasFlat) setProjection(true);
     view.lon = saved.lon; view.lat = saved.lat; view.zoom = saved.zoom; applyView();
     render("full");
@@ -948,6 +963,24 @@
   function roomAt(lat, lonC, lonL, lonR, need) {
     var pp = parallelPath(lat, lonC, lonL, lonR, need);
     return pp ? 2 * Math.min(pp.left, pp.right) : 0;
+  }
+  var scaleKey = "";
+  function updateScale() {
+    var el = $("scale");
+    if (!el) return;
+    var a = projection.invert([cx - 50, cy]), b = projection.invert([cx + 50, cy]);
+    if (!a || !b || !isFinite(a[0]) || !isFinite(b[0]) || (!flat && (!visible(a) || !visible(b)))) { if (!el.hidden) { el.hidden = true; scaleKey = ""; } return; }
+    var kmPerPx = G.sphereDistanceKm(a[0], a[1], b[0], b[1]) / 100;
+    var u = UNITS[state.units], perPx = kmPerPx * u.f, maxLen = W <= 640 ? 90 : 120;
+    var raw = perPx * maxLen, p10 = Math.pow(10, Math.floor(Math.log10(raw))), nice = p10;
+    [1, 2, 5, 10].forEach(function (m) { if (m * p10 <= raw) nice = m * p10; });
+    var px = Math.round(nice / perPx), label = (nice >= 1 ? nice.toLocaleString() : nice.toPrecision(1)) + " " + u.label;
+    var key = px + "|" + label;
+    if (key === scaleKey) return;
+    scaleKey = key;
+    el.hidden = false;
+    el.querySelector(".gc-scale-bar").style.width = px + "px";
+    el.querySelector(".gc-scale-label").textContent = label;
   }
   function drawCountryLabels() {
     labelBoxes = [];
@@ -1442,8 +1475,24 @@
     zoomAt(view.zoom * f, e.clientX, e.clientY);
   }, { passive: false });
 
-  $("zoom-in").addEventListener("click", function () { stopFly(); zoomAt(view.zoom * 1.5, cx, cy); });
-  $("zoom-out").addEventListener("click", function () { stopFly(); zoomAt(view.zoom / 1.5, cx, cy); });
+  var zoomAnim = null;
+  function zoomSmooth(factor, btn) {
+    var base = zoomAnim ? zoomAnim.to : view.zoom;
+    stopFly(); stopInertia();
+    if (btn) { btn.classList.remove("is-pulse"); void btn.offsetWidth; btn.classList.add("is-pulse"); }
+    var from = view.zoom, to = Math.max(flat ? FLAT_MIN : MIN_ZOOM, Math.min(MAX_ZOOM, base * factor));
+    if (reduceMotion) { zoomAt(to, cx, cy); return; }
+    zoomAnim = { from: from, to: to, t0: performance.now(), ms: 240 };
+    var step = function () {
+      if (!zoomAnim) return;
+      var t = Math.min(1, (performance.now() - zoomAnim.t0) / zoomAnim.ms), e = 1 - Math.pow(1 - t, 3);
+      zoomAt(zoomAnim.from * Math.pow(zoomAnim.to / zoomAnim.from, e), cx, cy);
+      if (t < 1) requestAnimationFrame(step); else zoomAnim = null;
+    };
+    requestAnimationFrame(step);
+  }
+  $("zoom-in").addEventListener("click", function () { zoomSmooth(1.5, this); });
+  $("zoom-out").addEventListener("click", function () { zoomSmooth(1 / 1.5, this); });
   $("fit").addEventListener("click", function () { fitRoute(true); });
   function renderSat() {
     if (flat) return;
@@ -1823,7 +1872,7 @@
     scheduleRender("coarse");
     requestAnimationFrame(flyStep);
   }
-  function stopFly() { if (fly) { fly = null; interacting = 0; } }
+  function stopFly() { zoomAnim = null; if (fly) { fly = null; interacting = 0; } }
 
   function fitRoute(always) {
     var t = fitTarget();

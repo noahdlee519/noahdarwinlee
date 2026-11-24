@@ -66,7 +66,7 @@
     var ui = {
       result: $("result"), tabs: $("tabs"), big: $("hero-big"), time: $("hero-time"), delta: $("hero-delta"), note: $("hero-note"),
       warn: $("warn"), plan: $("plan"), planStatus: $("plan-status"), timeline: $("timeline"), planAll: $("plan-all"), planTitle: $("plan-title"),
-      crosses: $("crosses"), crossTitle: $("crosses-title"), crossList: $("cross-list"), foot: $("foot"), stats: $("stats"), status: $("status"),
+      crosses: $("crosses"), crossTitle: $("crosses-title"), crossList: $("cross-list"), foot: $("foot"), status: $("status"),
       options: $("options"), optChips: $("opt-chips"), examples: $("examples"), tagline: $("tagline")
     };
     var warnActions = [];
@@ -249,9 +249,6 @@
       ui.delta.hidden = !delta; ui.note.hidden = !note; ui.time.hidden = !time;
       if (tab === "plan") renderPlan();
       renderCrosses(tab);
-      var ms = res.ms, ex2 = res.expanded;
-      if (tab === "plan" && state.plan && state.plan.status === "done") { ms = (ms || 0) + state.plan.ms; ex2 = (ex2 || 0) + state.plan.expanded; }
-      setText(ui.stats, ms != null && ex2 ? "Worked out in " + (ms / 1000).toFixed(ms < 100 ? 2 : 1) + " s | " + ex2.toLocaleString() + (tab === "plan" ? " corners and beacons searched" : " corners searched") : "");
       layoutSoon();
     }
 
@@ -386,7 +383,7 @@
         li.className = "gc-cross";
         if (!state.avoid.has(id) && id !== ANTARCTICA && ends.indexOf(id) < 0) {
           var b = document.createElement("button"); b.type = "button"; b.className = "gc-chip gc-chip-add";
-          b.dataset.id = id; b.textContent = f.properties.name; b.title = "Avoid " + f.properties.name; b.setAttribute("aria-label", "Avoid " + f.properties.name);
+          b.dataset.id = id; b.textContent = f.properties.name; b.dataset.tip = "Avoid " + f.properties.name; b.setAttribute("aria-label", "Avoid " + f.properties.name);
           li.appendChild(b);
         } else {
           var sp = document.createElement("span");

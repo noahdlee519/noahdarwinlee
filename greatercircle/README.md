@@ -91,7 +91,7 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   or `wind=jan` and so on for another month, picked from the twelve under
   Typical) switch the times to that month's typical winds and add the time
   the other way. A legend in the corner says which line is which, and "Save as an
-  image" draws a 1200 by 630 card of the route (the codes, names, distance,
+  image" draws a 1200 by 630 card (at twice that resolution, the globe redrawn sharp for it) of the route (the codes, names, distance,
   time, and the flat globe fitted to the route) and shares it where the
   browser can, or downloads it.
 
@@ -136,6 +136,14 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   and take the first that clears the other names and every dot and plane;
   cities go first, and if a city's name can only go where an airport is, the
   airport is left out rather than the city.
+
+  On a wide screen the result card (the tabs and the distance) sticks to the
+  top of the panel as the rest scrolls under it. The zoom buttons ease to
+  the new zoom, and the drawing tools slide out one after another.
+
+  A scale bar in the corner gives the distance across the middle of the view,
+  rounded to 1, 2, or 5 of a power of ten in the chosen units. The glow round
+  the globe is drawn outside it only, and fades as the globe fills the screen.
 
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its

@@ -23,13 +23,13 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "dev.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "dev.js", "comments.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
 // UCHRONIA moved here from noahdarwinlee.com/uchronia/ on 22 November 2026; its page there (go.js) sends visitors on.
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "uchronia/lang.js", "uchronia/lang", "fonts"]) copy(f);
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 // CHRONIA's own icons (the globe in its brace, 19 November 2026) take the place of noahdarwinlee.com's at the site's root,
 // where every page and the manifest look for them.
-for (const f of ["favicon.png", "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) copy("chronia/icons/" + f, f);
+for (const f of ["favicon.png", "favicon-32.png", "favicon-96.png", "favicon.ico", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) copy("chronia/icons/" + f, f);
 
 // Every data file the page fetches carries a hash of the whole data folder, so a cached file from an older build is never
 // read with a newer one (the polity numbers change between builds).
@@ -49,7 +49,7 @@ for (const f of ["favicon.png", "favicon-32.png", "apple-touch-icon.png", "icon-
   writeFileSync(page, head.replace(pre, '$1?v=' + v + '"'));
 }
 {
-  const MINIFY = ["app.js", "dev.js"], NOTICE = "/*! \u00a9 2026 Noah Darwin Lee. All rights reserved. https://chroniaatlas.com/terms/ */";
+  const MINIFY = ["app.js", "dev.js", "comments.js"], NOTICE = "/*! \u00a9 2026 Noah Darwin Lee. All rights reserved. https://chroniaatlas.com/terms/ */";
   let terser = null;
   try { terser = await import("terser"); } catch (e) { if (process.env.VERCEL) throw new Error("terser is not installed (npm ci installs it)"); }
   if (terser) {
