@@ -210,6 +210,8 @@ const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 function drawOpen(path, line) {
   const n = line.length - 1;
   if (n < 1) return;
+  // A border drawn as real borders are: straight runs and sharp turns, no curve (see shapeBorderLines).
+  if (line.poly) { for (let k = 1; k <= n; k++) path.cmd('l', line[k]); return; }
   if (n === 1) { path.cmd('l', line[1]); return; }
   path.cmd('l', mid(line[0], line[1]));
   path.cmd('q', line[1], mid(line[1], line[2]));
@@ -219,10 +221,95 @@ function drawOpen(path, line) {
 function drawLoop(path, line) {
   const n = line.length;
   if (n < 3) return;
+  if (line.poly) { path.move(line[0]); for (let k = 1; k < n; k++) path.cmd('l', line[k]); path.close(); return; }
   path.move(mid(line[n - 1], line[0]));
   path.cmd('q', line[0], mid(line[0], line[1]));
   for (let k = 1; k < n; k++) path.cmd('t', mid(line[k], line[(k + 1) % n]));
   path.close();
+}
+
+// The places a border must not be moved across: every town's dot (and settlement), in tenths, in a grid of cells.
+// near(poly): a place inside the polygon (a closed run of points in tenths), or within a unit of its edge.
+function placePins(labels, settlements) {
+  const pts = [];
+  for (const l of labels) if (l.dot && ['capital', 'city', 'town', 'village'].includes(l.kind)) pts.push([l.dot[0] * 10, l.dot[1] * 10]);
+  for (const t of settlements || []) if (t && Number.isFinite(t.x)) pts.push([t.x * 10, t.y * 10]);
+  const G = 100, grid = new Map();
+  for (const p of pts) { const key = Math.floor(p[1] / G) * 100000 + Math.floor(p[0] / G); if (!grid.has(key)) grid.set(key, []); grid.get(key).push(p); }
+  const segD = (p, a, b) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-9;
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2));
+    return Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dy * t);
+  };
+  return {
+    near(poly) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [x, y] of poly) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+      const M = 10;
+      for (let gy = Math.floor((y0 - M) / G); gy <= Math.floor((y1 + M) / G); gy++) for (let gx = Math.floor((x0 - M) / G); gx <= Math.floor((x1 + M) / G); gx++) {
+        for (const p of grid.get(gy * 100000 + gx) || []) {
+          if (p[0] < x0 - M || p[0] > x1 + M || p[1] < y0 - M || p[1] > y1 + M) continue;
+          let inside = false;
+          for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const a = poly[i], b = poly[j];
+            if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1]) + a[0]) inside = !inside;
+            if (segD(p, a, b) < M) return true;
+          }
+          if (inside) return true;
+        }
+      }
+      return false;
+    },
+  };
+}
+
+// A line reversed, keeping how it is drawn.
+const flip = (line) => { const out = line.slice().reverse(); if (line.poly) out.poly = true; return out; };
+
+// Borders as real ones look (Noah, 24 November 2026: the curved and nearly straight borders looked made up). A border
+// the pixel grid traced nearly straight was surveyed straight (see reshapeBorders), so it is drawn dead straight
+// between its ends. Any other is an old line, on ridges and streams and fields, irregular at every scale: its course
+// is kept and broken into ever smaller zigzags, a little to either side, down to a few hundred metres. Both are drawn
+// with straight segments and sharp corners, never smoothed into curves. Points are in even tenths, as arcLine gives.
+// pins (optional): place dots in tenths, { near(poly) => true if a place lies inside poly or within a unit of its
+// edge }: a straightening or a zigzag that would put a town on the other side of the line, or on it, is not made.
+export function shapeBorderLines(line, closed, pins = null) {
+  const even = (v) => Math.round(v / 2) * 2;
+  if (line.length < 2) return line;
+  const len = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+  if (!closed) {
+    const A = line[0], B = line[line.length - 1], L = len(A, B);
+    let dev = 0;
+    if (L > 0) for (const p of line) dev = Math.max(dev, Math.abs((p[0] - A[0]) * (B[1] - A[1]) - (p[1] - A[1]) * (B[0] - A[0])) / L);
+    // (In tenths: within 0.9 of a unit, or 2.5 per cent of the length, of the line between the ends, over 6 units.)
+    if (L >= 60 && dev <= Math.max(9, L * 0.025) && !(pins && pins.near(line))) { const out = [A, B]; out.poly = true; return out; }
+  }
+  // A hash of a segment's two ends, the same whichever way the line is walked, for a zigzag both countries share.
+  const hash = (a, b) => {
+    const [p, q] = a[0] < b[0] || (a[0] === b[0] && a[1] <= b[1]) ? [a, b] : [b, a];
+    let h = (p[0] * 73856093) ^ (p[1] * 19349663) ^ (q[0] * 83492791) ^ (q[1] * 2654435761);
+    h = Math.imul(h ^ (h >>> 15), 2246822519); h = Math.imul(h ^ (h >>> 13), 3266489917);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const out = [line[0]];
+  const split = (a, b, depth) => {
+    const L = len(a, b);
+    if (L < 16 || depth > 4) { out.push(b); return; }
+    // Walked the same way whichever end it starts from: the offset is signed against the segment's canonical direction.
+    const flipSign = a[0] < b[0] || (a[0] === b[0] && a[1] <= b[1]) ? 1 : -1;
+    const u = hash(a, b), off = (u - 0.5) * 2 * 0.2 * L * flipSign, along = (hash(b, a) - 0.5) * 0.3;
+    const nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
+    const t = 0.5 + along * flipSign;
+    const m = [even(a[0] + (b[0] - a[0]) * t + nx * off), even(a[1] + (b[1] - a[1]) * t + ny * off)];
+    if ((m[0] === a[0] && m[1] === a[1]) || (m[0] === b[0] && m[1] === b[1])) { out.push(b); return; }
+    if (pins && pins.near([a, m, b])) { out.push(b); return; }
+    split(a, m, depth + 1);
+    split(m, b, depth + 1);
+  };
+  for (let k = 1; k < line.length; k++) split(line[k - 1], line[k], 0);
+  if (closed) split(line[line.length - 1], line[0], 0), out.pop();
+  out.poly = true;
+  return out;
 }
 
 // Rings round a region: chain the arcs that bound it, each turned so the
@@ -233,8 +320,8 @@ function ringsPath(arcs, lines, isIn) {
     const r = isIn(arc.right), l = isIn(arc.left);
     if (r === l) return;
     const line = lines[k];
-    if (arc.closed) { pieces.push({ loop: r ? line : line.slice().reverse() }); return; }
-    const oriented = r ? line : line.slice().reverse();
+    if (arc.closed) { pieces.push({ loop: r ? line : flip(line) }); return; }
+    const oriented = r ? line : flip(line);
     pieces.push({ line: oriented, from: oriented[0].join(','), to: oriented[oriented.length - 1].join(',') });
   });
   const path = new PathText();
@@ -392,6 +479,15 @@ export function buildWorldFiles(world) {
     const out = [];
     for (const p of l) { out.push(p); if (p[0] === 0 || p[0] === W * 10 || p[1] === 0 || p[1] === H * 10) out.push(p); }
     lines[k] = out;
+  }
+  // Borders and province lines: straight where surveyed, irregular where old (see shapeBorderLines), never moved
+  // past a town.
+  const pins = placePins([...(labels || []), ...((world.detail && world.detail.labels) || [])], world.settlements);
+  for (let k = 0; k < lines.length; k++) {
+    const a = arcs[k];
+    if (ownerOf(a.left) < 0 || ownerOf(a.right) < 0 || a.left === a.right) continue;
+    if (lines[k].some((p) => p[0] === 0 || p[0] === W * 10)) continue; // (lines on the map's edge keep their corner)
+    lines[k] = shapeBorderLines(lines[k], a.closed, pins);
   }
   // Borders that run beside a river are moved onto it, so the border runs down the river's middle as drawn.
   if (world.rivers && world.riverMeta) snapBordersToRivers(arcs, lines, world, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && a.left !== a.right);
@@ -635,7 +731,7 @@ function snapBordersToRivers(arcs, lines, world, isBorder) {
     if (line.length < 6) return;
     const near = line.map((p, i) => (i === 0 || i === line.length - 1 ? null : nearest(p)));
     const out = [line[0]];
-    let i = 1;
+    let i = 1, onRiver = false;
     while (i < line.length - 1) {
       const a = near[i];
       if (!a || a.d > 22) { out.push(line[i]); i++; continue; }
@@ -649,9 +745,12 @@ function snapBordersToRivers(arcs, lines, world, isBorder) {
       piece.push(b.q);
       for (const p of piece) { const q = [Math.round(p[0] / 2) * 2, Math.round(p[1] / 2) * 2], last = out[out.length - 1]; if (last[0] !== q[0] || last[1] !== q[1]) out.push(q); }
       snapped++;
+      onRiver = true;
       i = e + 1;
     }
     out.push(line[line.length - 1]);
+    // A border that came to follow a river is drawn as the river is, as a curve, so the two lie together.
+    if (!onRiver) out.poly = line.poly;
     lines[n] = out;
   });
   return snapped;

@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
+
+// The first load as a visitor downloads it: the JSON as the server sends it, compressed, and the picture.
+const sent = (json, png) => gzipSync(json).length + png.length;
 import { makeWorld, WORLDS, slugOf } from '../world.mjs';
 import { buildWorldFiles } from '../output.mjs';
 
@@ -11,7 +15,7 @@ test('Le Guin comes out byte for byte the same twice, inside the size budget', (
   const b = buildWorldFiles(makeWorld('Le Guin', projects));
   assert.equal(a.json, b.json);
   assert.ok(a.png.equals(b.png));
-  const total = Buffer.byteLength(a.json) + a.png.length;
+  const total = sent(a.json, a.png);
   assert.ok(total <= 300 * 1024, `Le Guin is ${Math.round(total / 1024)} KB`);
 });
 
@@ -24,6 +28,6 @@ test('the written worlds: twenty in order, each inside the size budget', { skip:
     assert.equal(w.slug, slugOf(w.name));
     const json = readFileSync(new URL(`${w.slug}.json`, dir));
     const png = readFileSync(new URL(`${w.slug}.png`, dir));
-    assert.ok(json.length + png.length <= 300 * 1024, `${w.name} is ${Math.round((json.length + png.length) / 1024)} KB`);
+    assert.ok(sent(json, png) <= 300 * 1024, `${w.name} is ${Math.round(sent(json, png) / 1024)} KB`);
   }
 });

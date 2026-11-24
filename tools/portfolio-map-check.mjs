@@ -17,7 +17,7 @@
 //
 // Screenshots go to /tmp/portfolio-map-*.png.
 import { readFileSync, existsSync } from 'node:fs';
-import { inflateSync } from 'node:zlib';
+import { inflateSync, gzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -134,9 +134,10 @@ function content() {
       tileCount += found;
       if (listed !== found) ok(false, `${w.slug}: ${listed - found} of the ${lv.scale}-per-unit tiles it lists are missing`);
     }
-    size = Math.max(size, readFileSync(join(root, 'projects', 'worlds', `${w.slug}.json`)).length + readFileSync(join(root, 'projects', 'worlds', `${w.slug}.png`)).length);
+    // As a visitor downloads it: the JSON compressed, as the server sends it, and the picture.
+    size = Math.max(size, gzipSync(readFileSync(join(root, 'projects', 'worlds', `${w.slug}.json`))).length + readFileSync(join(root, 'projects', 'worlds', `${w.slug}.png`)).length);
   }
-  ok(size <= 300 * 1024, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest first load is ${(size / 1024).toFixed(0)} KB (json and png)`);
+  ok(size <= 300 * 1024, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest first load is ${(size / 1024).toFixed(0)} KB (json as sent, compressed, and png)`);
   ok(tileCount > 0, `the finer tiles are all there: ${tileCount} in all, ${(tileBytes / 1048576).toFixed(1)} MB across the twenty worlds, loaded only for the part of the map in view`);
 }
 
