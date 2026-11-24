@@ -1,6 +1,6 @@
 # CHRONIA: profiles and comments on the country card
 
-Design, 24 November 2026. Awaiting Noah's approval. Calls marked "(my call)" are Claude's, not Noah's, and are his to change.
+Design, 24 November 2026. Approved by Noah on 24 November 2026, with the age confirmation below added at his request. Calls marked "(my call)" are Claude's, not Noah's, and are his to change.
 
 ## Intent
 
@@ -19,6 +19,7 @@ A reader who is signed in should be able to say something about a country at the
 - **Limit:** 100 comments a day for each user.
 - **New comments:** go live at once, through a word filter.
 - **Reports:** a comment reported by three different users is hidden. It then shows on the team's dashboard, where an admin can restore it.
+- **Age:** a warning that a profile and comments are for people aged 13 and over, where the law asks for it.
 
 ## Goals
 
@@ -59,6 +60,15 @@ One way fits how CHRONIA is already built, so only one is proposed.
 - A profile is a username and, optionally, a picture. A user without a picture shows as their initial on a coloured disc, as the account button does now.
 - The Account panel gains the profile: picture, username, and "Edit profile". The header's account button shows the picture once there is one.
 - The first time a signed-in user tries to comment, the composer asks for a username in place.
+
+### Age (added at Noah's request)
+
+- Making a profile needs a ticked box: "I am 13 or older, and old enough in my country to use this without a parent's consent (16 in some of Europe)." The profile isn't made without it, and the function refuses a profile whose request lacks it. The time it was ticked is kept with the profile.
+- The box is a statement by the user, not a check of their age: the page asks for no birth date and keeps none.
+- The terms say that profiles and comments are for people aged 13 and over (or the higher age their country sets), and the privacy policy says CHRONIA does not knowingly keep a profile or comments from a child under 13 and erases them when it learns of one.
+- The team's dashboard can erase an account's profile and comments outright, for a user found to be under age.
+- Reading the map and its comments needs no account and has no age box.
+- Why: in the United States, COPPA asks for a parent's verified consent before a site that knows a user is under 13 collects their personal information; in the European Union the age for consenting to an online service is 16 unless a member state sets it lower, and never below 13; in the United Kingdom it is 13. This is a common practice for a general-audience site, not legal advice; a lawyer should read the terms before CHRONIA relies on them.
 
 ### Usernames
 
