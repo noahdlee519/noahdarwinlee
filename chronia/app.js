@@ -3395,8 +3395,8 @@
   //   - Letters of names that curve (states, peoples, rivers) are kept at sizes a tenth apart (INK_STEP) and scaled down to the
   //     size wanted, by at most a tenth; a line that is drawn straight and whole (a sea, a lake, a city, a division, a state
   //     named beside its coast) is kept at its own size.
-  //   - A sprite is drawn at INK_SS times the screen's pixels (twice at 1x, 1.5 times at 2x), so a letter turned or scaled
-  //     stays sharp.
+  //   - A letter's sprite is drawn at INK_SS times the screen's pixels (twice at 1x, 1.5 times at 2x), so a letter turned or
+  //     scaled stays sharp; a whole line's at the screen's own pixels, since it is stamped upright and unscaled.
   //   - The letters and the lines are kept apart (two stores), since the lines come and go as the map moves: a store that
   //     fills its pages (INK_PAGES, four of 2,048 pixels square, two on a phone or tablet) is emptied and starts again.
   //   - The stores are emptied when the fonts arrive, the palette is read, or the screen's pixel ratio changes (inkReset).
@@ -3405,9 +3405,9 @@
   //     straight or curved.
   // &vectortext in the address, or __chronia.textSprites(false), draws the names as text as before; "names as text" in the
   // benchmark (&bench) times it.
-  var INK_PAGE = 2048, INK_PAGES = LOW_MEM ? 2 : 4, INK_STEP = 1.1, INK_MIN = 6, INK_GAP = 2;
+  var INK_PAGE = 2048, INK_PAGES = LOW_MEM ? 2 : 4, INK_STEP = 1.1, INK_MIN = 6, INK_GAP = 2, inkQ = null;
   var textSprites = !addrHas("vectortext"), textLetters = false, inkK = 0, inkFor = 0, INK_SS = 1.5;
-  function inkStore() { return { pages: [], map: new Map(), page: -1, x: 0, y: 0, row: 0, flushed: 0, made: 0 }; }
+  function inkStore() { return { pages: [], map: new Map(), page: -1, x: 0, y: 0, row: 0, flushed: 0, made: 0, k: 2 }; }
   var ink = { glyph: inkStore(), line: inkStore() };
   // With drop (a tab hidden for a while), the pages' canvases are let go as well; they are made again when a name is drawn.
   function inkReset(drop) {
@@ -3417,11 +3417,14 @@
       if (drop === true) { st.pages.forEach(function (pg) { pg.cv.width = pg.cv.height = 1; }); st.pages = []; }
     });
     inkFor = window.devicePixelRatio || 1;
-    inkK = Math.max(2, Math.round(Math.min(2, Math.max(1, inkFor)) * INK_SS * 2) / 2);
+    var real = Math.min(2, Math.max(1, inkFor));
+    inkK = ink.glyph.k = Math.max(2, Math.round(real * INK_SS * 2) / 2);
+    ink.line.k = real;
   }
   function inkPage(st) {
     st.page++;
-    if (st.page >= INK_PAGES) { st.map.clear(); st.page = 0; st.flushed++; }
+    // Lines waiting to be stamped (inkQ) are stamped before the pages they are on are cleared.
+    if (st.page >= INK_PAGES) { if (st === ink.line) inkDrain(); st.map.clear(); st.page = 0; st.flushed++; }
     var pg = st.pages[st.page];
     if (!pg) {
       var cv = document.createElement("canvas");
@@ -3441,7 +3444,7 @@
     var sprite = st.map.get(key);
     if (sprite !== undefined) return sprite;
     if (inkFor !== (window.devicePixelRatio || 1)) inkReset();
-    var pg = st.page < 0 ? inkPage(st) : st.pages[st.page], g = pg.g, k = inkK;
+    var pg = st.page < 0 ? inkPage(st) : st.pages[st.page], g = pg.g, k = st.k;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.font = font; g.letterSpacing = sp + "px"; g.textAlign = align; g.textBaseline = base;
     var m = g.measureText(text), pad = lw / 2 + 1.5;
@@ -3463,27 +3466,46 @@
   }
   // Stamps a sprite with its anchor at (x, y) under the transform in force, scaled by sc.
   function inkStamp(sp, x, y, sc) { ctx.drawImage(sp.cv, sp.x, sp.y, sp.w, sp.h, x - sp.ox * sc, y - sp.oy * sc, sp.cw * sc, sp.ch * sc); }
-  // A whole line of text at (x, y), outlined and then filled, as ctx.strokeText and ctx.fillText would draw it with the font,
-  // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites. With halo false, the ink
-  // alone.
   // A whole line stamped from the lines' sprites, outlined (lw wide, in hc) unless hc is null, then filled (fc): false when a
-  // sprite can't be made, and nothing is drawn.
-  function inkLine(text, x, y, font, sp, al, bl, hc, lw, fc) {
+  // sprite can't be made, and nothing is drawn. The lines' sprites are drawn at the screen's own pixels, and at rest a line is
+  // stamped on whole pixels (snap, for a line under the map's plain transform), so it is as sharp as text; while the map moves
+  // it is stamped where it falls, so it glides rather than steps.
+  // Inside inkQueued (the seas', lakes', cities', and divisions' names), the stamps wait until the function is done, so that
+  // every sprite it needs is made first: a page drawn on between two stamps from it is copied whole each time where the canvas
+  // is not on the graphics card (4.6 ms a name in headless Chromium, a second for a frame that brought in 130 cities).
+  function inkLine(text, x, y, font, sp, al, bl, hc, lw, fc, snap) {
     var pre = font + "|" + sp + "|" + al + "|" + bl + "|", a = null, b, gen = ink.line.flushed;
     if (hc !== null) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
     b = inkSprite(ink.line, pre + "f" + fc + "|" + text, text, font, sp, al, bl, fc, 0);
     // the store was emptied to make room for the ink: the halo's sprite went with it
     if (a && gen !== ink.line.flushed) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
     if ((hc !== null && !a) || !b) return false;
+    if (snap && !moving) { x = Math.round(x * dpr) / dpr; y = Math.round(y * dpr) / dpr; }
+    if (inkQ) { if (a) inkQ.push(a, x, y); inkQ.push(b, x, y); return true; }
     if (a) inkStamp(a, x, y, 1);
     inkStamp(b, x, y, 1);
     return true;
   }
+  function inkDrain() {
+    if (!inkQ) return;
+    for (var i = 0; i < inkQ.length; i += 3) inkStamp(inkQ[i], inkQ[i + 1], inkQ[i + 2], 1);
+    inkQ.length = 0;
+  }
+  // fn with its lines' stamps held until it is done (and stamped then, also when it throws).
+  function inkQueued(fn) {
+    return function () {
+      if (inkQ) return fn.apply(this, arguments);
+      inkQ = [];
+      try { return fn.apply(this, arguments); } finally { try { inkDrain(); } finally { inkQ = null; } }
+    };
+  }
   // A whole line of text at (x, y), outlined and then filled, as ctx.strokeText and ctx.fillText would draw it with the font,
-  // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites. With halo false, the ink
-  // alone.
+  // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites, under the map's plain
+  // transform. With halo false, the ink alone.
   function inkText(text, x, y, halo) {
-    if (textSprites && !skip.sprites && inkLine(text, x, y, ctx.font, parseFloat(ctx.letterSpacing) || 0, ctx.textAlign, ctx.textBaseline, halo !== false ? ctx.strokeStyle : null, ctx.lineWidth, ctx.fillStyle)) return;
+    if (textSprites && !skip.sprites && inkLine(text, x, y, ctx.font, parseFloat(ctx.letterSpacing) || 0, ctx.textAlign, ctx.textBaseline, halo !== false ? ctx.strokeStyle : null, ctx.lineWidth, ctx.fillStyle, true)) return;
+    // the check's text ("letters") is set on whole pixels at rest as the sprites are, so the two can be compared point for point
+    if (textLetters && !moving) { x = Math.round(x * dpr) / dpr; y = Math.round(y * dpr) / dpr; }
     if (halo !== false) ctx.strokeText(text, x, y);
     ctx.fillText(text, x, y);
   }
@@ -3498,11 +3520,12 @@
     for (i = 0; i < lines.length; i++) {
       var ln = lines[i];
       if (!ln.gl) {
-        var sp = Math.round(ln.spx / sc * 100) / 100, pre = font + "|" + sp + "|center|middle|";
-        a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + ln.text, ln.text, font, sp, "center", "middle", hc, lw);
-        b = inkSprite(ink.line, pre + "f" + fc + "|" + ln.text, ln.text, font, sp, "center", "middle", fc, 0);
+        // a whole line (a state named beside its coast, a name pinned by an edit) is kept at its own size
+        var lf = style + f + "px " + SERIF, sp = Math.round(ln.spx * 100) / 100, pre = lf + "|" + sp + "|center|middle|", lw1 = it.sea ? 3 : Math.max(2, f * 0.22);
+        a = inkSprite(ink.line, pre + "h" + lw1 + hc + "|" + ln.text, ln.text, lf, sp, "center", "middle", hc, lw1);
+        b = inkSprite(ink.line, pre + "f" + fc + "|" + ln.text, ln.text, lf, sp, "center", "middle", fc, 0);
         if (!a || !b) return null;
-        out.push([a, b, ln.spx / 2, ln]);
+        out.push([a, b, ln.spx / 2, ln, 1]);
         continue;
       }
       for (j = 0; j < ln.gl.length; j++) {
@@ -3511,25 +3534,25 @@
         a = inkSprite(ink.glyph, ph + g.ch, g.ch, font, 0, "center", "middle", hc, lw);
         b = inkSprite(ink.glyph, pf + g.ch, g.ch, font, 0, "center", "middle", fc, 0);
         if (!a || !b) return null;
-        out.push([a, b, 0, g]);
+        out.push([a, b, 0, g, sc]);
       }
     }
     // a store emptied part of the way through took the first of these sprites with it: once more, from the start
     if (gen !== ink.glyph.flushed + ink.line.flushed) return again ? null : labelSprites(it, geo, true);
-    out.sc = sc; out.gen = gen;
+    out.gen = gen;
     return out;
   }
   function drawLabelItem(it, geo, alpha, ready) {
     var list = !textSprites || skip.sprites ? null : ready && ready.gen === ink.glyph.flushed + ink.line.flushed ? ready : labelSprites(it, geo);
     if (!list) return drawLabelVector(it, geo, alpha);
-    var sc = list.sc, k, e, q;
+    var k, e, q;
     ctx.globalAlpha = it.band ? alpha * 0.72 : alpha;
     for (var pass = 0; pass < 2; pass++) {
       for (k = 0; k < list.length; k++) {
         e = list[k]; q = e[3];
         if (q.ch === undefined) ctx.setTransform(dpr * q.tx, dpr * q.ty, -dpr * q.nx, -dpr * q.ny, dpr * q.mx, dpr * q.my);
         else ctx.setTransform(dpr * q.tx, dpr * q.ty, -dpr * q.nx, -dpr * q.ny, dpr * q.x, dpr * q.y);
-        inkStamp(e[pass], e[2], 0, sc);
+        inkStamp(e[pass], e[2], 0, e[4]);
       }
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -3644,6 +3667,7 @@
     if (live) scheduleRender(true);
   }
 
+  drawSeaLabels = inkQueued(drawSeaLabels); drawLakeLabels = inkQueued(drawLakeLabels); drawPlaces = inkQueued(drawPlaces); drawDivisionLabels = inkQueued(drawDivisionLabels);
   var SEAS = [
     ["North Atlantic Ocean", -42, 31, 1], ["South Atlantic Ocean", -17, -24, 1], ["North Pacific Ocean", -152, 31, 1],
     ["South Pacific Ocean", -122, -27, 1], ["Pacific Ocean", 168, 9, 1], ["Indian Ocean", 79, -22, 1],
@@ -3907,7 +3931,7 @@
   function drawRiverLabels(placed, S) {
     var top = Math.min(riverLabelRank(S), riverRank(S));
     if (!layers.water || !rivers || !top || clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)) < 0.6) return;
-    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames();
+    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames(), names = [], gen0 = ink.glyph.flushed;
     ctx.save();
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
     for (var i = 0; i < list.length && shown < 40; i++) {
@@ -3919,18 +3943,28 @@
       if (!spot || !insideMap(spot.box)) continue;
       placed.push(spot.box);
       shown++;
-      ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
-      var rs = riverSprites(chars, f);
-      for (var pass = rs ? 0 : 1; pass < 2; pass++) for (j = 0; j < spot.glyphs.length; j++) {
-        if (chars[j] === " ") continue;
-        var g = spot.glyphs[j];
+      names.push({ chars: chars, spot: spot, rs: riverSprites(chars, f) });
+    }
+    // Every name's sprites are made before any is stamped; if the store was emptied on the way, the sprites made before that
+    // went with it, and all are made again (as text, if it is emptied a second time).
+    if (ink.glyph.flushed !== gen0) {
+      gen0 = ink.glyph.flushed;
+      names.forEach(function (nm) { nm.rs = riverSprites(nm.chars, f); });
+      if (ink.glyph.flushed !== gen0) names.forEach(function (nm) { nm.rs = null; });
+    }
+    ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
+    names.forEach(function (nm) {
+      var rs = nm.rs;
+      for (var pass = rs ? 0 : 1; pass < 2; pass++) for (j = 0; j < nm.spot.glyphs.length; j++) {
+        if (nm.chars[j] === " ") continue;
+        var g = nm.spot.glyphs[j];
         ctx.save();
         ctx.translate(g[0], g[1]); ctx.rotate(g[2]);
         if (rs) inkStamp(rs[j][pass], 0, 0, rs.sc);
-        else { ctx.strokeText(chars[j], 0, 0); ctx.fillText(chars[j], 0, 0); }
+        else { ctx.strokeText(nm.chars[j], 0, 0); ctx.fillText(nm.chars[j], 0, 0); }
         ctx.restore();
       }
-    }
+    });
     ctx.restore();
   }
   // A river name's letters as sprites, halo and ink, or null to draw them as text.
@@ -4162,7 +4196,7 @@
       if (r.rm) placed.push({ x: p[0] - r.rm, y: p[1] - r.rm, w: 2 * r.rm, h: 2 * r.rm });
       placed.push(box);
       drawMark(p, r.k, r.kind, r.sel);
-      if (!inkLine(r.name, tx, ty, r.font, r.ls, "left", "middle", r.hc, r.lw, r.fc)) {
+      if (!inkLine(r.name, tx, ty, r.font, r.ls, "left", "middle", r.hc, r.lw, r.fc, true)) {
         ctx.font = r.font; ctx.letterSpacing = r.ls + "px"; ctx.lineWidth = r.lw; ctx.strokeStyle = r.hc; ctx.fillStyle = r.fc;
         ctx.strokeText(r.name, tx, ty); ctx.fillText(r.name, tx, ty);
       }
@@ -9488,7 +9522,12 @@
   // Whenever a face arrives (the italic comes after the roman, when a people's name first needs it), the widths measured and
   // the sprites drawn in the face that stood in for it are let go. Before 23 November 2026 only the roman's arrival did this,
   // so an italic name set letter by letter kept the stand-in's wider letter widths, and its letters stood too far apart.
-  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function () { widthCache.clear(); glyphSizes.clear(); labelCache.clear(); inkReset(); scheduleRender(); });
+  // Only the map's own faces count: an interface face that arrives when a panel first opens leaves the names as they are.
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function (e) {
+    var faces = e && e.fontfaces;
+    if (faces && faces.length && !faces.some(function (f) { return /IM Fell English|Old Standard TT/i.test(f.family || ""); })) return;
+    widthCache.clear(); glyphSizes.clear(); labelCache.clear(); inkReset(); scheduleRender();
+  });
   if (window.ResizeObserver) {
     var topRowW = "", topRowFrame = 0, topRowRO = new ResizeObserver(function () {
       var w = $("head").offsetWidth + "|" + $("ctls").offsetWidth;
@@ -10019,6 +10058,9 @@
     // For how long a layout of the names is carried while the map moves, in ms (0 lays them out every frame, as before
     // 23 November 2026; null puts back LABEL_CARRY_MS).
     labelCarry: function (ms) { labelCarryMs = ms === null || ms === undefined ? null : +ms; labelCache.delete("carry"); labelCache.delete("layout"); labelCache.delete("places"); },
+    // The size of a page of sprites and how many a store may fill, for a check that wants the stores emptied often; nulls put
+    // back what ships. Either way both stores start again.
+    inkPages: function (size, count) { INK_PAGE = size || 2048; INK_PAGES = count || (LOW_MEM ? 2 : 4); inkReset(true); scheduleRender(); },
     // Names from sprites: on or off (off draws them as text, as before 23 November 2026); with no argument, what is kept.
     // "letters" draws them as text but every line letter by letter, as the sprites are placed (a straight line as text is one
     // string, which the browser kerns), so that a check can compare the two drawings point for point.
