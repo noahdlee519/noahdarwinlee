@@ -5537,6 +5537,7 @@
   }
   var rangeActive = false;
   function syncTime() {
+    syncComments();
     if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); range.classList.remove("is-off"); }
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fitDate(fmtNow(now));
@@ -9855,6 +9856,10 @@
       token: function () { return reportToken().catch(function () { return null; }); },
       who: accountId,
       signIn: function () { setAccountOpen(true, false); },
+      // A 401 from the comments function: the session is dropped, as reportAsk does, so sign-in is offered again.
+      signedOut: function () { keepReportSession(null); },
+      // The Account panel opened (where the profile is edited), signed in.
+      openAccount: function () { setAccountOpen(true, false); },
       // The map's date as the page writes it in the address ("1815", "1941-06", "1941-06-22"); a date so written as
       // the page shows dates (the map's own date without one); and the map moved to a date, with the card of the
       // name given (or the card that was open) opened there.

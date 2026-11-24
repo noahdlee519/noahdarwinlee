@@ -56,13 +56,18 @@
     return box;
   }
 
-  // The function: { status, body }, with status 0 where it could not be reached.
+  // The function: { status, body }, with status 0 where it could not be reached. A 401 to a signed request drops the
+  // session, as the report panel does, so the Account panel and the composer offer sign-in again.
+  var expired = false;
   function ask(payload, signed) {
     var go = function (tok) {
       var headers = { "Content-Type": "application/json" };
       if (tok) headers.Authorization = "Bearer " + tok;
       return fetch(api.url, { method: "POST", headers: headers, body: JSON.stringify(payload) }).then(function (res) {
-        return res.json().catch(function () { return null; }).then(function (j) { return { status: res.status, body: j || {} }; });
+        return res.json().catch(function () { return null; }).then(function (j) {
+          if (res.status === 401 && tok) { expired = true; api.signedOut(); }
+          return { status: res.status, body: j || {} };
+        });
       });
     };
     return (signed === false ? Promise.resolve(null) : api.token()).then(go).catch(function () { return { status: 0, body: {} }; });
@@ -102,7 +107,20 @@
   // The card's thread: { name, tag, names, key }, the comments shown, and the order asked for. Every request for a list
   // carries the count `seq` had when it was sent; an answer whose count is no longer seq's (the card was closed or changed,
   // the order changed, or more were asked for since) is dropped.
-  var th = null, sort = "new", seq = 0, shown = [], total = 0, more = false, cache = new Map(), drafts = new Map();
+  var th = null, sort = "new", seq = 0, shown = [], total = 0, more = false, cache = new Map(), listAt = "";
+  // Drafts, by the name of the card they were written on, kept for the tab's life (sessionStorage), so that one survives a
+  // sign-in that leaves the page and comes back; a draft goes when it is posted.
+  var DRAFTS = "chronia-comment-drafts";
+  var drafts = {
+    all: function () { try { return JSON.parse(sessionStorage.getItem(DRAFTS) || "{}") || {}; } catch (e) { return {}; } },
+    get: function (n) { return drafts.all()[n] || ""; },
+    set: function (n, v) {
+      var a = drafts.all();
+      if (v) a[n] = v; else delete a[n];
+      try { if (Object.keys(a).length) sessionStorage.setItem(DRAFTS, JSON.stringify(a)); else sessionStorage.removeItem(DRAFTS); } catch (e) {}
+    },
+    delete: function (n) { drafts.set(n, ""); }
+  };
   var bar = el("p", "ch-cm-bar"), count = el("span", "ch-cm-count"), sortBox = el("span", "ch-cm-sort");
   sortBox.setAttribute("role", "group");
   sortBox.setAttribute("aria-label", T("Order of the comments"));
@@ -124,7 +142,7 @@
     moreNote.textContent = "";
     if (hit && Date.now() - hit.t < CACHE_MS) { take(hit.body, off); return; }
     var req = { action: "list", names: t.names, sort: sort };
-    if (sort === "near") req.at = api.at();
+    if (sort === "near") req.at = listAt = api.at();
     if (off) req.offset = off;
     list.setAttribute("aria-busy", "true");
     if (off) moreBtn.disabled = true;
@@ -183,14 +201,18 @@
     li.tabIndex = -1;
     li.appendChild(face(c.username, c.avatar));
     var main = el("div", "ch-cm-main"), meta = el("p", "ch-cm-meta");
-    meta.appendChild(el("span", "ch-cm-user", c.username));
+    var user = el("span", "ch-cm-user", c.username);
+    user.dir = "auto";
+    meta.appendChild(user);
     meta.appendChild(document.createTextNode(" "));
     var when = api.when(c.at), date = button(when, "ch-cm-date", function () { api.goTo(c.at, c.polity); });
     date.setAttribute("aria-label", T("Go to {date} on the map", { date: when }));
     meta.appendChild(date);
     if (th && c.polity && c.polity !== th.name) meta.appendChild(el("span", "ch-cm-where", " | " + c.polity));
     main.appendChild(meta);
-    main.appendChild(el("p", "ch-cm-text", c.text));
+    var text = el("p", "ch-cm-text", c.text);
+    text.dir = "auto";
+    main.appendChild(text);
     var acts = el("p", "ch-cm-acts"), any = false;
     var add = function (b) { if (any) acts.appendChild(document.createTextNode(" | ")); acts.appendChild(b); any = true; };
     if (api.who() && acct.me && !acct.me.failed) {
@@ -214,6 +236,14 @@
     btn.disabled = true;
     ask(Object.assign({ action: "flag" }, what)).then(function (r) {
       if (r.status === 200) { btn.textContent = done; said.textContent = T("Thank you. The team will look at it."); return; }
+      if (r.status === 404 && what.id !== undefined) {
+        shown = shown.filter(function (x) { return x.id !== what.id; });
+        total = Math.max(0, total - 1);
+        cache.clear();
+        renderList();
+        said.textContent = moreNote.textContent = T("That comment is no longer there.");
+        return;
+      }
       btn.disabled = false;
       said.textContent = actTrouble(r);
       moreNote.textContent = said.textContent;
@@ -240,7 +270,7 @@
   // The composer, at the top of the section: Sign in to comment, the profile form for an account without one, or the
   // box to write in. Its parts are kept between cards, so a draft is not lost when the list is drawn again.
   var composer = (function () {
-    var state = "", box = null, left = null, line = null, post = null, today = null, msg = null, posting = false, form = null;
+    var state = "", box = null, left = null, line = null, post = null, today = null, msg = null, posting = false, form = null, picNote = null;
     function setState(s) {
       if (s === state) return false;
       state = s;
@@ -250,17 +280,26 @@
     }
     function render() {
       var w = api.who(), p = profile();
-      var s = !w ? "out" : !acct.me ? "wait" : acct.me.failed ? "none" : !p ? "form" : p.blocked ? "blocked" : "box";
+      var s = !w ? (expired ? "expired" : "out") : !acct.me ? "wait" : acct.me.failed ? "none" : !p ? "form" : p.blocked ? "blocked" : "box";
       if (setState(s)) build(s);
       refresh();
     }
     function build(s) {
       if (s === "out") {
         compose.appendChild(button(T("Sign in to comment"), "ch-account-alt ch-cm-signin", function () { api.signIn(); }));
+      } else if (s === "expired") {
+        var run = el("p", "ch-cm-msg", serverTrouble({ status: 401 }));
+        run.setAttribute("aria-live", "polite");
+        compose.appendChild(run);
+        compose.appendChild(button(T("Sign in"), "ch-account-alt ch-cm-signin", function () { api.signIn(); }));
       } else if (s === "blocked") {
         compose.appendChild(el("p", "ch-cm-note", T("This account can't post comments.")));
       } else if (s === "form") {
-        form = profileForm(compose, true, function () { render(); if (box) box.focus(); }, null);
+        form = profileForm(compose, true, function (pictureTrouble) {
+          render();
+          if (pictureTrouble) notePicture(pictureTrouble);
+          else if (box) box.focus();
+        }, null);
       } else if (s === "box") {
         var id = "cm-box";
         var lab = el("label", "sr-only", T("Your comment"));
@@ -268,7 +307,6 @@
         box = el("textarea", "ch-save-input ch-cm-box");
         box.id = id;
         box.rows = 3;
-        box.maxLength = MAX;
         box.spellcheck = true;
         box.setAttribute("aria-describedby", "cm-left cm-line");
         left = el("span", "ch-cm-left");
@@ -286,7 +324,25 @@
         [lab, box, top, post, today, msg].forEach(function (n) { compose.appendChild(n); });
       }
     }
-    function counts() { if (box) left.textContent = box.value.length + " / " + MAX; }
+    // Characters are counted as the function counts them, by code point: an emoji is one.
+    function size(t) { return Array.from(t).length; }
+    function counts() {
+      if (!box) return;
+      var n = size(box.value);
+      left.textContent = n + " / " + MAX;
+      left.classList.toggle("is-over", n > MAX);
+    }
+    // After a first save whose picture failed: the name is saved, the picture is not, and another can be tried.
+    function notePicture(text) {
+      clearNote();
+      picNote = fill(el("p", "ch-cm-picnote"), text + " {try}", { try: button(T("Try another picture"), "ch-linkbtn", function () { api.openAccount(); editProfile(text); }) });
+      picNote.setAttribute("aria-live", "polite");
+      compose.insertBefore(picNote, compose.firstChild);
+      picNote.querySelector("button").focus();
+    }
+    function clearNote() { if (picNote) { picNote.remove(); picNote = null; } }
+    // Another card: a message about the last card's comment no longer applies.
+    function changed() { if (msg) msg.textContent = ""; }
     // The parts that follow the card and the account: the draft, the name and date the comment will carry, and the
     // count left today.
     function refresh() {
@@ -315,6 +371,8 @@
       if (posting || state !== "box" || !th) return;
       var text = box.value.trim();
       if (!text) { msg.textContent = T("Write something first."); box.focus(); return; }
+      if (size(text) > MAX) { msg.textContent = T("That is longer than 500 characters. Please shorten it."); box.focus(); return; }
+      drafts.set(th.name, box.value);
       posting = true;
       post.disabled = true;
       msg.textContent = T("Posting…");
@@ -324,7 +382,7 @@
         if (post) post.disabled = false;
         if (r.status === 200 && r.body && r.body.comment) {
           drafts.delete(t.name);
-          if (state === "box") { box.value = ""; msg.textContent = ""; }
+          if (state === "box" && th === t) { box.value = ""; msg.textContent = ""; counts(); }
           if (typeof r.body.left === "number" && acct.me) acct.me.left = r.body.left;
           cache.clear();
           if (th === t) {
@@ -339,10 +397,10 @@
         }
         if (r.status === 403 && r.body && r.body.error === "profile") { loadMe(true); return; }
         if (r.body && r.body.error === "blocked" && acct.me && acct.me.profile) acct.me.profile.blocked = true;
-        if (state === "box") msg.textContent = trouble(r);
+        if (state === "box" && th === t) msg.textContent = trouble(r);
       });
     }
-    return { render: render, refresh: refresh };
+    return { render: render, refresh: refresh, changed: changed, clearNote: clearNote };
   })();
 
   // The profile form: a username (checked with the function after a pause in typing), a picture (cut to a centred
@@ -498,9 +556,7 @@
       if (e === "word") return T("That name isn't allowed, so it can't be saved.");
       if (e === "shape") return T("A username is 3 to 20 characters: letters, numbers, and underscores, starting with a letter.");
       if (e === "soon") return +b.days === 1 ? T("You can change your username again tomorrow.") : T("You can change your username again in {n} days.", { n: Math.max(1, +b.days || 30) });
-      if (e === "picture") return T("That picture can't be used here. Choose another.");
-      if (e === "check") return T("The picture could not be checked just now. Try again later.");
-      if (e === "limit") return T("That is the most picture changes for one day. Try again tomorrow.");
+      if (e === "picture" || e === "check" || e === "limit") return pictureWhy(e);
       if (e === "long" || r.status === 413) return T("That picture is too large. Choose another.");
       if (e === "age") return T("Tick the box to say you are old enough.");
       if (e === "blocked") return T("This account can't make a profile.");
@@ -519,6 +575,9 @@
       ask(req).then(function (r) {
         saving = false;
         if (r.status === 200 && r.body && r.body.profile) {
+          // A first save makes the profile before the picture is checked; a picture that then fails is said, and the
+          // profile stands without it (the contract's picture_error).
+          var pe = r.body.picture_error ? T("Your username is saved, but the picture is not. {reason}", { reason: pictureWhy(r.body.picture_error) }) : null;
           msg.textContent = "";
           if (!acct.me || acct.me.failed) acct.me = { left: 100, cap: 100, role: null };
           acct.me.profile = r.body.profile;
@@ -528,7 +587,8 @@
           composer.render();
           renderAccount();
           if (th) load(0);
-          onDone();
+          if (!pe) composer.clearNote();
+          onDone(pe);
           return;
         }
         msg.textContent = trouble(r);
@@ -536,7 +596,13 @@
       });
     });
     setPic(undefined, null);
-    return { focus: function () { name.focus(); } };
+    return { focus: function () { name.focus(); }, focusPicture: function () { file.focus(); }, say: function (t) { msg.textContent = t; } };
+  }
+  function pictureWhy(e) {
+    if (e === "picture") return T("That picture can't be used here. Choose another.");
+    if (e === "check") return T("The picture could not be checked just now. Try again later.");
+    if (e === "limit") return T("That is the most picture changes for one day. Try again tomorrow.");
+    return T("The picture could not be stored just now. Try again later.");
   }
   function shrink(fileIn) {
     return new Promise(function (res, rej) {
@@ -601,14 +667,24 @@
       acctEdit.textContent = T("Choose a username");
     }
   }
-  if (acctEdit) acctEdit.addEventListener("click", function () {
+  // The form in the Account panel; `note` (after a picture that failed) is said in it, and the picture is focused.
+  function editProfile(note) {
+    if (!acctBox || !profile() && note) return;
     var first = !profile();
     editing = true;
+    renderAccount();
     acctFace.parentNode.hidden = true;
     acctForm.textContent = "";
-    var done = function () { editing = false; renderAccount(); acctEdit.focus(); };
-    profileForm(acctForm, first, done, done).focus();
-  });
+    var done = function (pictureTrouble) {
+      editing = false;
+      renderAccount();
+      if (pictureTrouble) editProfile(pictureTrouble);
+      else acctEdit.focus();
+    };
+    var f = profileForm(acctForm, first, done, function () { editing = false; renderAccount(); acctEdit.focus(); });
+    if (note) { f.say(note); f.focusPicture(); } else f.focus();
+  }
+  if (acctEdit) acctEdit.addEventListener("click", function () { editProfile(null); });
 
   api.ui = {
     // The card shown: its thread ({ name, tag, names }), or null for none (closed, a city's card, or not a country).
@@ -619,7 +695,15 @@
         return;
       }
       var key = t.names.join("\u0001");
-      if (th && th.key === key && th.name === t.name) { composer.refresh(); return; }
+      if (th && th.key === key && th.name === t.name) {
+        // The same card, at another date (a war's months before 1648 keep the card open): the label, the line, and a
+        // nearest-first order follow the date.
+        renderSort();
+        composer.refresh();
+        if (sort === "near" && listAt !== api.at()) load(0);
+        return;
+      }
+      composer.changed();
       th = { name: t.name, tag: t.tag || "", names: t.names, key: key };
       shown = []; total = 0; more = false;
       show(false);
@@ -630,6 +714,7 @@
     // The account changed (signed in or out) or the Account panel opened.
     account: function () {
       var w = api.who();
+      if (w) expired = false;
       if (w !== acct.who) {
         acct = { who: "", me: null, asking: null };
         cache.clear();

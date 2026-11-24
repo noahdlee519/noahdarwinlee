@@ -21,7 +21,7 @@ const TOKEN = jwt({ sub: "11111111-2222-3333-4444-555555555555", email: "reader@
 // The stand-in for chronia-comments. `s.answer(body)` may return [status, json] to take over an action, `s.delay(body)`
 // a wait in ms, and `s.fail` a status for every call (or "abort").
 function standIn() {
-  const s = { calls: [], comments: [], me: null, role: null, fail: null, answer: null, delay: null, nextId: 5000, left: 100, nameWhy: {} };
+  const s = { calls: [], comments: [], me: null, role: null, fail: null, answer: null, delay: null, nextId: 5000, left: 100, nameWhy: {}, pictureError: null };
   s.add = (c) => { const x = Object.assign({ id: s.nextId++, username: "Herodotus", avatar: null, polity: "France", at: "1900", text: "A comment.", mine: false }, c); s.comments.push(x); return x; };
   s.handle = async (route) => {
     const req = route.request();
@@ -45,6 +45,11 @@ function standIn() {
     if (a === "name") { const w = s.nameWhy[String(body.username).toLowerCase()]; return reply(200, w ? { ok: false, why: w } : { ok: true }); }
     if (a === "profile") {
       if (!s.me && body.age !== true) return reply(400, { error: "age" });
+      // A first save makes the profile before the picture is checked; a picture that then fails still answers 200.
+      if (!s.me && body.avatar && s.pictureError) {
+        s.me = { username: body.username, avatar: null, blocked: false };
+        return reply(200, { profile: s.me, picture_error: s.pictureError });
+      }
       s.me = { username: body.username || (s.me && s.me.username), avatar: body.avatar === "" ? null : body.avatar ? PIC : s.me ? s.me.avatar : null, blocked: false };
       return reply(200, { profile: s.me });
     }
@@ -545,6 +550,173 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   await shot(phone, "card-phone-390");
   say(!phone.errors.length, "no page errors", phone.errors.join("; "));
   await phone.close();
+}
+
+// 9. M1: the answer to a post made on one card never clears, overwrites, or puts an error under another card's box.
+{
+  const s = standIn();
+  s.me = { username: "Herodotus", avatar: null, blocked: false };
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  for (const [label, answer] of [["posted", null], ["refused", [400, { error: "word" }]]]) {
+    await card(page, TAGGED);
+    await settle(page, 1200);
+    s.delay = (b) => (b.action === "post" ? 1500 : 0);
+    s.answer = answer ? (b) => (b.action === "post" ? answer : null) : null;
+    await page.fill(".ch-cm-box", "Written on " + TAGGED);
+    await page.click(".ch-cm-post");
+    await settle(page, 100);
+    await card(page, UNTAGGED);
+    await settle(page, 300);
+    await page.fill(".ch-cm-box", "Written on " + UNTAGGED);
+    await settle(page, 2000);
+    const v = await view(page);
+    say((await page.inputValue(".ch-cm-box")) === "Written on " + UNTAGGED && !v.msg, "M1: a post " + label + " on one card leaves another card's box and message alone", JSON.stringify([await page.inputValue(".ch-cm-box"), v.msg]));
+    s.delay = null; s.answer = null;
+    await page.fill(".ch-cm-box", "");
+    await page.evaluate(() => document.getElementById("card-close").click());
+  }
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+}
+
+// 10. M2: a 401 drops the session, offers Sign in in the composer, and the draft outlives a reload (a sign-in redirect).
+{
+  const s = standIn();
+  s.me = { username: "Herodotus", avatar: null, blocked: false };
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1200);
+  s.answer = (b) => (b.action === "post" ? [401, { error: "signin" }] : null);
+  await page.fill(".ch-cm-box", "Kept through a sign-in.");
+  await page.click(".ch-cm-post");
+  await settle(page, 800);
+  s.answer = null;
+  const after = await page.evaluate(() => ({ auth: localStorage.getItem("chronia-auth"), accountIn: document.getElementById("account-in").hidden === false, signin: [...document.querySelectorAll("#cm .ch-cm-compose button")].map((b) => b.textContent), msg: (document.querySelector("#cm .ch-cm-compose .ch-cm-msg") || {}).textContent || "", kept: JSON.stringify(Object.assign({}, sessionStorage)) }));
+  say(after.auth === null && !after.accountIn, "M2: a 401 drops the session, so the Account panel offers sign-in", JSON.stringify(after));
+  say(after.signin.includes("Sign in") && /run out/.test(after.msg), "M2: the composer says the sign-in ran out and offers Sign in", JSON.stringify(after));
+  say(after.kept.includes("Kept through a sign-in."), "M2: the draft is kept in sessionStorage", after.kept);
+  await page.reload({ waitUntil: "load" });
+  await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1500);
+  say((await page.inputValue(".ch-cm-box").catch(() => "")) === "Kept through a sign-in.", "M2: signed in again after a reload, the draft is back in the box", await page.inputValue(".ch-cm-box").catch(() => "(no box)"));
+  await page.click(".ch-cm-post");
+  await settle(page, 800);
+  say(!(await page.evaluate(() => JSON.stringify(Object.assign({}, sessionStorage)))).includes("Kept through a sign-in."), "M2: posted, the kept draft is cleared", "");
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+}
+
+// 11. M3: a Report on a comment since gone says so, and the comment leaves the list.
+{
+  const s = standIn();
+  s.me = { username: "Herodotus", avatar: null, blocked: false };
+  s.add({ username: "Gone", polity: TAGGED, at: "1900", text: "Since removed." });
+  s.add({ username: "Here", polity: TAGGED, at: "1900", text: "Still here." });
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1200);
+  s.answer = (b) => (b.action === "flag" ? [404, { error: "missing" }] : null);
+  await page.click(".ch-cm-item:has(.ch-cm-user:text-is('Gone')) .ch-cm-acts button:text-is('Report')");
+  await settle(page, 600);
+  s.answer = null;
+  const v = await view(page);
+  const note = await page.evaluate(() => [...document.querySelectorAll("#cm .ch-cm-note, #cm .ch-cm-said")].map((n) => n.textContent).join(" | "));
+  say(!v.items.some((i) => i.user === "Gone") && v.items.some((i) => i.user === "Here"), "M3: a Report answered 404 takes the comment out of the list", JSON.stringify(v.items.map((i) => i.user)));
+  say(/no longer there/.test(note) && !/server/.test(note), "M3: and says it is no longer there, not a server error", note);
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+}
+
+// 12. M5: with the card open while the date moves (a war's months before 1648), the order, its label, and the line follow.
+{
+  const s = standIn();
+  s.me = { username: "Herodotus", avatar: null, blocked: false };
+  s.add({ any: true, username: "Froissart", polity: "Kingdom of France", at: "1400", text: "A chronicle." });
+  const page = await open(s, { signedIn: true });
+  await page.evaluate(() => window.__chronia.setLayer("control", true));
+  await setDate(page, "1400");
+  await settle(page, 1500);
+  const name = await page.evaluate((fr) => window.__chronia.polities().find((n) => fr.includes(n)), france[1]);
+  await card(page, name);
+  await settle(page, 1200);
+  await page.click(".ch-cm-sort button:nth-of-type(2)");
+  await settle(page, 600);
+  const at0 = await page.evaluate(() => (document.querySelector(".ch-cm-line") || {}).textContent);
+  await page.click("#month-up");
+  await settle(page, 900);
+  const st = await page.evaluate(() => ({ open: window.__chronia.card().open, url: location.search, sort: document.querySelectorAll(".ch-cm-sort button")[1].textContent, line: (document.querySelector(".ch-cm-line") || {}).textContent }));
+  const m = /y=([^&]+)/.exec(st.url), at = m ? decodeURIComponent(m[1]) : "";
+  const last = lists(s).slice(-1)[0] || {};
+  say(st.open && /^1400-\d\d$/.test(at), "M5: a month stepped in a war's year keeps the card open (" + at + ")", JSON.stringify(st));
+  say(st.line !== at0 && /1400/.test(st.line) && st.sort.replace("Nearest to ", "") === st.line.replace(/^.*dated /, "").replace(/\.$/, ""), "M5: the line and the Nearest label follow the date", JSON.stringify([at0, st]));
+  say(last.sort === "near" && last.at === at, "M5: a nearest-first list is asked again for the new date", JSON.stringify(last) + " vs " + at);
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+}
+
+// 13. M7: comments and usernames follow their own direction; the count counts code points, with no cut at 500 units.
+{
+  const s = standIn();
+  s.me = { username: "Herodotus", avatar: null, blocked: false };
+  s.add({ username: "Ibn_Battuta", polity: TAGGED, at: "1900", text: "رحلة إلى باريس" });
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1200);
+  const dirs = await page.evaluate(() => { const li = document.querySelector(".ch-cm-item"); return [li.querySelector(".ch-cm-text").getAttribute("dir"), li.querySelector(".ch-cm-user").getAttribute("dir")]; });
+  say(dirs[0] === "auto" && dirs[1] === "auto", "M7: a comment's text and username have dir=auto", JSON.stringify(dirs));
+  const emoji = "\u{1F3DB}".repeat(300);
+  await page.fill(".ch-cm-box", emoji);
+  const c = await page.evaluate(() => ({ len: [...document.querySelector(".ch-cm-box").value].length, max: document.querySelector(".ch-cm-box").getAttribute("maxlength"), left: document.querySelector(".ch-cm-left").textContent }));
+  say(c.len === 300 && !c.max && /^300 ?\/ ?500$/.test(c.left), "M7: 300 emoji count as 300, and the box does not cut them", JSON.stringify(c));
+  await page.fill(".ch-cm-box", "x".repeat(501));
+  const n0 = s.calls.filter((x) => x.action === "post").length;
+  await page.click(".ch-cm-post");
+  await settle(page, 400);
+  const v = await view(page);
+  say(s.calls.filter((x) => x.action === "post").length === n0 && /500 characters/.test(v.msg), "M7: 501 characters are refused here, with the limit said", v.msg);
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+}
+
+// 14. The contract's first save with a picture that fails: the profile is made, and the form says the picture was not.
+{
+  const s = standIn();
+  s.pictureError = "check";
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1200);
+  await page.fill("#cm .ch-pf-name", "Herodotus");
+  await settle(page, 900);
+  await page.check("#cm .ch-pf-age");
+  await page.setInputFiles("#cm .ch-pf-file", await pngOf(page, 400, 400));
+  await settle(page, 1000);
+  await page.click("#cm .ch-pf-save");
+  await settle(page, 1000);
+  const v = await view(page);
+  const note = await page.evaluate(() => (document.querySelector("#cm .ch-cm-picnote") || {}).textContent || "");
+  say(v.box && !v.form, "picture_error: the profile is made, and the composer is ready", JSON.stringify(v).slice(0, 160));
+  say(/username is saved/.test(note) && /picture is not/.test(note) && /could not be checked/.test(note), "picture_error: it says the name is saved, the picture is not, and why", note);
+  await shot(page, "picture-error", "#card");
+  await page.click("#cm .ch-cm-picnote button");
+  await settle(page, 500);
+  const acct = await page.evaluate(() => ({ open: !document.getElementById("account").hidden, file: !!document.querySelector("#account .ch-pf-file"), user: (document.getElementById("account-username") || {}).textContent }));
+  say(acct.open && acct.file, "picture_error: Try another picture opens the profile's picture in the Account panel", JSON.stringify(acct));
+  s.pictureError = null;
+  await page.setInputFiles("#account .ch-pf-file", await pngOf(page, 300, 300));
+  await settle(page, 900);
+  await page.click("#account .ch-pf-save");
+  await settle(page, 900);
+  const last = s.calls.filter((c) => c.action === "profile").slice(-1)[0] || {};
+  say(!!last.avatar && last.age === undefined, "picture_error: another picture is then sent as an edit", JSON.stringify(Object.assign({}, last, { avatar: (last.avatar || "").slice(0, 8) })));
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
 }
 
 // Screenshots of the card with comments at desktop width, signed in.

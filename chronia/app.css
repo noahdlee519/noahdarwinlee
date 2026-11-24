@@ -2476,6 +2476,16 @@ select.ch-save-input {
   font-variant-numeric: tabular-nums;
 }
 
+.ch-cm-left.is-over {
+  color: var(--ch-select);
+}
+
+.ch-cm-picnote {
+  margin: 0 0 10px !important;
+  font-size: 13px;
+  color: var(--ink);
+}
+
 .ch-cm-post {
   width: auto;
   max-width: 100%;
