@@ -2,6 +2,7 @@
   --font: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --orange: #e68019;
+  --sel-red: #e0342a;
   --water: #7fd5e9;
   --shadow-rgb: 38, 38, 42;
   --toast-bg: #2f3034;
@@ -167,6 +168,11 @@ textarea {
   opacity: 1;
 }
 
+/* A tile already seen once comes back with no fade. */
+.map-tile.is-seen {
+  transition: none;
+}
+
 /* Once the picture is in, the stand-in land under it is no longer painted. */
 .map.is-image-in .map-land {
   visibility: hidden;
@@ -243,13 +249,18 @@ textarea {
   fill-opacity: 0.14;
 }
 
-.map-sel {
-  fill: var(--orange);
-  fill-opacity: var(--m-sel-opacity);
+/* Round a picked country, the rest of the map a shade greyer, as Google Maps does. */
+.map-dimming {
+  opacity: 0.2;
+}
+
+.map-dim {
+  fill: #8e9396;
 }
 
 .map-sel.is-province {
-  fill-opacity: calc(var(--m-sel-opacity) * 1.35);
+  fill: var(--sel-red);
+  fill-opacity: 0.08;
 }
 
 .map-outline path {
@@ -260,21 +271,26 @@ textarea {
   pointer-events: none;
 }
 
-.map-outline-glow {
-  stroke: var(--orange);
-  stroke-opacity: 0.22;
-  stroke-width: 6px;
+/* Google's red dotted line: short red dashes over a faint pale line, so it reads on land and sea alike. */
+.map-outline-under {
+  stroke: #fff;
+  stroke-opacity: 0.55;
+  stroke-width: 3.5px;
 }
 
-.map-outline-line {
-  stroke: var(--m-sel-ink);
-  stroke-width: 1.75px;
+.map-outline .map-outline-line {
+  stroke: var(--sel-red);
+  stroke-width: 2.25px;
+  stroke-dasharray: 2.6 2.4;
+  stroke-linecap: butt;
 }
 
-.map-outline-prov {
-  stroke: var(--m-sel-ink);
-  stroke-width: 1.75px;
-  stroke-dasharray: 5 3;
+.map-outline .map-outline-prov {
+  stroke: var(--sel-red);
+  stroke-opacity: 0.75;
+  stroke-width: 1.5px;
+  stroke-dasharray: 1.6 2.6;
+  stroke-linecap: butt;
 }
 
 .map-layer,
@@ -316,10 +332,6 @@ textarea {
   cursor: pointer;
 }
 
-.k-country.is-sel text {
-  fill: var(--m-sel-ink);
-}
-
 .k-capital text {
   font-weight: 600;
 }
@@ -331,10 +343,6 @@ textarea {
 .k-province.is-on {
   pointer-events: auto;
   cursor: pointer;
-}
-
-.k-province.is-sel text {
-  fill: var(--m-sel-ink);
 }
 
 .k-range text {
@@ -596,6 +604,9 @@ a {
   font: inherit;
   font-size: 16px;
   outline: none;
+  /* A pixel above the box's middle, where the eye puts the middle of lower-case text (Noah, 24 November 2026). */
+  position: relative;
+  top: -1px;
 }
 
 .search-input::placeholder {
@@ -633,6 +644,43 @@ a {
 
 .search-me {
   display: none;
+}
+
+/* Noah's portrait at the top right of a computer's screen, where Google Maps keeps the account picture, in the same
+   ring as on a phone. */
+.corner-me {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 25;
+  display: block;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border-radius: 50%;
+  background: conic-gradient(#2a44d6 0 25%, #e68019 0 50%, #26262a 0 75%, #2a44d6 0);
+  box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.2), 0 2px 8px rgba(var(--shadow-rgb), 0.12);
+  transition: transform 140ms ease;
+}
+
+.corner-me img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--raised);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .corner-me:hover {
+    transform: scale(1.05);
+  }
+}
+
+.corner-me:focus-visible {
+  outline-offset: 3px;
 }
 
 .search-list {
@@ -2072,6 +2120,10 @@ body:not(.is-panel) .panel-tab .ic {
     object-position: 50% 18%;
   }
 
+  .corner-me {
+    display: none;
+  }
+
   .search-list {
     top: 64px;
     border-radius: 20px;
@@ -2472,12 +2524,19 @@ body:not(.is-panel) .panel-tab .ic {
 
 /* ================================================================ the menu */
 
-/* It appears at once, with no slide or fade, as the reference's does: a drawer over the rail and panel, and a scrim. */
+/* A drawer over the rail and panel, sliding in from the left with the scrim fading up, as Google Maps' menu does
+   (Noah, 24 November 2026). While it slides out it is already hidden to the page, and drawn only until it is gone. */
 .drawer-scrim {
   position: fixed;
   inset: 0;
   z-index: 70;
   background: rgba(var(--shadow-rgb), 0.32);
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.drawer-scrim.is-open {
+  opacity: 1;
 }
 
 .drawer {
@@ -2493,6 +2552,32 @@ body:not(.is-panel) .panel-tab .ic {
   background: var(--surface);
   box-shadow: 0 0 2px rgba(var(--shadow-rgb), 0.12), 4px 0 24px rgba(var(--shadow-rgb), 0.18);
   color: var(--ink);
+  transform: translateX(-100%);
+  transition: transform 250ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.drawer.is-open {
+  transform: none;
+}
+
+.drawer.is-closing,
+.drawer-scrim.is-closing {
+  pointer-events: none;
+}
+
+.drawer.is-closing[hidden] {
+  display: flex;
+}
+
+.drawer-scrim.is-closing[hidden] {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawer-scrim {
+    transition: none;
+  }
 }
 
 .drawer[hidden],

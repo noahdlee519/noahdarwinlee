@@ -252,7 +252,7 @@
     var saved = isSaved(p.id);
     return '<div class="actions">' +
       '<a class="action action-visit" ' + linkAttrs(p.url) + '><span class="action-dot">' + icon("i-visit") + "</span><span>Visit</span></a>" +
-      '<button class="action action-save' + (saved ? " is-on" : "") + '" type="button" aria-pressed="' + saved + '" data-save="' + p.id + '"><span class="action-dot">' + icon("i-heart") + '</span><span class="action-save-text">' + (saved ? "Saved" : "Save") + "</span></button>" +
+      '<button class="action action-save' + (saved ? " is-on" : "") + '" type="button" aria-pressed="' + saved + '" data-save="' + p.id + '"><span class="action-dot">' + icon("i-bookmark") + '</span><span class="action-save-text">' + (saved ? "Saved" : "Save") + "</span></button>" +
       '<button class="action action-share" type="button" data-share="' + p.id + '"' + (province ? ' data-province="' + province + '"' : "") + '><span class="action-dot">' + icon("i-link") + "</span><span>Share</span></button>" +
       "</div>";
   }
@@ -305,7 +305,7 @@
   function rowFor(p) {
     return '<li><button class="row" type="button" data-open="' + p.id + '">' + glyph(p.id) +
       rowText(p.name, p.tagline, p.domain) +
-      (isSaved(p.id) ? '<span class="row-heart" aria-label="Saved">' + icon("i-heart") + "</span>" : "") + "</button></li>";
+      (isSaved(p.id) ? '<span class="row-heart" aria-label="Saved">' + icon("i-bookmark") + "</span>" : "") + "</button></li>";
   }
 
   // On a phone, the sheet at rest is headed Projects (Noah, 24 November 2026: no world's name on a phone); raised, it
@@ -335,7 +335,7 @@
     var h = '<header class="head head-plain"><h2 class="title" tabindex="-1">Saved</h2><p class="sub">Projects you’ve hearted, kept in this browser</p></header>';
     var items = state.saved.map(function (id) { return state.byId[id]; }).filter(Boolean);
     if (!items.length) {
-      h += '<div class="empty">' + icon("i-heart", "empty-heart") + "<p>Nothing saved yet. Open a country and press Save to keep it here.</p></div>";
+      h += '<div class="empty">' + icon("i-bookmark", "empty-heart") + "<p>Nothing saved yet. Open a country and press Save to keep it here.</p></div>";
     } else h += '<ul class="rows rows-saved">' + items.map(rowFor).join("") + "</ul>";
     return h;
   }
@@ -1019,11 +1019,16 @@
   }
 
   var drawer = (function () {
-    var box = $("#drawer"), scrim = $("#drawer-scrim"), openers = $$("#menu-btn, .search-menu"), back = null;
+    var box = $("#drawer"), scrim = $("#drawer-scrim"), openers = $$("#menu-btn, .search-menu"), back = null, closing = 0;
     function open(from) {
       dismissHint();
       back = from || document.activeElement;
+      clearTimeout(closing);
+      box.classList.remove("is-closing"); scrim.classList.remove("is-closing");
       box.hidden = false; scrim.hidden = false;
+      // Slide in from the left, the scrim fading up, as Google Maps' menu does.
+      void box.offsetWidth;
+      box.classList.add("is-open"); scrim.classList.add("is-open");
       document.body.classList.add("is-drawer");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
       $(".drawer-world").textContent = state.world ? state.world.name : "";
@@ -1032,6 +1037,11 @@
     function close(keepFocus) {
       if (box.hidden) return;
       box.hidden = true; scrim.hidden = true;
+      // Hidden at once for the page's sake; still drawn while it slides back out.
+      box.classList.add("is-closing"); scrim.classList.add("is-closing");
+      box.classList.remove("is-open"); scrim.classList.remove("is-open");
+      clearTimeout(closing);
+      closing = setTimeout(function () { box.classList.remove("is-closing"); scrim.classList.remove("is-closing"); }, reduceMotion.matches ? 0 : 260);
       document.body.classList.remove("is-drawer");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
       if (!keepFocus && back && back.focus) back.focus({ preventScroll: true });
@@ -1090,7 +1100,7 @@
     state.map = new PM.MapView($("#map"));
     state.map.onPicture = function (href) { $$(".terrain-picture").forEach(function (i) { i.setAttribute("href", href); }); };
     state.map.obstacles = function () {
-      return [".search-box", ".scale-corner", ".controls"].map(function (s) { return $(s); }).filter(function (e) {
+      return [".search-box", ".scale-corner", ".controls", ".corner-me"].map(function (s) { return $(s); }).filter(function (e) {
         return e && e.offsetParent !== null && getComputedStyle(e).display !== "none";
       }).map(function (e) { return e.getBoundingClientRect(); });
     };

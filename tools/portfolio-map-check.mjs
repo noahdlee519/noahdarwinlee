@@ -315,7 +315,7 @@ async function mapStage(browser) {
   await page.waitForTimeout(300);
   await page.mouse.click(wrapped.x, wrapped.y);
   await page.waitForTimeout(1300);
-  const sel = await page.evaluate(() => ({ id: window.__portfolioMap.map.selected, tint: document.querySelectorAll('.map-tint .map-sel').length, copies: window.__portfolioMap.map.copies.length }));
+  const sel = await page.evaluate(() => ({ id: window.__portfolioMap.map.selected, tint: document.querySelectorAll('.map-dimming .map-dim').length, copies: window.__portfolioMap.map.copies.length }));
   ok(wrapped.x > wrapped.seam && sel.id === wrapped.id && sel.tint >= 2, `clicking a country on a wrapped copy opens it and tints it on every copy (${sel.tint} tints over ${sel.copies} copies)`);
   // Zoom all the way out: the whole world fits.
   await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
@@ -328,7 +328,7 @@ async function mapStage(browser) {
 }
 
 const panelTitle = (page) => page.evaluate(() => { const t = document.querySelector('#panel-body .title'); return t ? t.textContent.trim() : null; });
-const selected = (page) => page.evaluate(() => { const m = window.__portfolioMap.map; return { id: m.selected, province: m.selectedProvince, world: m.world.slug, lit: !!document.querySelector('.map-tint .map-sel') }; });
+const selected = (page) => page.evaluate(() => { const m = window.__portfolioMap.map; return { id: m.selected, province: m.selectedProvince, world: m.world.slug, lit: !!document.querySelector('.map-dimming .map-dim') }; });
 
 async function interfaceStage(browser) {
   console.log('interface (desktop, 1440x900)');
@@ -602,11 +602,17 @@ async function menuStage(browser) {
   const loc = await page.evaluate(() => { const a = document.querySelector('.locate'), z = document.querySelector('.zoom'); const ra = a.getBoundingClientRect(), rz = z.getBoundingClientRect(); return { href: a.getAttribute('href'), label: a.getAttribute('aria-label'), same: Math.abs(ra.width - rz.width) < 1, above: ra.bottom < rz.top, gap: rz.top - ra.bottom }; });
   ok(loc.href === '/#about' && loc.label === 'About Noah' && loc.same && loc.above && loc.gap > 2 && loc.gap < 16, `a location button to About sits just above the zoom pill, the same width (${loc.gap.toFixed(0)} px apart)`);
 
-  // The drawer: it opens at once, over the rail and panel, with a scrim, and closes four ways.
+  // The drawer: it slides in over the rail and panel, with a scrim, and closes four ways.
   const drawerOpen = () => page.evaluate(() => !document.querySelector('#drawer').hidden);
   await page.click('#menu-btn');
+  const mid = await page.evaluate(() => document.querySelector('#drawer').getBoundingClientRect().left);
+  await page.waitForTimeout(400);
   const d = await page.evaluate(() => { const r = document.querySelector('#drawer').getBoundingClientRect(); return { x: r.left, w: r.width, h: r.height, anim: getComputedStyle(document.querySelector('#drawer')).transitionDuration + getComputedStyle(document.querySelector('#drawer')).animationName, scrim: !document.querySelector('#drawer-scrim').hidden, title: document.querySelector('#drawer-title').textContent }; });
-  ok(d.x === 0 && Math.abs(d.w - 320) < 2 && d.h === 900 && d.scrim && d.anim === '0snone' && d.title === 'Noah Darwin Lee', 'the ≡ button opens a full-height drawer, 320 px wide, at once, with a scrim over the map');
+  ok(d.x === 0 && Math.abs(d.w - 320) < 2 && d.h === 900 && d.scrim && /^0\.2[0-9]*s/.test(d.anim) && mid < 0 && d.title === 'Noah Darwin Lee', `the ≡ button slides in a full-height drawer, 320 px wide, with a scrim over the map (${mid.toFixed(0)} px at the start)`);
+  const me = await page.evaluate(() => { const a = document.querySelector('.corner-me'); const r = a.getBoundingClientRect(); return { href: a.getAttribute('href'), right: innerWidth - r.right, top: r.top, w: r.width, ring: getComputedStyle(a).backgroundImage.includes('conic') }; });
+  ok(me.href === '/#about' && me.right < 24 && me.top < 24 && me.w >= 40 && me.ring, 'the ringed portrait sits at the top right, linking to About');
+  const icon = await page.evaluate(() => [...document.querySelectorAll('use')].some((u) => u.getAttribute('href') === '#i-heart'));
+  ok(!icon, 'saving uses a bookmark, not a heart');
   await page.screenshot({ path: '/tmp/portfolio-map-drawer.png' });
   await page.keyboard.press('Escape');
   ok(!(await drawerOpen()), 'Escape closes it');

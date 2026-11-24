@@ -299,6 +299,11 @@
     this.isletTpl = svg("g", { class: "map-islets" }, La.tpl);
     this.roadLayer = layer("map-roads", true);
     // The picked and hovered country's tint, under the borders.
+    // The grey round a picked country: its own layer, made translucent as a whole, so where two copies overlap by a
+    // hair at the seam the grey does not double. Each copy's strip is clipped a hair wider than the copy.
+    this.dimLayer = layer("map-dimming", true);
+    var defs = svg("defs", {}, g), clip = svg("clipPath", { id: "map-strip", clipPathUnits: "userSpaceOnUse" }, defs);
+    svg("rect", { x: -0.6, y: -H * 3, width: W + 1.2, height: H * 7 }, clip);
     this.tintLayer = layer("map-tint", true);
     var Lb = layer("map-lines", true);
     this.lineLayer = Lb;
@@ -382,8 +387,8 @@
 
   // The picked country (and its provinces) and the hovered one, tinted; the picked one outlined.
   MapView.prototype._tint = function () {
-    var T = this.tintLayer.tpl, O = this.outlineLayer.tpl;
-    T.textContent = ""; O.textContent = "";
+    var T = this.tintLayer.tpl, O = this.outlineLayer.tpl, D = this.dimLayer.tpl;
+    T.textContent = ""; O.textContent = ""; D.textContent = "";
     var id = this.selected, sh = id && this.shapes[id];
     if (this.hover && this.hover.id && !(this.hover.id === id && !this.hover.province)) {
       var hs = this.shapes[this.hover.id];
@@ -393,13 +398,19 @@
       }
     }
     if (sh) {
-      svg("path", { class: "map-sel", d: sh.project.path }, T);
+      // As Google Maps marks a picked place (Noah, 24 November 2026): everything else a little greyer, and the place
+      // itself ringed with a red dotted line. The grey is this copy's strip of the map less the country, the country
+      // cut out where it reaches across either edge too, and clipped to the strip so copies meet edge to edge.
+      var W = this.world.width, H = this.world.height, d = sh.project.path;
+      var shift = function (dx) { return d.replace(/M(-?[\d.]+)/g, function (m, x) { return "M" + Math.round((+x + dx) * 10) / 10; }); };
+      svg("path", { class: "map-dim", d: "M-1 " + -H * 3 + "H" + (W + 1) + "V" + H * 4 + "H-1Z" + d + shift(-W) + shift(W), "fill-rule": "evenodd", "clip-path": "url(#map-strip)" }, D);
       var pv = this.selectedProvince && sh.provinces[this.selectedProvince];
       if (pv) svg("path", { class: "map-sel is-province", d: pv.path }, T);
-      svg("path", { class: "map-outline-glow", d: sh.project.path }, O);
-      svg("path", { class: "map-outline-line", d: sh.project.path }, O);
+      svg("path", { class: "map-outline-under", d: d }, O);
+      svg("path", { class: "map-outline-line", d: d }, O);
       if (pv) svg("path", { class: "map-outline-prov", d: pv.path }, O);
     }
+    this._refresh(this.dimLayer);
     this._refresh(this.tintLayer);
     this._refresh(this.outlineLayer);
   };
@@ -815,6 +826,7 @@
     this.view = view;
     this.els = {};
     this.level = null;
+    this.seen = {}; // tiles loaded once: shown again at once, with no fade (Noah, 24 November 2026: tiles flashed on zoom)
   }
   Tiles.prototype.levelFor = function () {
     var v = this.view, w = v.world, T = w.tiles;
@@ -854,14 +866,38 @@
       if (!self.els[key]) self.els[key] = self._make(want[key]);
       if (!self.els[key].loaded) pending++;
     });
-    // Tiles out of view go at once; tiles of another level wait until this level's are in.
-    Object.keys(this.els).forEach(function (key) {
+    // Tiles of this level a little out of view stay, so a pan or a zoom back shows them at once; tiles of another
+    // level stay until this level's are in, and are then kept underneath while the view is near them, so a zoom back
+    // and forth across a level never drops to the softer whole-world picture.
+    var z2 = v.size(), far = Math.max(z2.w, z2.h) / v.s; // one screen, in map units
+    var bx0 = (-v.tx) / v.s - far, bx1 = (z2.w - v.tx) / v.s + far, by0 = (-v.ty) / v.s - far, by1 = (z2.h - v.ty) / v.s + far;
+    var keys = Object.keys(this.els);
+    keys.forEach(function (key) {
       if (want[key]) return;
-      var el = self.els[key];
-      if (lv && el.scale === lv.scale) { el.node.remove(); delete self.els[key]; }
-      else if (!pending || !lv) { el.node.remove(); delete self.els[key]; }
+      var el = self.els[key], near = el.x1 >= bx0 && el.x0 <= bx1 && el.y1 >= by0 && el.y0 <= by1;
+      var otherLevel = !lv || el.scale !== lv.scale;
+      if (!near || (otherLevel && !pending && lv && el.scale < lv.scale) || !el.loaded) { el.node.remove(); delete self.els[key]; }
     });
+    // A ceiling on what is kept: the farthest go first.
+    keys = Object.keys(this.els);
+    if (keys.length > 260) {
+      var cx = (z2.w / 2 - v.tx) / v.s, cy = (z2.h / 2 - v.ty) / v.s;
+      keys.filter(function (k) { return !want[k]; }).map(function (k) {
+        var e = self.els[k]; return { k: k, d: Math.hypot((e.x0 + e.x1) / 2 - cx, (e.y0 + e.y1) / 2 - cy) };
+      }).sort(function (a, b) { return b.d - a.d; }).slice(0, keys.length - 260).forEach(function (o) {
+        self.els[o.k].node.remove(); delete self.els[o.k];
+      });
+    }
     this.pending = pending;
+  };
+  // One group per level, finer over coarser, so tiles kept from another level never cover sharper ones.
+  Tiles.prototype._layer = function (scale) {
+    var host = this.view.tileHost, g = host.querySelector('g[data-scale="' + scale + '"]');
+    if (g) return g;
+    g = svg("g", { "data-scale": scale }, host);
+    var after = [].slice.call(host.children).filter(function (c) { return c !== g && +c.getAttribute("data-scale") > scale; })[0];
+    if (after) host.insertBefore(g, after);
+    return g;
   };
   Tiles.prototype._make = function (t) {
     var v = this.view, w = v.world, lv = t.lv, self = this;
@@ -869,10 +905,14 @@
     var node = svg("image", {
       class: "map-tile", x: t.col * lv.unit + t.k * w.width, y: t.row * lv.unit,
       width: px / lv.scale, height: py / lv.scale, preserveAspectRatio: "none"
-    }, v.tileHost);
-    var el = { node: node, scale: lv.scale, url: ROOT + "worlds/" + w.tiles.src + lv.scale + "/" + t.col + "-" + t.row + ".png", loaded: false };
+    }, this._layer(lv.scale));
+    var x0 = t.col * lv.unit + t.k * w.width, y0 = t.row * lv.unit;
+    var el = { node: node, scale: lv.scale, url: ROOT + "worlds/" + w.tiles.src + lv.scale + "/" + t.col + "-" + t.row + ".png", loaded: false,
+      x0: x0, y0: y0, x1: x0 + px / lv.scale, y1: y0 + py / lv.scale };
+    if (this.seen[el.url]) node.classList.add("is-seen");
     node.addEventListener("load", function () {
       el.loaded = true;
+      self.seen[el.url] = true;
       node.classList.add("is-in");
       if (self.pending && !--self.pending) self.update();
     });
