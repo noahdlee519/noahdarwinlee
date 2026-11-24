@@ -29,7 +29,7 @@ for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchroni
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 // CHRONIA's own icons (the globe in its brace, 19 November 2026) take the place of noahdarwinlee.com's at the site's root,
 // where every page and the manifest look for them.
-for (const f of ["favicon.png", "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) copy("chronia/icons/" + f, f);
+for (const f of ["favicon.png", "favicon-32.png", "favicon-96.png", "favicon.ico", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) copy("chronia/icons/" + f, f);
 
 // Every data file the page fetches carries a hash of the whole data folder, so a cached file from an older build is never
 // read with a newer one (the polity numbers change between builds).
