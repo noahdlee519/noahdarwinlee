@@ -30,7 +30,7 @@
     body: document.body, panel: $("#panel"), panelBody: $("#panel-body"), panelScroll: $("#panel-scroll"),
     tab: $("#panel-tab"), grip: $(".sheet-grip"), search: $("#search"), input: $("#search-input"),
     list: $("#search-list"), clear: $(".search-clear"), go: $(".search-go"), me: $(".search-me"),
-    toast: $("#toast"), strip: $("#strip"), worldName: $(".strip-world-name"), fab: $("#fab-world"),
+    toast: $("#toast"), strip: $("#strip"), worldName: $(".strip-world-name"),
     dialog: $("#feedback-dialog")
   };
 
@@ -308,15 +308,16 @@
       (isSaved(p.id) ? '<span class="row-heart" aria-label="Saved">' + icon("i-heart") + "</span>" : "") + "</button></li>";
   }
 
-  // On a phone, the sheet at rest names the world; raised, it lists the world's countries.
+  // On a phone, the sheet at rest is headed Projects (Noah, 24 November 2026: no world's name on a phone); raised, it
+  // lists the countries, the large ones first with no heading, then the islands and small states.
   function viewWorld() {
     var n = state.world.projects.length, h = "";
-    h += '<header class="head head-world"><h2 class="title" tabindex="-1">' + esc(state.world.name) + "</h2>";
+    h += '<header class="head head-world"><h2 class="title" tabindex="-1">Projects</h2>';
     // On a phone the opening line lives here, under the world's name, until the visitor acts.
     h += '<p class="sub">' + (hintShown() ? "Click on a project to learn more." : "A world of " + n + " countries, each one of my projects") + "</p></header>";
     var flag = state.projects.filter(function (p) { return p.tier === "flagship"; });
     var small = state.projects.filter(function (p) { return p.tier !== "flagship"; });
-    h += '<section class="block block-first"><h3 class="block-title">The large countries</h3><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
+    h += '<section class="block block-first"><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
     h += '<section class="block"><h3 class="block-title">Islands and small states</h3><ul class="rows">' + small.map(rowFor).join("") + "</ul></section>";
     return h;
   }
@@ -435,7 +436,7 @@
 
   // On a phone the footer strip's links sit under the sheet's heading, so they show when the sheet is down.
   function peekLinks() {
-    return '<p class="peek-links">Map: <button class="link-btn" type="button" data-next-world>' + esc(state.world.name) + '</button><i class="sep" aria-hidden="true">|</i><a href="/terms/">Terms</a><i class="sep" aria-hidden="true">|</i><a href="/privacy/">Privacy</a><i class="sep" aria-hidden="true">|</i><button class="link-btn" type="button" data-feedback>Site feedback</button></p>';
+    return '<p class="peek-links"><a href="/terms/">Terms</a><i class="sep" aria-hidden="true">|</i><a href="/privacy/">Privacy</a><i class="sep" aria-hidden="true">|</i><button class="link-btn" type="button" data-feedback>Site feedback</button></p>';
   }
   function renderPeek() {
     var p = $(".peek-links", els.panelBody);
@@ -735,9 +736,20 @@
     var kmPerPx = state.world.scale.kmPerUnit / m.s;
     var km = niceDistance(kmPerPx * 96), px = km / kmPerPx;
     var text = km.toLocaleString("en-US") + " km";
+    // The phone's corner bar, after the Google Maps app: miles above the line and kilometres below it, each measured
+    // back from the right end, where both figures sit.
+    var mi = niceDistance(kmPerPx * 96 / 1.609344), miPx = mi * 1.609344 / kmPerPx;
+    var miText = mi.toLocaleString("en-US") + (mi === 1 ? " mile" : " miles");
     $$(".scale").forEach(function (s) {
       $(".scale-text", s).textContent = text;
       $(".scale-bar", s).style.width = px.toFixed(1) + "px";
+      var d = $(".scale-dual", s);
+      if (d) {
+        d.style.setProperty("--km", px.toFixed(1) + "px");
+        d.style.setProperty("--mi", miPx.toFixed(1) + "px");
+        $(".scale-mi", s).textContent = miText;
+        $(".scale-km", s).textContent = text;
+      }
       if (s.getAttribute("role")) s.setAttribute("aria-label", "Scale: " + px.toFixed(0) + " pixels is " + text);
     });
   }
@@ -767,7 +779,7 @@
       buildShapes();
       els.worldName.textContent = w.name;
       $(".drawer-world").textContent = w.name;
-      document.title = "Noah Darwin Lee | Projects | " + w.name;
+      document.title = "Noah Darwin Lee | Projects" + (isPhone() ? "" : " | " + w.name);
       return document.fonts.ready.then(function () { state.map.measureLabels(); });
     });
   }
@@ -1078,7 +1090,7 @@
     state.map = new PM.MapView($("#map"));
     state.map.onPicture = function (href) { $$(".terrain-picture").forEach(function (i) { i.setAttribute("href", href); }); };
     state.map.obstacles = function () {
-      return [".search-box", ".scale-corner", ".controls", ".fab-world"].map(function (s) { return $(s); }).filter(function (e) {
+      return [".search-box", ".scale-corner", ".controls"].map(function (s) { return $(s); }).filter(function (e) {
         return e && e.offsetParent !== null && getComputedStyle(e).display !== "none";
       }).map(function (e) { return e.getBoundingClientRect(); });
     };
@@ -1104,7 +1116,6 @@
     $("#zoom-in").addEventListener("click", function () { state.map.zoomBy(1.6); });
     $("#zoom-out").addEventListener("click", function () { state.map.zoomBy(1 / 1.6); });
     $("#strip-world").addEventListener("click", nextWorld);
-    els.fab.addEventListener("click", nextWorld);
     var resizeRaf = 0;
     window.addEventListener("resize", function () {
       cancelAnimationFrame(resizeRaf);

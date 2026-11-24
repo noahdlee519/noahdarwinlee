@@ -1594,18 +1594,18 @@ body:not(.is-panel) .panel-tab .ic {
   color: #3c3f44;
 }
 
+/* The location button's mark, after the Google Maps app's: a blue dot in a pale blue halo. */
 .locate svg {
   width: 22px;
   height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
+}
+
+.locate .locate-halo {
+  fill: #e3eafc;
 }
 
 .locate .locate-dot {
-  fill: currentColor;
-  stroke: none;
+  fill: #1a73e8;
 }
 
 .zoom {
@@ -1668,10 +1668,6 @@ body:not(.is-panel) .panel-tab .ic {
   cursor: default;
 }
 
-.fab-world {
-  display: none;
-}
-
 .corner {
   position: fixed;
   bottom: calc(var(--map-bottom, 24px) + 12px);
@@ -1705,6 +1701,10 @@ body:not(.is-panel) .panel-tab .ic {
 }
 
 .scale-corner {
+  display: none;
+}
+
+.scale-dual {
   display: none;
 }
 
@@ -2078,35 +2078,11 @@ body:not(.is-panel) .panel-tab .ic {
     max-height: calc(100vh - 220px);
   }
 
-  /* Round white buttons at the right, above the sheet: the location button, and under it the next world, where a
-     mapping app keeps its layers button. No zoom buttons: pinch and double-tap zoom, as in the app. */
-  .fab-world {
-    position: fixed;
-    right: 14px;
-    bottom: calc(var(--map-bottom, 200px) + 16px);
-    z-index: 15;
-    display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--surface);
-    box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.2), 0 4px 12px rgba(var(--shadow-rgb), 0.14);
-    color: #3c4043;
-    cursor: pointer;
-    transition: opacity 200ms ease, transform 140ms ease;
-  }
-
-  .fab-world .ic {
-    width: 24px;
-    height: 24px;
-    stroke-width: 1.8;
-  }
-
-  .fab-world:active {
-    transform: scale(0.94);
+  /* One white button at the right, above the sheet: the location button. No next-world button and no world's name
+     on a phone (Noah, 24 November 2026), and no zoom buttons: pinch and double-tap zoom, as in the app. */
+  .drawer-next,
+  .drawer-note {
+    display: none;
   }
 
   .strip {
@@ -2115,7 +2091,7 @@ body:not(.is-panel) .panel-tab .ic {
 
   .controls {
     right: 14px;
-    bottom: calc(var(--map-bottom, 200px) + 16px + 52px + 14px);
+    bottom: calc(var(--map-bottom, 200px) + 16px);
   }
 
   .zoom {
@@ -2123,16 +2099,15 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .locate {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
     box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.2), 0 4px 12px rgba(var(--shadow-rgb), 0.14);
-    color: var(--accent);
   }
 
   .locate svg {
-    width: 24px;
-    height: 24px;
+    width: 34px;
+    height: 34px;
   }
 
   .hint {
@@ -2156,8 +2131,70 @@ body:not(.is-panel) .panel-tab .ic {
     text-shadow: 0 0 3px var(--m-halo), 0 0 3px var(--m-halo);
   }
 
+  /* The scale after the Google Maps app's: one line, miles above it and kilometres below, each measured back from
+     the right end, with a tick up where the miles start and a tick down where the kilometres start. */
+  .scale-corner .scale-text,
   .scale-corner .scale-bar {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-halo) 70%, transparent);
+    display: none;
+  }
+
+  .scale-corner .scale-dual {
+    position: relative;
+    display: block;
+    width: max(var(--km, 60px), var(--mi, 60px));
+    height: 42px;
+    font-size: 13.5px;
+    line-height: 1;
+    font-weight: 500;
+  }
+
+  .scale-line,
+  .scale-line::before,
+  .scale-line::after {
+    position: absolute;
+    background: currentColor;
+    border-radius: 1px;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-halo) 80%, transparent);
+  }
+
+  .scale-line {
+    top: 20px;
+    right: 0;
+    left: 0;
+    height: 2px;
+  }
+
+  .scale-line::before,
+  .scale-line::after {
+    content: "";
+    width: 2px;
+    height: 11px;
+  }
+
+  /* Kilometres: a tick down at their start. */
+  .scale-line::before {
+    top: 0;
+    left: calc(100% - var(--km, 60px));
+  }
+
+  /* Miles: a tick up at their start. */
+  .scale-line::after {
+    bottom: 0;
+    left: calc(100% - var(--mi, 60px));
+  }
+
+  .scale-mi,
+  .scale-km {
+    position: absolute;
+    right: 0;
+  }
+
+  .scale-mi {
+    bottom: 26px;
+  }
+
+  .scale-km {
+    top: 26px;
   }
 
   /* The panel becomes a bottom sheet. */
@@ -2360,7 +2397,6 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .is-sheet-full .corner,
-  .is-sheet-full .fab-world,
   .is-sheet-full .controls {
     opacity: 0;
     pointer-events: none;
