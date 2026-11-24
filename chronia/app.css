@@ -143,6 +143,10 @@
   --ch-b9: #7d924e;
 }
 
+/* The page itself can't be zoomed on a touch screen: on an iPhone a double tap, a pinch that began on the interface, or a tap on a
+   text box zoomed the whole page, and left it zoomed. The page takes pans only (its panels scroll); the map has its own pinch
+   (.ch-globe). With this go the viewport's maximum-scale in index.html and the gesture listeners in app.js. */
+html:has(body.ch-page) { touch-action: pan-x pan-y; }
 body.ch-page {
   margin: 0;
   padding: 0;
@@ -150,7 +154,7 @@ body.ch-page {
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);
   color: var(--ink);
   font-family: var(--ch-serif);

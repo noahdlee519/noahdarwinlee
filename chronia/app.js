@@ -4917,6 +4917,7 @@
   var pointers = new Map(), drag = null, pinch = null, inertia = null, downAt = null;
   function stopInertia() { if (inertia) { cancelAnimationFrame(inertia.raf); inertia = null; } }
   canvas.addEventListener("pointerdown", function (e) {
+    lastDownType = e.pointerType;
     stopInertia();
     lapseHold();
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
@@ -5031,6 +5032,11 @@
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
   canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !pointers.size) { setHover(-1); hideTip(); } });
+  // No page zoom on a touch screen (see the note on touch-action in app.css): Safari's own pinch events are refused wherever they
+  // begin. A Mac's trackpad, which sends them too, is left alone.
+  if (navigator.maxTouchPoints > 0) ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) {
+    document.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false });
+  });
   canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
     stopInertia();
@@ -5038,7 +5044,10 @@
     var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     zoomAt(view.zoom * Math.exp(-dy * 0.0016), e.clientX, e.clientY);
   }, { passive: false });
-  canvas.addEventListener("dblclick", function (e) { zoomAt(view.zoom * 2, e.clientX, e.clientY); });
+  // A double click with a mouse zooms in. A double tap with a finger or a pen does not (since 23 November 2026): two quick taps
+  // on a country, wanting its card, zoomed the map in instead; a finger has the pinch.
+  var lastDownType = "mouse";
+  canvas.addEventListener("dblclick", function (e) { if (lastDownType === "mouse") zoomAt(view.zoom * 2, e.clientX, e.clientY); });
   // The right button turns the globe, so the canvas keeps its own menu to itself.
   canvas.addEventListener("contextmenu", function (e) { if (!flat) e.preventDefault(); });
 
