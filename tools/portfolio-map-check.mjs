@@ -5,7 +5,7 @@
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
 //   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|moved|all] [base URL]
-//       map: the world draws 20 countries and their labels, zoom stops at 16x, the water is the reference's blue at
+//       map: the world draws 20 countries and their labels, zoom stops at 8x, the water is the reference's blue at
 //       each zoom, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
@@ -29,8 +29,8 @@ const PAGE = `${base}/projects/`;
 
 // The closest zoom (map.js, MAX_ZOOM), and the sea's blue as the page should render it at each zoom: the reference's,
 // measured on Noah's screenshots of it (read through their colour profiles into sRGB).
-const MAX_ZOOM = 16;
-const WATER_AT = [[1, '#70d3e5'], [3, '#7fd5e9'], [6, '#88d7eb'], [16, '#90d9ed']];
+const MAX_ZOOM = 8;
+const WATER_AT = [[1, '#7fd5e9'], [3, '#7fd5e9'], [6, '#7fd5e9'], [8, '#7fd5e9']];
 
 let failures = 0;
 const ok = (cond, what) => {

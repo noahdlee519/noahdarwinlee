@@ -7,10 +7,11 @@
   var ROOT = "/projects/";
   // The closest zoom: 6x is a regional view, where a city is a grey patch with its main roads; from there to 16x the
   // cities open up into their streets, cores, and parks.
-  var MAX_ZOOM = 16;
+  var MAX_ZOOM = 8; // Noah, 24 November 2026: 16x showed the land cover's coarse facets; 8x is the limit.
   // The water's blue by zoom, as the reference draws it (measured on Noah's screenshots, read through their colour
   // profiles into sRGB): deeper when the whole world shows, paler the closer in.
-  var WATER_BY_ZOOM = [[1, [112, 211, 229]], [3, [127, 213, 233]], [6, [136, 215, 235]], [16, [144, 217, 237]]];
+  // One steady blue at every zoom (Noah, 24 November 2026: the zoom-1 blue read too cyan): the reference's at regional zoom.
+  var WATER_BY_ZOOM = [[1, [127, 213, 233]], [8, [127, 213, 233]]];
   function waterAt(z) {
     var W = WATER_BY_ZOOM, n = W.length;
     if (z <= W[0][0]) return hex(W[0][1]);
@@ -586,7 +587,10 @@
       if (hidden[l.kind]) { if (it.shown) { it.shown = false; it.el.classList.remove("is-on"); } return; }
       var forced = it.country && it.country === self.selected;
       var inProvince = l.kind === "province" && self.selected === l.parent;
-      if ((z + 1e-6 >= l.minZoom) || forced || (inProvince && z * 1.6 >= l.minZoom)) {
+      // The worlds name some places for zooms up to 16x; with the limit at 8x, everything set for 6x and beyond appears
+      // by 8x, in the same order.
+      var mz = l.minZoom <= 6 ? l.minZoom : Math.min(MAX_ZOOM, 6 + (l.minZoom - 6) * (MAX_ZOOM - 6) / 10);
+      if ((z + 1e-6 >= mz) || forced || (inProvince && z * 1.6 >= mz)) {
         var px = clamp(Ppx * l.size, it.floor, it.cap);
         var k = px / l.size; // screen px per label unit
         var span = self.world.width * s, rcx = r.l + r.w / 2;
@@ -714,9 +718,9 @@
     this.host.classList.toggle("is-z4", z >= 3.9);
     this.host.classList.toggle("is-z5", z >= 4.9);
     this.host.classList.toggle("is-z55", z >= 5.85);
-    this.host.classList.toggle("is-z7", z >= 6.9);
-    this.host.classList.toggle("is-z9", z >= 8.9);
-    this.host.classList.toggle("is-z12", z >= 11.9);
+    this.host.classList.toggle("is-z7", z >= 5.9);
+    this.host.classList.toggle("is-z9", z >= 6.9);
+    this.host.classList.toggle("is-z12", z >= 7.9);
     var water = waterAt(z);
     if (water !== this.water) {
       this.water = water;
