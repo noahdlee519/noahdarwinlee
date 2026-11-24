@@ -169,3 +169,182 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+
+/* The team's list of comments and profile pictures (reports.js, "cm"): rows like the reports', each with the writer's
+   picture or initial on a disc, as on the atlas's cards. */
+.cp-sheet .cm {
+  margin-top: 34px;
+}
+.cp-sheet .cm-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+.cm.cm-off .rp-bar,
+.cm.cm-off .cm-sub,
+.cm.cm-off .cm-names {
+  display: none;
+}
+.cm .rp-bar {
+  margin-top: 14px;
+}
+#cm-note:empty {
+  display: none;
+}
+.cm-sub,
+.cm-names > summary.cm-sub {
+  margin: 30px 0 6px;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+.cm-names > summary {
+  cursor: pointer;
+}
+.cm-names > .rp-note {
+  margin: 4px 0 6px;
+}
+.cp-sheet .cm-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+}
+.cm-av,
+.cm-pic {
+  flex: none;
+  box-sizing: border-box;
+  border: 1px solid var(--brass-deep);
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--ivory);
+}
+.cm-av {
+  width: 36px;
+  height: 36px;
+}
+.cm-pic {
+  width: 112px;
+  height: 112px;
+}
+.cm-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--metal);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9);
+  color: var(--on-brass);
+  font-family: var(--num);
+  font-size: 18px;
+}
+.cm-pic.cm-face {
+  font-size: 46px;
+}
+.cm-name {
+  overflow-wrap: anywhere;
+}
+.cm-state {
+  font-style: italic;
+}
+.cm-hidden,
+.cm-removed,
+.cm-tag {
+  color: var(--red);
+}
+.cm-tag {
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.cm-item[data-state="removed"] .cm-text {
+  color: var(--muted);
+}
+.cm-picrow {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.cm-picbody {
+  flex: 1;
+  min-width: 0;
+}
+.cp-sheet .cm-picbody .cm-head {
+  margin-top: 6px;
+}
+.cm-short {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 14px 0 12px;
+}
+.cm-short .rp-acts {
+  margin-left: auto;
+}
+.cm-count {
+  color: var(--muted);
+  font-size: 16px;
+}
+.cm-err:empty {
+  display: none;
+}
+.cm-err {
+  color: var(--red);
+}
+.cm-move {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.cm-move input {
+  box-sizing: border-box;
+  width: 15rem;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  background: var(--ivory);
+  box-shadow: var(--well);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+/* Erase's question, in the row: ruled off in red, as it cannot be undone. */
+.cm-ask {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--red);
+  background: rgba(140, 42, 26, 0.06);
+}
+.cp-sheet .cm-ask p {
+  margin: 0 0 6px;
+}
+.cp-sheet .cm-ask .cm-danger {
+  color: var(--red);
+}
+.cm-gone .rp-meta {
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  .cm-pic {
+    width: 88px;
+    height: 88px;
+  }
+  .cm-short .rp-acts {
+    margin-left: 0;
+  }
+  .cm-move input {
+    width: 11rem;
+  }
+}
+/* The comments' counts take their own line under the filter. */
+.cm .rp-count {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+.cm-state {
+  white-space: nowrap;
+}

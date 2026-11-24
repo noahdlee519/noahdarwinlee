@@ -9,7 +9,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://jvcmeuqlyygpwelmvxuv.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://jvcmeuqlyygpwelmvxuv.supabase.co; connect-src 'self' https://jvcmeuqlyygpwelmvxuv.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
     <!-- Google AdSense's site tag, so Google can find and verify chroniaatlas.com (18 November 2026). It sits after a
          Content-Security-Policy that does not allow Google's script, so it never loads here: the advertisements are on
@@ -50,6 +50,35 @@
           <button type="button" class="rp-out" id="out">Lock</button>
         </div>
         <ol class="rp-list" id="list"></ol>
+
+        <!-- Comments and profile pictures that readers have reported, for the team (reports.js fills it from the
+             chronia-comments function's queue; a reviewer gets the buttons). Shown only to a Google sign-in. -->
+        <section class="cm" id="cm" hidden aria-labelledby="cm-title">
+          <h2 id="cm-title">Comments</h2>
+          <p class="cm-lede">Comments and pictures that readers have reported, or that are hidden or removed, newest first.</p>
+          <div class="rp-bar" id="cm-bar" role="group" aria-label="Which comments to show">
+            <button type="button" data-cstate="all" aria-pressed="true">All</button> |
+            <button type="button" data-cstate="live" aria-pressed="false">Live with reports</button> |
+            <button type="button" data-cstate="hidden" aria-pressed="false">Hidden</button> |
+            <button type="button" data-cstate="removed" aria-pressed="false">Removed</button>
+            <span class="rp-count" id="cm-count" aria-live="polite"></span>
+          </div>
+          <p class="rp-note" id="cm-note" aria-live="polite"></p>
+          <ol class="rp-list" id="cm-list"></ol>
+
+          <h3 class="cm-sub" id="cm-pics-title">Pictures</h3>
+          <ol class="rp-list" id="cm-pics" aria-labelledby="cm-pics-title"></ol>
+
+          <h3 class="cm-sub" id="cm-blocked-title">Blocked accounts</h3>
+          <ol class="rp-list" id="cm-blocked" aria-labelledby="cm-blocked-title"></ol>
+
+          <details class="cm-names" id="cm-names">
+            <summary class="cm-sub">Moved names</summary>
+            <p class="rp-note" id="cm-names-note">Countries that comments were posted under and that the map no longer has, after a change to its data.</p>
+            <ol class="rp-list"></ol>
+            <datalist id="cm-polities"></datalist>
+          </details>
+        </section>
       </section>
       <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a class="cp-faq" href="../faq/">FAQ</a> | <a href="../premium/">Premium</a> | <a href="../privacy/">Privacy</a> | <a href="../terms/">Terms</a></footer>
     </main>
