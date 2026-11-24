@@ -248,6 +248,11 @@ body.cp {
   font-size: 16px;
 }
 
+/* IM Fell's Q sweeps a long tail to the right, under the bar after it. */
+.cp-foot a.cp-faq {
+  margin-right: 0.3em;
+}
+
 .cp-foot a[aria-current="page"] {
   color: var(--ink);
   text-decoration: none;
