@@ -43,11 +43,11 @@ Comment   { "id": 123, "username": "Herodotus", "avatar": "https://…" | null, 
 
 ## Actions for the team (`viewer` or `reviewer` in `chronia_team`)
 
-- `queue` → `{ role, comments: Comment[] (every comment with flags > 0 or not live, newest first, at most 500), pictures: [{ "username", "avatar", "user", "flags", "state": "ok" | "hidden" | "removed" }], names: string[] (every distinct `polity` stored, for the page to find those no longer on the map) }`
+- `queue` → `{ role, comments: Comment[] (every comment with flags > 0 or not live, newest first, at most 500), pictures: [{ "username", "avatar", "user", "flags", "state": "ok" | "hidden" | "removed" }], blocked: [{ "username", "user" }] (blocked accounts, so a block can be undone), names: string[] (every distinct `polity` stored, for the page to find those no longer on the map) }`
 - Reviewer only (a viewer gets 403 `review`):
   - `restore { id }` → `{ comment }` (live again, flags cleared)
   - `remove { id }` → `{ comment }`
   - `block { user: "<account id>", on: boolean }` → `{ ok: true }`
-  - `picture { user: "<account id>", on: boolean }` → `{ ok: true }` (off removes the picture; on restores a hidden one)
+  - `picture { user: "<account id>", on: boolean }` → `{ ok: true }` (off removes the picture from public view; on restores a hidden one, or a removed one whose file is still kept, which it is for 30 days)
   - `move { from: string, to: string }` → `{ moved: n }` (every comment stored under `from` now under `to`)
   - `erase { user: "<account id>" }` → `{ ok: true }` (profile, picture file, comments, and flags gone)
