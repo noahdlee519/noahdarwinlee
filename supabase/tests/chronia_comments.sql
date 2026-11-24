@@ -16,7 +16,7 @@ declare r record;
 begin
   for r in select c.relname, c.relrowsecurity from pg_class c
            where c.relnamespace = 'public'::regnamespace
-             and c.relname in ('chronia_profiles', 'chronia_comments', 'chronia_flags') loop
+             and c.relname in ('chronia_profiles', 'chronia_comments', 'chronia_flags', 'chronia_avatar_trash') loop
     assert r.relrowsecurity, 'row-level security is on for ' || r.relname;
     assert not has_table_privilege('anon', 'public.' || r.relname, 'select,insert,update,delete,truncate,references,trigger'),
       'anon has no right on ' || r.relname;
@@ -26,7 +26,7 @@ begin
       'service_role may read and write ' || r.relname;
   end loop;
   assert (select count(*) from pg_class where relnamespace = 'public'::regnamespace
-          and relname in ('chronia_profiles', 'chronia_comments', 'chronia_flags')) = 3, 'the three tables exist';
+          and relname in ('chronia_profiles', 'chronia_comments', 'chronia_flags', 'chronia_avatar_trash')) = 4, 'the four tables exist';
   assert not exists (select 1 from pg_policies where tablename like 'chronia\_%'), 'the tables have no policies';
 end $$;
 
@@ -68,6 +68,12 @@ declare
     'select public.chronia_thread(array[''x''], ''new'', 0, 0, 20, null, false)',
     'select public.chronia_queue()',
     'select public.chronia_avatars_expired(30)',
+    'select public.chronia_avatar_uncount(t.u(1))',
+    'select public.chronia_avatar_moves(null, 50)',
+    'select public.chronia_avatar_moved(t.u(1), ''x.webp'', true)',
+    'select public.chronia_avatar_trash_take(10)',
+    'select public.chronia_avatar_trash_done(array[1]::bigint[])',
+    'select * from public.chronia_avatar_trash',
     'select public.chronia_me(t.u(1), 100)'];
   who text;
 begin
@@ -160,6 +166,33 @@ end $$;
 do $$
 declare j jsonb;
 begin
+  assert (select username_fold from public.chronia_profiles where user_id = t.u(3)) = 'herodotus', 'a profile keeps its folded name';
+  j := public.chronia_profile_save(t.u(7), 'Her0dotus', 'her0dotus', null, true, 30, 'herodotus');
+  assert j->>'error' = 'taken', 'Her0dotus is taken by Herodotus: ' || j::text;
+  j := public.chronia_profile_save(t.u(7), 'Iliad', 'iliad', null, true, 30, 'lllad');
+  assert (j->>'ok')::boolean, 'Iliad is free: ' || j::text;
+  j := public.chronia_profile_save(t.u(8), 'lliad', 'lliad', null, true, 30, 'lllad');
+  assert j->>'error' = 'taken', 'lliad is taken by Iliad: ' || j::text;
+  j := public.chronia_profile_save(t.u(8), 'EssexMan', 'essexman', null, true, 30, 'essexman');
+  assert (j->>'ok')::boolean, 'EssexMan is free: ' || j::text;
+  j := public.chronia_profile_save(t.u(15), 'Essex_Man', 'essex_man', null, true, 30, 'essexman');
+  assert j->>'error' = 'taken', 'Essex_Man is taken by EssexMan: ' || j::text;
+  j := public.chronia_profile_save(t.u(15), 'Essex_Man', 'essex_man', null, true, 30, null);
+  assert j->>'error' = 'taken', 'a save with no fold given folds the name itself: ' || j::text;
+  j := public.chronia_profile_save(t.u(7), 'ILIAD', 'iliad', null, null, 30, 'lllad');
+  assert j->>'error' = 'soon', 'one''s own name in another case is one''s own, not taken: ' || j::text;
+  begin
+    perform public.chronia_profile_save(t.u(15), 'Abcdef', 'abcdef', null, true, 30, 'zzz');
+    raise exception 'no error';
+  exception when check_violation then null;
+  end;
+  assert (select username_fold from public.chronia_profiles where user_id = t.u(99)) = 'seededpre',
+    'the migration fills the folded name of a profile made before it';
+end $$;
+
+do $$
+declare j jsonb;
+begin
   j := public.chronia_profile_save(t.u(1), null, null, 'a2.webp', null, 30);
   assert (j->>'ok')::boolean and j->>'avatar' = 'a2.webp' and j->>'old_avatar' = 'a1.webp',
     'a new picture returns the old one to be deleted: ' || j::text;
@@ -172,17 +205,28 @@ end $$;
 do $$
 declare j jsonb;
 begin
-  j := public.chronia_avatar_count(t.u(9), 5);
-  assert (j->>'ok')::boolean and (j->>'left')::int = 4, 'an account with no profile may upload its first picture: ' || j::text;
-  j := public.chronia_profile_save(t.u(9), 'Polybius', 'polybius', 'p0.webp', true, 30);
-  assert (select avatar_changes = 1 and avatar_day = (now() at time zone 'utc')::date
-          from public.chronia_profiles where user_id = t.u(9)), 'a first profile with a picture counts one change today';
-  for i in 1..4 loop
+  for i in 1..8 loop
     j := public.chronia_avatar_count(t.u(9), 5);
-    assert (j->>'ok')::boolean and (j->>'left')::int = 4 - i, 'picture change ' || (i + 1) || ' of 5 is allowed: ' || j::text;
+    assert j->>'error' = 'profile', 'an account with no profile gets no picture check, however often it asks: ' || j::text;
+  end loop;
+  j := public.chronia_profile_save(t.u(9), 'Polybius', 'polybius', 'p0.webp', true, 30);
+  assert (select avatar_changes = 0 from public.chronia_profiles where user_id = t.u(9)),
+    'making a profile counts no picture change: the function counts each picture before its check';
+  for i in 1..5 loop
+    j := public.chronia_avatar_count(t.u(9), 5);
+    assert (j->>'ok')::boolean and (j->>'left')::int = 5 - i, 'picture change ' || i || ' of 5 is allowed: ' || j::text;
   end loop;
   j := public.chronia_avatar_count(t.u(9), 5);
   assert j->>'error' = 'limit', 'a sixth picture change in a day is refused: ' || j::text;
+  j := public.chronia_avatar_uncount(t.u(9));
+  assert (j->>'ok')::boolean, 'a change whose check could not be made is given back: ' || j::text;
+  j := public.chronia_avatar_count(t.u(9), 5);
+  assert (j->>'ok')::boolean and (j->>'left')::int = 0, 'the change given back can be used again: ' || j::text;
+  assert public.chronia_avatar_count(t.u(9), 5)->>'error' = 'limit', 'and then the cap holds again';
+  perform public.chronia_avatar_uncount(t.u(3));
+  perform public.chronia_avatar_uncount(t.u(3));
+  assert (select avatar_changes from public.chronia_profiles where user_id = t.u(3)) = 0, 'giving back never goes below none';
+  assert (public.chronia_avatar_uncount(t.u(19))->>'ok')::boolean, 'giving back for no profile is harmless';
   j := public.chronia_avatar_count(t.u(3), 5);
   assert (j->>'left')::int = 4, 'another account has its own count: ' || j::text;
 end $$;
@@ -483,9 +527,87 @@ begin
   assert public.chronia_avatars_expired(30) = '[]'::jsonb, 'an expired picture is returned only once';
   j := public.chronia_avatar_set(t.u(2), true);
   assert (j->>'ok')::boolean and j->'avatar' = 'null', 'an expired picture cannot be turned on again: ' || j::text;
+  assert exists (select 1 from public.chronia_avatar_trash where name = 'b2.webp' and bucket = 'chronia-avatars'),
+    'an expired picture goes to the trash, for the sweep to delete';
   j := public.chronia_account_erase(t.u(9));
   assert (j->>'ok')::boolean and j->'avatar' = 'null' and j->>'removed_avatar' = 'p0.webp',
     'erase returns a kept picture''s file too: ' || j::text;
+  assert exists (select 1 from public.chronia_avatar_trash where name = 'p0.webp'), 'erase puts the files in the trash';
+end $$;
+
+do $$
+declare j jsonb; m jsonb;
+begin
+  perform public.chronia_profile_save(t.u(16), 'Strabo', 'strabo', null, true, 30);
+  perform public.chronia_profile_save(t.u(16), null, null, 's1.webp', null, 30);
+  perform public.chronia_comment_send(t.u(16), 'Pontus', '0020', 20, 'Geography', 100, 0);
+  assert (select not avatar_kept from public.chronia_profiles where user_id = t.u(16)), 'a new picture is in the public bucket';
+  assert public.chronia_avatar_moves(null, 50) = '[]'::jsonb, 'nothing to move while every picture is where it belongs: '
+    || public.chronia_avatar_moves(null, 50)::text;
+  perform public.chronia_flag_add(t.u(1), null, t.u(16), 20, 3);
+  perform public.chronia_flag_add(t.u(3), null, t.u(16), 20, 3);
+  perform public.chronia_flag_add(t.u(4), null, t.u(16), 20, 3);
+  m := public.chronia_avatar_moves(t.u(16), 50);
+  assert m = jsonb_build_array(jsonb_build_object('user', t.u(16), 'name', 's1.webp', 'kept', true)),
+    'a picture hidden by reports is to move to the private bucket: ' || m::text;
+  j := public.chronia_avatar_moved(t.u(16), 'other.webp', true);
+  assert not (j->>'ok')::boolean and (select not avatar_kept from public.chronia_profiles where user_id = t.u(16)),
+    'a move is recorded only for the file the profile still has: ' || j::text;
+  j := public.chronia_avatar_moved(t.u(16), 's1.webp', true);
+  assert (j->>'ok')::boolean and (select avatar_kept from public.chronia_profiles where user_id = t.u(16)), 'a move is recorded: ' || j::text;
+  assert public.chronia_avatar_moves(t.u(16), 50) = '[]'::jsonb, 'a moved picture has nothing left to move';
+  assert exists (select 1 from jsonb_array_elements(public.chronia_queue()->'pictures') e
+                 where e->>'user' = t.u(16)::text and (e->>'kept')::boolean and e->>'avatar' = 's1.webp'),
+    'the queue says the picture is in the private bucket';
+  assert (public.chronia_comment_row((select id from public.chronia_comments where user_id = t.u(16)))->>'avatar_kept')::boolean,
+    'a comment as the team sees it says where its writer''s picture is';
+
+  j := public.chronia_avatar_set(t.u(16), true);
+  m := public.chronia_avatar_moves(t.u(16), 50);
+  assert m = jsonb_build_array(jsonb_build_object('user', t.u(16), 'name', 's1.webp', 'kept', false)),
+    'a picture a reviewer keeps is to move back to the public bucket: ' || m::text;
+  assert public.chronia_thread(array['Pontus'], 'new', 0, 0, 20, null, false)->'comments'->0->'avatar' = 'null',
+    'the thread shows no picture until it is back in the public bucket';
+  assert (public.chronia_me(t.u(16), 100)->'profile'->>'avatar_kept')::boolean, 'me says where the picture is';
+  perform public.chronia_avatar_moved(t.u(16), 's1.webp', false);
+  assert public.chronia_thread(array['Pontus'], 'new', 0, 0, 20, null, false)->'comments'->0->>'avatar' = 's1.webp',
+    'the thread shows the picture once it is back';
+
+  perform public.chronia_avatar_set(t.u(16), false);
+  m := public.chronia_avatar_moves(null, 50);
+  assert m = jsonb_build_array(jsonb_build_object('user', t.u(16), 'name', 's1.webp', 'kept', true)),
+    'a picture a reviewer removes is to move to the private bucket: ' || m::text;
+  perform public.chronia_avatar_moved(t.u(16), 's1.webp', true);
+  j := public.chronia_profile_save(t.u(16), null, null, 's2.webp', null, 30);
+  assert j->>'removed_avatar' = 's1.webp' and (select not avatar_kept from public.chronia_profiles where user_id = t.u(16)),
+    'a new picture is public, and the kept one is given up: ' || j::text;
+
+  perform public.chronia_profile_save(t.u(17), 'Pausanias', 'pausanias', null, true, 30);
+  perform public.chronia_profile_save(t.u(17), null, null, 't1.webp', null, 30);
+  perform public.chronia_avatar_set(t.u(17), false);
+  perform public.chronia_avatar_moved(t.u(17), 't1.webp', true);
+  perform public.chronia_profile_save(t.u(18), 'Diodorus', 'diodorus', null, true, 30);
+  perform public.chronia_profile_save(t.u(18), null, null, 't3.webp', null, 30);
+end $$;
+
+reset role;
+delete from public.chronia_avatar_trash;
+delete from auth.users where id in (t.u(17), t.u(18)); -- as Supabase deletes a user, past the function
+set role service_role;
+
+do $$
+declare j jsonb; ids bigint[];
+begin
+  assert not exists (select 1 from public.chronia_profiles where user_id in (t.u(17), t.u(18))), 'the profiles went with the users';
+  j := public.chronia_avatar_trash_take(100);
+  assert j @> jsonb_build_array(jsonb_build_object('name', 't1.webp', 'bucket', 'chronia-avatars-kept'),
+                                jsonb_build_object('name', 't3.webp', 'bucket', 'chronia-avatars'))
+         and jsonb_array_length(j) = 2, 'deleting a user puts its picture files in the trash, each with its bucket: ' || j::text;
+  assert public.chronia_avatar_trash_take(1) ->> 0 is not null and jsonb_array_length(public.chronia_avatar_trash_take(1)) = 1,
+    'the trash is taken a few at a time';
+  select array_agg((e->>'id')::bigint) into ids from jsonb_array_elements(j) e;
+  assert public.chronia_avatar_trash_done(ids) = 2, 'files deleted are forgotten';
+  assert public.chronia_avatar_trash_take(100) = '[]'::jsonb, 'the trash is empty';
 end $$;
 
 -- ---------------------------------------------------------------- threads
@@ -663,4 +785,6 @@ do $$
 begin
   assert (select public and file_size_limit = 204800 and allowed_mime_types = array['image/webp', 'image/jpeg', 'image/png']
           from storage.buckets where id = 'chronia-avatars'), 'the public picture bucket exists with its limits';
+  assert (select not public and file_size_limit = 204800 and allowed_mime_types = array['image/webp', 'image/jpeg', 'image/png']
+          from storage.buckets where id = 'chronia-avatars-kept'), 'the private bucket for hidden and removed pictures exists';
 end $$;

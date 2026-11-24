@@ -2,7 +2,7 @@
 // Run with `deno test rules.test.ts` from this folder. Plain assertions, so no network is needed.
 // The worst words are built from pieces, so they don't sit whole in this file or its output.
 
-import { atNumber, checkComment, checkUsername, imageKind } from "./rules.ts";
+import { atNumber, checkComment, checkUsername, foldName, imageKind } from "./rules.ts";
 
 function eq(got: unknown, want: unknown, what: string) {
   const g = JSON.stringify(got), w = JSON.stringify(want);
@@ -25,7 +25,7 @@ const goodNames = [
 ];
 for (const name of goodNames) {
   Deno.test(`username passes: ${name}`, () => {
-    eq(checkUsername(name), { ok: true, key: name.toLowerCase() }, name);
+    eq(checkUsername(name), { ok: true, key: name.toLowerCase(), fold: foldName(name) }, name);
   });
 }
 
@@ -74,8 +74,28 @@ for (const [name, why, what] of badNames) {
   });
 }
 
-Deno.test("username key is the lowercase name", () => {
-  eq(checkUsername("Lin_Zexu"), { ok: true, key: "lin_zexu" }, "key");
+Deno.test("username key is the lowercase name, and fold its look-alike form", () => {
+  eq(checkUsername("Lin_Zexu"), { ok: true, key: "lin_zexu", fold: "llnzexu" }, "key and fold");
+});
+
+Deno.test("foldName: lowercase, no underscores, and each look-alike as one letter", () => {
+  const cases: [string, string][] = [
+    ["Herodotus", "herodotus"], ["Her0dotus", "herodotus"], ["HER0DOTUS", "herodotus"],
+    ["Iliad", "lllad"], ["lliad", "lllad"], ["1liad", "lllad"], ["ILIAD", "lllad"],
+    ["EssexMan", "essexman"], ["Essex_Man", "essexman"], ["E55ex__Man", "essexman"],
+    ["T3st_4ll_5even_7_8", "testallseventb"], ["Barn", "barn"], ["Bam", "bam"],
+    ["Agent_2_6_9", "agent269"],
+  ];
+  for (const [name, want] of cases) eq(foldName(name), want, name);
+  eq(foldName("Barn") === foldName("Bam"), false, "rn is not folded to m");
+});
+
+Deno.test("names that look alike fold alike", () => {
+  const same: [string, string][] = [["Herodotus", "Her0dotus"], ["Iliad", "lliad"], ["EssexMan", "Essex_Man"], ["Mary_Lee", "M4ryLee"]];
+  for (const [a, b] of same) {
+    const x = checkUsername(a), y = checkUsername(b);
+    eq(x.ok && y.ok && x.fold === y.fold, true, a + " and " + b);
+  }
 });
 
 // Comments

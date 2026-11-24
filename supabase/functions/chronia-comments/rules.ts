@@ -26,7 +26,15 @@ function folds(s: string): string[] {
   return [base.replace(/1/g, "i"), base.replace(/1/g, "l")];
 }
 
-export function checkUsername(name: string): { ok: true; key: string } | { ok: false; why: "shape" | "reserved" | "word" } {
+// A name as names are told apart: lowercase, without underscores, and each look-alike as one letter (0 as o;
+// 1, i, and l as l; 3 as e; 4 as a; 5 as s; 7 as t; 8 as b), so that Her0dotus is Herodotus and lliad is Iliad.
+// "rn" is left alone. The migration folds the same way (chronia_profiles_fold_check), and the names are unique by it.
+const FOLD: Record<string, string> = { "0": "o", "1": "l", "i": "l", "3": "e", "4": "a", "5": "s", "7": "t", "8": "b" };
+export function foldName(name: string): string {
+  return name.toLowerCase().replace(/_/g, "").replace(/[01i34578]/g, (c) => FOLD[c]);
+}
+
+export function checkUsername(name: string): { ok: true; key: string; fold: string } | { ok: false; why: "shape" | "reserved" | "word" } {
   if (!SHAPE.test(name)) return { ok: false, why: "shape" };
   const key = name.toLowerCase();
   const folded = folds(key);
@@ -39,7 +47,7 @@ export function checkUsername(name: string): { ok: true; key: string } | { ok: f
     if (NAME_SET.has(p) && !ALLOW_SET.has(p)) return { ok: false, why: "word" };
   }
   if (joined.some((s) => ANYWHERE.test(s.replace(ALLOWED, "|")))) return { ok: false, why: "word" };
-  return { ok: true, key };
+  return { ok: true, key, fold: foldName(name) };
 }
 
 // Comments

@@ -29,6 +29,23 @@ create table if not exists public.chronia_profiles (
 -- first made, hence the separate statements.
 alter table public.chronia_profiles add column if not exists avatar_removed text check (char_length(avatar_removed) between 1 and 200);
 alter table public.chronia_profiles add column if not exists avatar_removed_at timestamptz;
+-- Where the picture's file is: false in the public bucket, true in the private chronia-avatars-kept, where a
+-- hidden or removed picture goes. The state says where it should be; this says where it is, and is set only after a
+-- move has been made, so a move that fails leaves a difference that chronia_avatar_moves reports until it is made.
+alter table public.chronia_profiles add column if not exists avatar_kept boolean not null default false;
+-- The username folded, so that look-alikes are one name: lowercase, no underscores, and 0 as o; 1, i, and l as l;
+-- 3 as e; 4 as a; 5 as s; 7 as t; 8 as b (foldName in rules.ts does the same). Unique, as the key is.
+alter table public.chronia_profiles add column if not exists username_fold text;
+update public.chronia_profiles set username_fold = translate(replace(lower(username), '_', ''), '0134578i', 'oleastbl') where username_fold is null;
+alter table public.chronia_profiles alter column username_fold set not null;
+create unique index if not exists chronia_profiles_fold on public.chronia_profiles (username_fold);
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'chronia_profiles_fold_check') then
+    alter table public.chronia_profiles add constraint chronia_profiles_fold_check
+      check (username_fold = translate(replace(lower(username), '_', ''), '0134578i', 'oleastbl'));
+  end if;
+end $$;
 create index if not exists chronia_profiles_kept on public.chronia_profiles (avatar_removed_at) where avatar_removed is not null;
 create index if not exists chronia_profiles_queue on public.chronia_profiles (user_id)
   where avatar_flags > 0 or avatar_state <> 'ok' or blocked;
@@ -62,6 +79,22 @@ create index if not exists chronia_flags_comment on public.chronia_flags (commen
 create index if not exists chronia_flags_picture on public.chronia_flags (target_user) where target_user is not null;
 create index if not exists chronia_flags_user on public.chronia_flags (user_id, sent_at desc);
 
+-- Picture files to delete: those of a profile deleted by any route (the team's erase, or the sign-in account
+-- deleted in Supabase, which cascades here), and those given up when a removed picture's 30 days end. The function
+-- deletes them at its next sweep and then forgets them.
+create table if not exists public.chronia_avatar_trash (
+  id bigint generated always as identity primary key,
+  name text not null check (char_length(name) between 1 and 200),
+  bucket text not null check (bucket in ('chronia-avatars', 'chronia-avatars-kept')),
+  added_at timestamptz not null default now()
+);
+
+alter table public.chronia_avatar_trash enable row level security;
+revoke all on public.chronia_avatar_trash from public, anon, authenticated;
+revoke all on sequence public.chronia_avatar_trash_id_seq from public, anon, authenticated;
+grant select, insert, delete on public.chronia_avatar_trash to service_role;
+grant usage, select on sequence public.chronia_avatar_trash_id_seq to service_role;
+
 alter table public.chronia_profiles enable row level security;
 alter table public.chronia_comments enable row level security;
 alter table public.chronia_flags enable row level security;
@@ -74,6 +107,10 @@ grant usage, select on sequence public.chronia_comments_id_seq, public.chronia_f
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('chronia-avatars', 'chronia-avatars', true, 204800, array['image/webp', 'image/jpeg', 'image/png'])
 on conflict (id) do nothing;
+-- Hidden and removed pictures, out of public reach; the team sees them through signed addresses that last an hour.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('chronia-avatars-kept', 'chronia-avatars-kept', false, 204800, array['image/webp', 'image/jpeg', 'image/png'])
+on conflict (id) do nothing;
 
 -- One comment as the team sees it: for restore, remove, and the queue.
 create or replace function public.chronia_comment_row(p_comment bigint)
@@ -84,18 +121,21 @@ set search_path = ''
 as $$
   select jsonb_build_object('id', c.id, 'username', p.username, 'avatar', p.avatar, 'polity', c.polity, 'at', c.at,
                             'text', c.body, 'flags', c.flags, 'state', c.state, 'user', c.user_id, 'sent', c.sent_at,
-                            'blocked', p.blocked)
+                            'blocked', p.blocked, 'avatar_kept', p.avatar_kept)
   from public.chronia_comments c join public.chronia_profiles p on p.user_id = c.user_id
   where c.id = p_comment;
 $$;
 
 -- Makes a profile, or changes an existing one's username or picture. p_avatar null leaves the picture as it is,
--- '' removes it, and a new name sets it; a new picture starts with a clean record. A first profile that comes with
--- a picture counts as that day's first picture change (chronia_avatar_count lets an account with no profile pass).
+-- '' removes it, and a new name sets it; a new picture starts with a clean record, in the public bucket. A name is
+-- taken if another account holds its key or its folded form (p_fold, or the name folded here if it is not given).
+-- The function never sends a picture with a first save: it makes the profile first, then counts the picture with
+-- chronia_avatar_count, which refuses an account with no profile, so no picture is checked uncounted.
 -- Any change of picture by its owner gives up one a reviewer removed and kept aside: its name comes back as
 -- removed_avatar, as old_avatar does, for the caller to delete the file.
+drop function if exists public.chronia_profile_save(uuid, text, text, text, boolean, integer);
 create or replace function public.chronia_profile_save(p_user uuid, p_username text, p_key text, p_avatar text,
-                                                       p_age boolean, p_name_days integer)
+                                                       p_age boolean, p_name_days integer, p_fold text default null)
 returns jsonb
 language plpgsql
 set search_path = ''
@@ -103,6 +143,7 @@ as $$
 declare
   p public.chronia_profiles;
   v_avatar text := nullif(p_avatar, '');
+  v_fold text := coalesce(p_fold, translate(replace(lower(p_username), '_', ''), '0134578i', 'oleastbl'));
   v_old text;
   v_kept text;
   v_rename boolean;
@@ -118,13 +159,12 @@ begin
     if coalesce(p_username, '') = '' or coalesce(p_key, '') = '' then
       return jsonb_build_object('error', 'field');
     end if;
-    if exists (select 1 from public.chronia_profiles where username_key = p_key) then
+    if exists (select 1 from public.chronia_profiles where username_key = p_key or username_fold = v_fold) then
       return jsonb_build_object('error', 'taken');
     end if;
     begin
-      insert into public.chronia_profiles (user_id, username, username_key, avatar, avatar_changes, avatar_day, age_ok_at)
-      values (p_user, p_username, p_key, v_avatar, case when v_avatar is null then 0 else 1 end,
-              case when v_avatar is null then null else (now() at time zone 'utc')::date end, now());
+      insert into public.chronia_profiles (user_id, username, username_key, username_fold, avatar, age_ok_at)
+      values (p_user, p_username, p_key, v_fold, v_avatar, now());
     exception when unique_violation then
       return jsonb_build_object('error', 'taken');
     end;
@@ -140,7 +180,7 @@ begin
     if coalesce(p_key, '') = '' then
       return jsonb_build_object('error', 'field');
     end if;
-    if exists (select 1 from public.chronia_profiles where username_key = p_key and user_id <> p_user) then
+    if exists (select 1 from public.chronia_profiles where (username_key = p_key or username_fold = v_fold) and user_id <> p_user) then
       return jsonb_build_object('error', 'taken');
     end if;
     if p.named_at > now() - make_interval(days => p_name_days) then
@@ -151,14 +191,14 @@ begin
 
   begin
     if v_rename then
-      update public.chronia_profiles set username = p_username, username_key = p_key, named_at = now()
+      update public.chronia_profiles set username = p_username, username_key = p_key, username_fold = v_fold, named_at = now()
       where user_id = p_user;
     end if;
     if p_avatar is not null then
       v_old := p.avatar;
       v_kept := p.avatar_removed;
       update public.chronia_profiles set avatar = v_avatar, avatar_state = 'ok', avatar_flags = 0,
-        avatar_removed = null, avatar_removed_at = null where user_id = p_user;
+        avatar_removed = null, avatar_removed_at = null, avatar_kept = false where user_id = p_user;
       delete from public.chronia_flags where target_user = p_user;
     end if;
   exception when unique_violation then
@@ -170,8 +210,8 @@ begin
 end;
 $$;
 
--- Counts a picture change for today (UTC) before the paid picture check runs. An account with no profile yet
--- passes uncounted: its first picture is counted when chronia_profile_save makes the profile.
+-- Counts a picture change for today (UTC) before the paid picture check runs, under a lock on the account's row.
+-- An account with no profile is refused, so that no check runs uncounted.
 create or replace function public.chronia_avatar_count(p_user uuid, p_cap integer)
 returns jsonb
 language plpgsql
@@ -184,7 +224,7 @@ declare
 begin
   select * into p from public.chronia_profiles where user_id = p_user for update;
   if not found then
-    return jsonb_build_object('ok', true, 'left', p_cap - 1);
+    return jsonb_build_object('error', 'profile');
   end if;
   if p.blocked then
     return jsonb_build_object('error', 'blocked');
@@ -195,6 +235,20 @@ begin
   end if;
   update public.chronia_profiles set avatar_changes = n + 1, avatar_day = d where user_id = p_user;
   return jsonb_build_object('ok', true, 'left', p_cap - n - 1);
+end;
+$$;
+
+-- Gives back today's picture change when the check could not be made (the model unreachable), so that an
+-- outage does not use up a reader's changes. A refused picture is not given back.
+create or replace function public.chronia_avatar_uncount(p_user uuid)
+returns jsonb
+language plpgsql
+set search_path = ''
+as $$
+begin
+  update public.chronia_profiles set avatar_changes = avatar_changes - 1
+  where user_id = p_user and avatar_day = (now() at time zone 'utc')::date and avatar_changes > 0;
+  return jsonb_build_object('ok', true);
 end;
 $$;
 
@@ -404,7 +458,7 @@ begin
 end;
 $$;
 
--- Gives up the removed pictures kept aside longer than p_days: returns their file names, for the caller to delete,
+-- Gives up the removed pictures kept aside longer than p_days: puts their files in the trash, returns their names,
 -- and forgets them. The account is then simply without a picture, and leaves the team's list.
 create or replace function public.chronia_avatars_expired(p_days integer)
 returns jsonb
@@ -415,15 +469,22 @@ declare
   v_names jsonb;
   v_ids uuid[];
 begin
-  with gone as (
+  with old as (
+    select user_id as id, avatar_removed as name, avatar_kept as kept from public.chronia_profiles
+    where avatar_removed is not null and avatar_removed_at < now() - make_interval(days => p_days)
+    for update),
+  gone as (
     update public.chronia_profiles set avatar_removed = null, avatar_removed_at = null,
       avatar_state = case when avatar is null then 'ok' else avatar_state end,
-      avatar_flags = case when avatar is null then 0 else avatar_flags end
-    from (select user_id as id, avatar_removed as name from public.chronia_profiles
-          where avatar_removed is not null and avatar_removed_at < now() - make_interval(days => p_days)
-          for update) old
+      avatar_flags = case when avatar is null then 0 else avatar_flags end,
+      avatar_kept = case when avatar is null then false else avatar_kept end
+    from old
     where user_id = old.id
-    returning old.name, old.id)
+    returning old.name, old.id, old.kept),
+  put as (
+    insert into public.chronia_avatar_trash (name, bucket)
+    select name, case when kept then 'chronia-avatars-kept' else 'chronia-avatars' end from gone
+    returning 1)
   select coalesce(jsonb_agg(name order by name), '[]'::jsonb), array_agg(id) into v_names, v_ids from gone;
   delete from public.chronia_flags f where f.target_user = any(v_ids)
     and exists (select 1 from public.chronia_profiles p where p.user_id = f.target_user and p.avatar is null);
@@ -477,6 +538,83 @@ begin
 end;
 $$;
 
+-- Pictures whose file is not in the bucket their state calls for: to the private bucket (kept true) when hidden
+-- or removed, back to the public one when in good standing. The function makes each move, then records it with
+-- chronia_avatar_moved.
+create or replace function public.chronia_avatar_moves(p_user uuid, p_limit integer)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('user', x.user_id, 'name', x.name, 'kept', x.kept) order by x.user_id), '[]'::jsonb)
+  from (select user_id, coalesce(avatar, avatar_removed) as name, avatar_state <> 'ok' as kept
+        from public.chronia_profiles
+        where coalesce(avatar, avatar_removed) is not null and avatar_kept <> (avatar_state <> 'ok')
+          and (p_user is null or user_id = p_user)
+        order by user_id
+        limit greatest(coalesce(p_limit, 50), 1)) x;
+$$;
+
+-- Records that a picture's file was moved, if the profile still has that file (a new picture since is left alone).
+create or replace function public.chronia_avatar_moved(p_user uuid, p_name text, p_kept boolean)
+returns jsonb
+language plpgsql
+set search_path = ''
+as $$
+begin
+  update public.chronia_profiles set avatar_kept = p_kept
+  where user_id = p_user and coalesce(avatar, avatar_removed) = p_name;
+  return jsonb_build_object('ok', found);
+end;
+$$;
+
+-- The oldest files in the trash, a few at a time, for the function to delete; then chronia_avatar_trash_done
+-- forgets those it deleted, so a delete that fails is tried again at the next sweep.
+create or replace function public.chronia_avatar_trash_take(p_limit integer)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name, 'bucket', t.bucket) order by t.id), '[]'::jsonb)
+  from (select id, name, bucket from public.chronia_avatar_trash order by id limit greatest(coalesce(p_limit, 100), 1)) t;
+$$;
+
+create or replace function public.chronia_avatar_trash_done(p_ids bigint[])
+returns integer
+language plpgsql
+set search_path = ''
+as $$
+declare
+  n integer;
+begin
+  delete from public.chronia_avatar_trash where id = any(p_ids);
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
+-- However a profile is deleted, its picture files go to the trash. Security definer, so that the cascade from a
+-- sign-in account deleted by Supabase's own role can write to the closed table.
+create or replace function public.chronia_profiles_trash()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.chronia_avatar_trash (name, bucket)
+  select n, case when old.avatar_kept then 'chronia-avatars-kept' else 'chronia-avatars' end
+  from unnest(array[old.avatar, old.avatar_removed]) n
+  where n is not null;
+  return old;
+end;
+$$;
+drop trigger if exists chronia_profiles_trash on public.chronia_profiles;
+create trigger chronia_profiles_trash before delete on public.chronia_profiles
+  for each row execute function public.chronia_profiles_trash();
+
 -- A card's thread: live comments under any of p_names, by accounts not blocked. p_sort 'near' orders by distance
 -- from p_at_num, then newest; anything else, newest first. A picture shows only while in good standing.
 -- p_team adds the team's fields (flags, state, and the writer's account id).
@@ -501,7 +639,7 @@ begin
   select coalesce(jsonb_agg(x.j order by x.o), '[]'::jsonb) into v_rows
   from (
     select jsonb_build_object('id', c.id, 'username', p.username,
-             'avatar', case when p.avatar_state = 'ok' then p.avatar end,
+             'avatar', case when p.avatar_state = 'ok' and not p.avatar_kept then p.avatar end,
              'polity', c.polity, 'at', c.at, 'text', c.body, 'mine', c.user_id = p_viewer and p_viewer is not null)
            || case when p_team then jsonb_build_object('flags', c.flags, 'state', c.state, 'user', c.user_id)
                    else '{}'::jsonb end as j,
@@ -531,7 +669,7 @@ as $$
       from (select id, sent_at from public.chronia_comments where flags > 0 or state <> 'live'
             order by sent_at desc, id desc limit 500) q), '[]'::jsonb),
     'pictures', coalesce((
-      select jsonb_agg(jsonb_build_object('username', username, 'avatar', coalesce(avatar, avatar_removed), 'user', user_id,
+      select jsonb_agg(jsonb_build_object('username', username, 'avatar', coalesce(avatar, avatar_removed), 'kept', avatar_kept, 'user', user_id,
                                           'flags', avatar_flags, 'state', avatar_state) order by username_key)
       from public.chronia_profiles where avatar_flags > 0 or avatar_state <> 'ok'), '[]'::jsonb),
     'blocked', coalesce((
@@ -549,7 +687,7 @@ stable
 set search_path = ''
 as $$
   select jsonb_build_object(
-    'profile', (select jsonb_build_object('username', username, 'avatar', avatar, 'avatar_state', avatar_state,
+    'profile', (select jsonb_build_object('username', username, 'avatar', avatar, 'avatar_state', avatar_state, 'avatar_kept', avatar_kept,
                                           'blocked', blocked, 'named_at', named_at)
                 from public.chronia_profiles where user_id = p_user),
     'left', greatest(0, p_cap - (select count(*) from public.chronia_comments
@@ -563,7 +701,13 @@ declare
 begin
   foreach f in array array[
     'public.chronia_comment_row(bigint)',
-    'public.chronia_profile_save(uuid, text, text, text, boolean, integer)',
+    'public.chronia_profile_save(uuid, text, text, text, boolean, integer, text)',
+    'public.chronia_avatar_uncount(uuid)',
+    'public.chronia_avatar_moves(uuid, integer)',
+    'public.chronia_avatar_moved(uuid, text, boolean)',
+    'public.chronia_avatar_trash_take(integer)',
+    'public.chronia_avatar_trash_done(bigint[])',
+    'public.chronia_profiles_trash()',
     'public.chronia_avatar_count(uuid, integer)',
     'public.chronia_comment_send(uuid, text, text, numeric, text, integer, integer)',
     'public.chronia_flag_add(uuid, bigint, uuid, integer, integer)',

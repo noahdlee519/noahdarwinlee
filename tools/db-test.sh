@@ -70,6 +70,13 @@ create table storage.buckets (id text primary key, name text, public boolean, fi
 SQL
 
 sql <"$MIGRATION" || fail "the migration, first run"
+# A profile made before the folded names: the second run must fill its username_fold (tested in the tests).
+sql <<'SQL' || fail "the seeded profile"
+insert into auth.users (id) values ('00000000-0000-0000-0000-000000000099');
+alter table public.chronia_profiles alter column username_fold drop not null;
+insert into public.chronia_profiles (user_id, username, username_key, age_ok_at)
+values ('00000000-0000-0000-0000-000000000099', 'Seeded_Pre', 'seeded_pre', now());
+SQL
 sql <"$MIGRATION" || fail "the migration, second run"
 sql <"$TESTS" || fail "the tests"
 

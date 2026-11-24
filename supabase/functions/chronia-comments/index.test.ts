@@ -16,14 +16,21 @@ Object.defineProperty(Deno, "env", {
   configurable: true,
 });
 Object.defineProperty(Deno, "serve", { value: () => ({}), configurable: true });
+// Work left to run after an answer (the sweep), as Supabase's runtime takes it; each test waits for it at its end.
+const pending: Promise<unknown>[] = [];
+Object.defineProperty(globalThis, "EdgeRuntime", { value: { waitUntil: (p: Promise<unknown>) => pending.push(p) }, configurable: true });
+async function settled() {
+  while (pending.length) await Promise.allSettled(pending.splice(0));
+}
 const { handle } = await import("./index.ts");
+import { foldName } from "./rules.ts";
 
 // ---------------------------------------------------------------- the stand-in world
 
 // deno-lint-ignore no-explicit-any
 type Json = any;
 type Call = { kind: string; name: string; method: string; url: string; headers: Headers; body: Json };
-type Profile = { username: string; blocked?: boolean };
+type Profile = { username: string; blocked?: boolean; avatar?: string | null; kept?: string | null };
 
 const ALICE = "a11ce000-0000-4000-8000-000000000001";
 const BOB = "b0b00000-0000-4000-8000-000000000002";
@@ -50,9 +57,18 @@ class World {
   ]);
   team = new Map<string, string>([[VERA, "viewer"], [RITA, "reviewer"]]);
   profiles = new Map<string, Profile>([[BOB, { username: "Thucydides" }]]);
-  rpc: Record<string, (a: Json) => Json> = {};
+  rpc: Record<string, (a: Json) => Json> = {
+    // The sweep's calls, quiet by default.
+    chronia_avatars_expired: () => [],
+    chronia_avatar_moves: () => [],
+    chronia_avatar_moved: () => ({ ok: true }),
+    chronia_avatar_trash_take: () => [],
+    chronia_avatar_trash_done: (a: Json) => a.p_ids.length,
+    chronia_avatar_uncount: () => ({ ok: true }),
+  };
+  files: Record<string, Set<string>> = { "chronia-avatars": new Set(), "chronia-avatars-kept": new Set() };
   claude: string = "ok"; // the model's answer, or "down" (unreachable), "error" (a 500), "hang" (never answers)
-  fail = new Set<string>(); // "auth", "upload", "remove", "rpc:<name>"
+  fail = new Set<string>(); // "auth", "upload", "remove", "move", "sign", "rpc:<name>"
   seen(kind: string, name?: string) {
     return this.calls.filter((c) => c.kind === kind && (name === undefined || c.name === name));
   }
@@ -118,20 +134,40 @@ globalThis.fetch = async (input: string | URL | Request, init: RequestInit = {})
   }
   if (url.pathname === "/rest/v1/chronia_profiles") {
     rec("table", "chronia_profiles");
-    const key = url.searchParams.get("username_key"), id = url.searchParams.get("user_id");
+    const key = url.searchParams.get("username_key"), fold = url.searchParams.get("username_fold"), id = url.searchParams.get("user_id");
     const rows = [...world.profiles.entries()].filter(([uid, p]) =>
-      (key === null || "eq." + p.username.toLowerCase() === key) && (id === null || "eq." + uid === id)
+      (key === null || "eq." + p.username.toLowerCase() === key) && (fold === null || "eq." + foldName(p.username) === fold) &&
+      (id === null || "eq." + uid === id)
     ).map(([uid, p]) => ({ user_id: uid, blocked: !!p.blocked }));
     return answer(200, rows);
   }
   if (url.pathname.startsWith("/storage/v1/object/chronia-avatars/") && method === "POST") {
-    rec("upload", url.pathname.slice("/storage/v1/object/chronia-avatars/".length));
+    const name = url.pathname.slice("/storage/v1/object/chronia-avatars/".length);
+    rec("upload", name);
     if (world.fail.has("upload")) return answer(500, { error: "storage down" });
+    world.files["chronia-avatars"].add(name);
     return answer(200, { Key: "chronia-avatars/x" });
   }
-  if (url.pathname === "/storage/v1/object/chronia-avatars" && method === "DELETE") {
-    rec("remove", (body && body.prefixes || []).join(","));
+  if (url.pathname === "/storage/v1/object/move" && method === "POST") {
+    rec("move", body.sourceKey + ">" + body.destinationBucket);
+    if (world.fail.has("move")) return answer(500, { error: "storage down" });
+    const from = world.files[body.bucketId], to = world.files[body.destinationBucket];
+    if (!from || !to || body.sourceKey !== body.destinationKey) return answer(400, { error: "invalid" });
+    if (!from.has(body.sourceKey)) return answer(400, { statusCode: "404", error: "not_found" });
+    from.delete(body.sourceKey);
+    to.add(body.destinationKey);
+    return answer(200, { message: "Successfully moved" });
+  }
+  if (url.pathname === "/storage/v1/object/sign/chronia-avatars-kept" && method === "POST") {
+    rec("sign", body.paths.join(","));
+    if (world.fail.has("sign")) return answer(500, { error: "storage down" });
+    return answer(200, body.paths.map((p: string) => ({ path: p, signedURL: "/object/sign/chronia-avatars-kept/" + p + "?token=T" + body.expiresIn, error: null })));
+  }
+  if ((url.pathname === "/storage/v1/object/chronia-avatars" || url.pathname === "/storage/v1/object/chronia-avatars-kept") && method === "DELETE") {
+    const bucket = url.pathname.slice("/storage/v1/object/".length);
+    rec(bucket === "chronia-avatars" ? "remove" : "remove-kept", (body && body.prefixes || []).join(","));
     if (world.fail.has("remove")) return answer(500, { error: "storage down" });
+    for (const n of body.prefixes) world.files[bucket].delete(n);
     return answer(200, []);
   }
   throw new Error("unexpected fetch to " + url.pathname);
@@ -177,11 +213,16 @@ function clean(got: Got, what: string, ids: string[] = []) {
 }
 
 const URL_OF = (name: string) => BASE + "/storage/v1/object/public/chronia-avatars/" + name;
+const SIGNED = (name: string) => BASE + "/storage/v1/object/sign/chronia-avatars-kept/" + name + "?token=T3600";
 
 function test(name: string, fn: () => Promise<void>) {
   Deno.test(name, async () => {
     world = new World();
-    await fn();
+    try {
+      await fn();
+    } finally {
+      await settled();
+    }
   });
 }
 
@@ -390,7 +431,7 @@ test("name answers 200 with why for a name the rules refuse", async () => {
 test("name is taken when another account holds its lowercase key", async () => {
   const got = await ask({ action: "name", username: "THUCYDIDES" }, { as: "alice" });
   eq(got.body, { ok: false, why: "taken" }, "taken");
-  ok(world.seen("table", "chronia_profiles")[0].url.includes("username_key=eq.thucydides"), "asked by the lowercase key");
+  ok(world.seen("table", "chronia_profiles")[0].url.includes("username_fold=eq.thucydldes"), "asked by the folded name");
   clean(got, "name", [BOB]);
 });
 
@@ -619,18 +660,35 @@ function b64(bytes: Uint8Array) {
 
 const NEW_FILE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(webp|jpg|png)$/;
 
-// Bob has a profile, a picture (old.webp), and a removed one the team still keeps (kept.webp).
+// Bob has a profile, a picture (old.webp), and a removed one the team still keeps (kept.webp). The database's
+// stand-ins keep the profiles, refuse a count with no profile, count to five, and refuse a name whose fold is held.
 function profiling() {
-  world.rpc.chronia_avatar_count = () => ({ ok: true, left: 4 });
-  world.rpc.chronia_profile_save = (a: Json) => ({
-    ok: true,
-    username: a.p_username || "Thucydides",
-    avatar: a.p_avatar === null ? "old.webp" : a.p_avatar || null,
-    avatar_state: "ok",
-    old_avatar: a.p_avatar === null ? null : "old.webp",
-    removed_avatar: a.p_avatar === null ? null : "kept.webp",
-  });
+  world.profiles.set(BOB, { username: "Thucydides", avatar: "old.webp", kept: "kept.webp" });
+  const counts = new Map<string, number>();
+  world.rpc.chronia_avatar_count = (a: Json) => {
+    if (!world.profiles.has(a.p_user)) return { error: "profile" };
+    const n = counts.get(a.p_user) || 0;
+    if (n >= 5) return { error: "limit" };
+    counts.set(a.p_user, n + 1);
+    return { ok: true, left: 4 - n };
+  };
+  world.rpc.chronia_profile_save = (a: Json) => {
+    const had = world.profiles.get(a.p_user);
+    if (a.p_username && [...world.profiles].some(([u, p]) => u !== a.p_user && foldName(p.username) === a.p_fold)) return { error: "taken" };
+    if (!had && a.p_age !== true) return { error: "age" };
+    const p: Profile = had || { username: a.p_username, avatar: null, kept: null };
+    world.profiles.set(a.p_user, p);
+    if (a.p_username) p.username = a.p_username;
+    let old = null, kept = null;
+    if (a.p_avatar !== null) {
+      [old, kept] = [p.avatar || null, p.kept || null];
+      [p.avatar, p.kept] = [a.p_avatar || null, null];
+    }
+    return { ok: true, username: p.username, avatar: p.avatar || null, avatar_state: "ok", old_avatar: old, removed_avatar: kept };
+  };
 }
+
+const DROPPED = (names: string) => ["remove:" + names, "remove-kept:" + names];
 
 function nothingStored(what: string) {
   eq(world.seen("upload").length, 0, what + ": nothing uploaded");
@@ -646,9 +704,9 @@ test("profile needs a sign-in", async () => {
 test("a first profile is made with a username and the age box", async () => {
   profiling();
   const got = await ask({ action: "profile", username: "Herodotus", age: true }, { as: "alice" });
-  eq(got.body, { profile: { username: "Herodotus", avatar: URL_OF("old.webp"), blocked: false } }, "answer");
+  eq(got.body, { profile: { username: "Herodotus", avatar: null, blocked: false } }, "answer");
   eq(world.seen("rpc", "chronia_profile_save")[0].body, {
-    p_user: ALICE, p_username: "Herodotus", p_key: "herodotus", p_avatar: null, p_age: true, p_name_days: 30,
+    p_user: ALICE, p_username: "Herodotus", p_key: "herodotus", p_avatar: null, p_age: true, p_name_days: 30, p_fold: "herodotus",
   }, "rpc args");
 });
 
@@ -710,7 +768,7 @@ test("a picture is counted, checked, uploaded, saved, and the old files deleted,
   const up = world.seen("upload")[0];
   ok(NEW_FILE.test(up.name) && up.name.endsWith(".webp"), "an unguessable name: " + up.name);
   eq(world.order(), [
-    "table:chronia_profiles", "rpc:chronia_avatar_count", "claude:messages", "upload:" + up.name, "rpc:chronia_profile_save", "remove:old.webp,kept.webp",
+    "table:chronia_profiles", "rpc:chronia_avatar_count", "claude:messages", "upload:" + up.name, "rpc:chronia_profile_save", ...DROPPED("old.webp,kept.webp"),
   ], "order");
   eq(world.seen("rpc", "chronia_avatar_count")[0].body, { p_user: BOB, p_cap: 5 }, "count args");
   eq([...new Uint8Array(up.body as Uint8Array)], [...bytes], "the bytes uploaded are the picture's");
@@ -830,7 +888,7 @@ test("a save that fails after the upload deletes the new file and keeps the old"
   world.rpc.chronia_profile_save = () => ({ error: "taken" });
   err(await ask({ action: "profile", username: "Herodotus", avatar: b64(picture("webp")) }, { as: "bob" }), 409, "taken", "taken");
   const name = world.seen("upload")[0].name;
-  eq(world.order().slice(-3), ["upload:" + name, "rpc:chronia_profile_save", "remove:" + name], "the new file is deleted");
+  eq(world.order().slice(-4), ["upload:" + name, "rpc:chronia_profile_save", ...DROPPED(name)], "the new file is deleted");
   world = new World();
   profiling();
   world.fail.add("rpc:chronia_profile_save");
@@ -842,7 +900,7 @@ test("an empty picture removes it, with no count, check, or upload", async () =>
   profiling();
   const got = await ask({ action: "profile", avatar: "" }, { as: "bob" });
   eq(got.body, { profile: { username: "Thucydides", avatar: null, blocked: false } }, "answer");
-  eq(world.order(), ["table:chronia_profiles", "rpc:chronia_profile_save", "remove:old.webp,kept.webp"], "order");
+  eq(world.order(), ["table:chronia_profiles", "rpc:chronia_profile_save", ...DROPPED("old.webp,kept.webp")], "order");
   eq(world.seen("rpc", "chronia_profile_save")[0].body.p_avatar, "", "saved as none");
 });
 
@@ -863,6 +921,97 @@ test("a username with quotes or angle brackets is refused as shape, never sent",
   err(await ask({ action: "profile", username: `"<b>Bob</b>"`, age: true }, { as: "alice" }), 400, "shape", "shape");
   eq((await ask({ action: "name", username: `Bob"><script>` }, { as: "alice" })).body, { ok: false, why: "shape" }, "name");
   eq(world.seen("rpc").length + world.seen("table", "chronia_profiles").length, 0, "nothing sent");
+});
+
+// C1: no picture is checked for an account without a profile, so the cap on checks can't be passed.
+
+test("a taken username with a picture, sent again and again, runs no check and uploads nothing", async () => {
+  profiling();
+  for (let i = 0; i < 12; i++) {
+    err(await ask({ action: "profile", username: "THUCYDIDES", age: true, avatar: b64(picture("png")) }, { as: "alice" }), 409, "taken", "try " + i);
+  }
+  eq([world.seen("claude").length, world.seen("upload").length, world.seen("rpc", "chronia_avatar_count").length], [0, 0, 0], "no check, no upload, no count");
+  ok(!world.profiles.has(ALICE), "no profile made");
+});
+
+test("first profiles sent at once with a picture run at most five checks", async () => {
+  profiling();
+  const tries = await Promise.all(Array.from({ length: 12 }, () =>
+    ask({ action: "profile", username: "Herodotus", age: true, avatar: b64(picture("webp")) }, { as: "alice" })
+  ));
+  eq(world.seen("claude").length, 5, "five checks");
+  eq(world.seen("upload").length, 5, "five uploads");
+  eq(tries.map((t) => t.status), Array(12).fill(200), "each answer is the profile");
+  eq(tries.filter((t) => t.body.picture_error === "limit").length, 7, "the rest are told the day's limit");
+});
+
+test("a first save makes the profile before the picture is counted, checked, and stored", async () => {
+  profiling();
+  const got = await ask({ action: "profile", username: "Herodotus", age: true, avatar: b64(picture("webp")) }, { as: "alice" });
+  const up = world.seen("upload")[0];
+  eq(world.order(), [
+    "table:chronia_profiles", "rpc:chronia_profile_save", "rpc:chronia_avatar_count", "claude:messages", "upload:" + up.name, "rpc:chronia_profile_save",
+  ], "order");
+  const [first, second] = world.seen("rpc", "chronia_profile_save").map((c) => c.body);
+  eq([first.p_avatar, first.p_username, first.p_age], [null, "Herodotus", true], "the profile first, without the picture");
+  eq([second.p_avatar, second.p_username, second.p_key, second.p_fold], [up.name, null, null, null], "then the picture alone");
+  eq(got.body, { profile: { username: "Herodotus", avatar: URL_OF(up.name), blocked: false } }, "answer");
+});
+
+test("a first save whose picture fails still makes the profile, and says why", async () => {
+  const cases: [string, (w: World) => void, string][] = [
+    ["refused", (w) => (w.claude = "no"), "picture"],
+    ["unreachable", (w) => (w.claude = "down"), "check"],
+    ["limit", (w) => (w.rpc.chronia_avatar_count = () => ({ error: "limit" })), "limit"],
+    ["upload", (w) => w.fail.add("upload"), "store"],
+    ["save", (w) => { const real = w.rpc.chronia_profile_save; let n = 0; w.rpc.chronia_profile_save = (a: Json) => (++n === 2 ? { error: "blocked" } : real(a)); }, "store"],
+  ];
+  for (const [what, set, code] of cases) {
+    world = new World();
+    profiling();
+    set(world);
+    const got = await ask({ action: "profile", username: "Herodotus", age: true, avatar: b64(picture("webp")) }, { as: "alice" });
+    eq({ status: got.status, body: got.body }, { status: 200, body: { profile: { username: "Herodotus", avatar: null, blocked: false }, picture_error: code } }, what);
+    ok(world.profiles.has(ALICE) && !world.profiles.get(ALICE)!.avatar, what + ": the profile is made, with no picture");
+    eq(world.files["chronia-avatars"].size, 0, what + ": no file left in the public bucket");
+  }
+});
+
+test("a first save checks the picture's size and kind before the profile is made", async () => {
+  profiling();
+  err(await ask({ action: "profile", username: "Herodotus", age: true, avatar: b64(picture("text")) }, { as: "alice" }), 400, "picture", "not a picture");
+  err(await ask({ action: "profile", username: "Herodotus", age: true, avatar: b64(picture("webp", 200 * 1024 + 1)) }, { as: "alice" }), 413, "long", "too large");
+  eq(world.seen("rpc").length, 0, "nothing asked of the database");
+  ok(!world.profiles.has(ALICE), "no profile made");
+});
+
+// M4: an outage does not use up a reader's picture changes.
+
+test("a check that can't be made gives the day's change back; a refusal doesn't", async () => {
+  profiling();
+  world.claude = "down";
+  err(await ask({ action: "profile", avatar: b64(picture("webp")) }, { as: "bob" }), 503, "check", "down");
+  eq(world.seen("rpc", "chronia_avatar_uncount").map((c) => c.body), [{ p_user: BOB }], "given back");
+  world.claude = "no";
+  err(await ask({ action: "profile", avatar: b64(picture("webp")) }, { as: "bob" }), 400, "picture", "refused");
+  eq(world.seen("rpc", "chronia_avatar_uncount").length, 1, "a refusal is not given back");
+});
+
+// M11: look-alike names are one name.
+
+test("a name that folds like one already held is taken; one's own in another form is one's own", async () => {
+  world.profiles.set(RITA, { username: "Herodotus" });
+  world.profiles.set(VERA, { username: "Iliad" });
+  world.profiles.set(EVE, { username: "EssexMan" });
+  for (const username of ["Her0dotus", "lliad", "Essex_Man", "Il1ad"]) {
+    eq((await ask({ action: "name", username }, { as: "alice" })).body, { ok: false, why: "taken" }, username);
+  }
+  ok(world.seen("table", "chronia_profiles")[0].url.includes("username_fold=eq.herodotus"), "asked by the folded name");
+  eq((await ask({ action: "name", username: "THUCYD1DES" }, { as: "bob" })).body, { ok: true }, "one's own");
+  profiling();
+  world.profiles.set(RITA, { username: "Herodotus" });
+  err(await ask({ action: "profile", username: "Her0dotus", age: true }, { as: "alice" }), 409, "taken", "the save refuses it too");
+  eq(world.seen("rpc", "chronia_profile_save")[0].body.p_fold, "herodotus", "the fold is sent");
 });
 
 // ---------------------------------------------------------------- the team
@@ -898,19 +1047,59 @@ test("queue gives the team every reported comment and picture, the blocked, and 
   }, "answer");
 });
 
-test("queue first forgets expired pictures and deletes their files, best effort", async () => {
+test("queue shows hidden and removed pictures through addresses signed for an hour", async () => {
   queueing();
-  await ask({ action: "queue" }, { as: "rita" });
-  eq(world.order(), ["rpc:chronia_avatars_expired", "remove:gone1.webp,gone2.webp", "rpc:chronia_queue"], "order");
-  eq(world.seen("rpc", "chronia_avatars_expired")[0].body, { p_days: 30 }, "kept 30 days");
+  world.rpc.chronia_queue = () => ({
+    comments: [{ ...TEAM_ROW, avatar: "h.webp", avatar_kept: true }, { ...TEAM_ROW, id: 10, avatar: "p.webp", avatar_kept: false }],
+    pictures: [{ username: "A", avatar: "h.webp", user: BOB, flags: 3, state: "hidden", kept: true },
+               { username: "B", avatar: "q.webp", user: ALICE, flags: 1, state: "ok", kept: false }],
+    blocked: [],
+    names: [],
+  });
+  const got = await ask({ action: "queue" }, { as: "vera" });
+  eq(got.body.comments.map((c: Json) => c.avatar), [SIGNED("h.webp"), URL_OF("p.webp")], "comments");
+  eq(got.body.pictures.map((c: Json) => c.avatar), [SIGNED("h.webp"), URL_OF("q.webp")], "pictures");
+  eq(world.seen("sign").map((c) => c.body), [{ expiresIn: 3600, paths: ["h.webp"] }], "signed once, for an hour");
+  eq(world.seen("sign")[0].headers.get("apikey"), SECRET, "signed with the secret key");
+  ok(!("kept" in got.body.pictures[0]) && !("avatar_kept" in got.body.comments[0]), "the contract's shapes, unchanged");
   world = new World();
   queueing();
-  world.fail.add("rpc:chronia_avatars_expired");
-  eq((await ask({ action: "queue" }, { as: "rita" })).status, 200, "the queue is served all the same");
-  world = new World();
+  world.rpc.chronia_queue = () => ({ comments: [], pictures: [{ username: "A", avatar: "h.webp", user: BOB, flags: 3, state: "hidden", kept: true }], blocked: [], names: [] });
+  world.fail.add("sign");
+  const down = await ask({ action: "queue" }, { as: "vera" });
+  eq([down.status, down.body.pictures[0].avatar], [200, null], "signing down: no address, never the public one");
+});
+
+test("queue and post sweep after answering: expired pictures, moves, and the trash", async () => {
+  for (const b of [{ action: "queue" }, POST]) {
+    world = new World();
+    queueing();
+    posting();
+    world.rpc.chronia_avatar_trash_take = () => [{ id: 4, name: "x.webp", bucket: "chronia-avatars" }, { id: 5, name: "y.webp", bucket: "chronia-avatars-kept" }];
+    const got = await ask(b, { as: b.action === "queue" ? "rita" : "bob" });
+    eq(got.status, 200, b.action);
+    eq(world.seen("rpc", "chronia_avatars_expired").length, 0, b.action + ": the answer does not wait for the sweep");
+    await settled();
+    const at = world.order().indexOf("rpc:chronia_avatars_expired");
+    eq(world.order().slice(at), [
+      "rpc:chronia_avatars_expired", "rpc:chronia_avatar_moves", "rpc:chronia_avatar_trash_take", ...DROPPED("x.webp,y.webp"), "rpc:chronia_avatar_trash_done",
+    ], b.action + ": the sweep");
+    eq(world.seen("rpc", "chronia_avatars_expired")[0].body, { p_days: 30 }, "kept 30 days");
+    eq(world.seen("rpc", "chronia_avatar_trash_done")[0].body, { p_ids: [4, 5] }, "forgotten once deleted");
+  }
+});
+
+test("a sweep that fails is tried again later, and never fails the answer", async () => {
   queueing();
+  posting();
+  world.rpc.chronia_avatar_trash_take = () => [{ id: 4, name: "x.webp", bucket: "chronia-avatars" }];
   world.fail.add("remove");
-  eq((await ask({ action: "queue" }, { as: "rita" })).status, 200, "a failed delete doesn't fail the queue");
+  eq((await ask(POST, { as: "bob" })).status, 200, "a failed delete");
+  await settled();
+  eq(world.seen("rpc", "chronia_avatar_trash_done").length, 0, "the trash keeps what it could not delete");
+  for (const f of ["rpc:chronia_avatars_expired", "rpc:chronia_avatar_moves", "rpc:chronia_avatar_trash_take"]) world.fail.add(f);
+  eq((await ask(POST, { as: "bob" })).status, 200, "the database down for the sweep");
+  eq((await ask({ action: "queue" }, { as: "rita" })).status, 200, "the queue too");
 });
 
 const REVIEWS: Json[] = [
@@ -955,14 +1144,73 @@ test("block and unblock an account", async () => {
   err(await ask({ action: "block", user: BOB, on: true }, { as: "rita" }), 404, "missing", "missing");
 });
 
-test("picture off and on, deleting any file the database gives up", async () => {
-  world.rpc.chronia_avatar_set = (a: Json) => ({ ok: true, avatar: "b1.webp", removed_avatar: a.p_on ? null : "older.webp" });
+// I1: a hidden or removed picture leaves the public bucket at once, and comes back when kept or restored.
+
+function picturing(state: { kept: boolean }) {
+  world.files["chronia-avatars"].add("b1.webp");
+  world.rpc.chronia_avatar_set = (a: Json) => {
+    state.kept = !a.p_on;
+    return { ok: true, avatar: "b1.webp", removed_avatar: null };
+  };
+  let where = false; // where the file is, as recorded
+  world.rpc.chronia_avatar_moves = () => (where === state.kept ? [] : [{ user: BOB, name: "b1.webp", kept: state.kept }]);
+  world.rpc.chronia_avatar_moved = (a: Json) => {
+    where = a.p_kept;
+    return { ok: true };
+  };
+}
+
+test("picture off moves the file to the private bucket at once, and on moves it back", async () => {
+  picturing({ kept: false });
   eq((await ask({ action: "picture", user: BOB, on: false }, { as: "rita" })).body, { ok: true }, "off");
-  eq(world.order(), ["rpc:chronia_avatar_set", "remove:older.webp"], "only the file given up is deleted; the removed one is kept");
+  ok(!world.files["chronia-avatars"].has("b1.webp") && world.files["chronia-avatars-kept"].has("b1.webp"), "out of the public bucket before the answer");
+  eq(world.order(), ["rpc:chronia_avatar_set", "rpc:chronia_avatar_moves", "move:b1.webp>chronia-avatars-kept", "rpc:chronia_avatar_moved"], "the database, then the move, then its record");
+  eq(world.seen("rpc", "chronia_avatar_moves")[0].body, { p_user: BOB, p_limit: 50 }, "this account's moves");
+  eq(world.seen("rpc", "chronia_avatar_moved")[0].body, { p_user: BOB, p_name: "b1.webp", p_kept: true }, "recorded");
   eq((await ask({ action: "picture", user: BOB, on: true }, { as: "rita" })).body, { ok: true }, "on");
-  eq(world.seen("remove").length, 1, "nothing deleted when turned on");
+  ok(world.files["chronia-avatars"].has("b1.webp") && !world.files["chronia-avatars-kept"].has("b1.webp"), "back in the public bucket");
   world.rpc.chronia_avatar_set = () => ({ error: "missing" });
   err(await ask({ action: "picture", user: BOB, on: true }, { as: "rita" }), 404, "missing", "missing");
+});
+
+test("a report that hides a picture moves its file out of the public bucket at once", async () => {
+  const state = { kept: false };
+  picturing(state);
+  world.rpc.chronia_flag_add = () => {
+    state.kept = true;
+    return { ok: true, flags: 3, hidden: true };
+  };
+  eq((await ask({ action: "flag", user: "Thucydides" }, { as: "alice" })).body, { ok: true }, "flagged");
+  ok(!world.files["chronia-avatars"].has("b1.webp") && world.files["chronia-avatars-kept"].has("b1.webp"), "moved before the answer");
+  world = new World();
+  world.rpc.chronia_flag_add = () => ({ ok: true, flags: 1, hidden: false });
+  await ask({ action: "flag", user: "Thucydides" }, { as: "alice" });
+  eq(world.seen("rpc", "chronia_avatar_moves").length, 0, "a report that hides nothing moves nothing");
+  world.rpc.chronia_flag_add = () => ({ ok: true, flags: 3, hidden: true });
+  await ask({ action: "flag", id: 41 }, { as: "alice" });
+  eq(world.seen("rpc", "chronia_avatar_moves").length, 0, "a hidden comment moves no picture");
+});
+
+test("a move that fails is not recorded, and the next sweep makes it", async () => {
+  const state = { kept: false };
+  picturing(state);
+  world.fail.add("move");
+  eq((await ask({ action: "picture", user: BOB, on: false }, { as: "rita" })).body, { ok: true }, "the removal stands");
+  eq(world.seen("rpc", "chronia_avatar_moved").length, 0, "the database still says the file is public");
+  world.fail.delete("move");
+  posting();
+  await ask(POST, { as: "bob" });
+  await settled();
+  ok(world.files["chronia-avatars-kept"].has("b1.webp") && !world.files["chronia-avatars"].has("b1.webp"), "the sweep moved it");
+  eq(world.seen("rpc", "chronia_avatar_moved").map((c) => c.body.p_kept), [true], "and recorded it");
+});
+
+test("a file already moved, whose record was lost, is recorded without moving", async () => {
+  picturing({ kept: false });
+  world.files["chronia-avatars"].delete("b1.webp");
+  world.files["chronia-avatars-kept"].add("b1.webp");
+  await ask({ action: "picture", user: BOB, on: false }, { as: "rita" });
+  eq(world.seen("rpc", "chronia_avatar_moved").map((c) => c.body), [{ p_user: BOB, p_name: "b1.webp", p_kept: true }], "recorded");
 });
 
 test("move every comment from one name to another", async () => {
@@ -974,10 +1222,13 @@ test("move every comment from one name to another", async () => {
   err(await ask({ action: "move", from: "x", to: "y".repeat(201) }, { as: "rita" }), 400, "field", "to", { field: "to" });
 });
 
-test("erase empties the database first, then deletes the picture files", async () => {
+// I2: however a profile goes, its files go to the trash, which the sweep empties.
+
+test("erase empties the database first, then deletes the picture files through the trash", async () => {
   world.rpc.chronia_account_erase = () => ({ ok: true, avatar: "b1.webp", removed_avatar: "kept.webp" });
+  world.rpc.chronia_avatar_trash_take = () => [{ id: 4, name: "b1.webp", bucket: "chronia-avatars" }, { id: 5, name: "kept.webp", bucket: "chronia-avatars-kept" }];
   eq((await ask({ action: "erase", user: BOB }, { as: "rita" })).body, { ok: true }, "answer");
-  eq(world.order(), ["rpc:chronia_account_erase", "remove:b1.webp,kept.webp"], "order");
+  eq(world.order(), ["rpc:chronia_account_erase", "rpc:chronia_avatar_trash_take", ...DROPPED("b1.webp,kept.webp"), "rpc:chronia_avatar_trash_done"], "order");
   eq(world.seen("rpc", "chronia_account_erase")[0].body, { p_user: BOB }, "rpc args");
   world = new World();
   world.fail.add("rpc:chronia_account_erase");

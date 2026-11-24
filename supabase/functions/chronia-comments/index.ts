@@ -29,12 +29,16 @@ const HIDE_AT = 3; // reports from different accounts that hide a comment or a p
 const PICTURE_CAP = 5; // picture changes a day for each account
 const NAME_DAYS = 30; // days between changes of username
 const KEEP_DAYS = 30; // days a picture a reviewer removed is kept, so that the removal can be undone
+const SIGN_S = 3600; // seconds the team's address for a hidden or removed picture lasts
+const SWEEP_MOVES = 50; // picture moves one sweep makes at most
+const SWEEP_TRASH = 100; // picture files one sweep deletes at most
 const MAX_PICTURE = 200 * 1024; // bytes
 const PAGE = 20; // comments to a page of a thread
 const MAX_NAMES = 60; // names in one thread
 const MAX_NAME = 200; // characters in a country's name
 const CHECK_MS = 20_000; // how long the picture check may take
-const BUCKET = "chronia-avatars";
+const BUCKET = "chronia-avatars"; // public: pictures in good standing
+const KEPT = "chronia-avatars-kept"; // private: hidden and removed pictures, for the team
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL = "claude-haiku-5-5";
 const USERNAME_SHAPE = /^[A-Za-z][A-Za-z0-9_]{2,19}$/;
@@ -199,8 +203,9 @@ function comment(c: Json, team: boolean) {
   return out;
 }
 
+// A picture is shown only in good standing and in the public bucket.
 function profileOut(p: Json) {
-  return { username: p.username, avatar: p.avatar_state === "ok" ? avatarUrl(p.avatar) : null, blocked: p.blocked === true };
+  return { username: p.username, avatar: p.avatar_state === "ok" && !p.avatar_kept ? avatarUrl(p.avatar) : null, blocked: p.blocked === true };
 }
 
 // The database's refusals, as the contract's answers.
@@ -306,21 +311,122 @@ async function upload(name: string, bytes: Uint8Array<ArrayBuffer>, kind: string
   if (!res.ok) throw new Error("chronia-comments upload " + res.status);
 }
 
-// Deletes picture files, best effort: a file left behind is only storage, and is logged.
-async function drop(names: unknown[]) {
+// Deletes picture files from both buckets (a file may be in either, after a move half made), best effort: a file
+// left behind is only storage, and is logged. True if both deletes were answered.
+async function drop(names: unknown[]): Promise<boolean> {
   const files = names.filter((n): n is string => typeof n === "string" && FILE.test(n));
-  if (!files.length) return;
-  try {
-    const res = await fetch(base() + "/storage/v1/object/" + BUCKET, {
-      method: "DELETE",
-      headers: { ...dbKey(), "Content-Type": "application/json" },
-      body: JSON.stringify({ prefixes: files }),
-    });
-    await res.body?.cancel();
-    if (!res.ok) console.error("chronia-comments drop " + res.status + " " + files.join(","));
-  } catch (e) {
-    console.error("chronia-comments drop " + String((e as Json)?.message || e).slice(0, 100) + " " + files.join(","));
+  if (!files.length) return true;
+  let done = true;
+  for (const bucket of [BUCKET, KEPT]) {
+    try {
+      const res = await fetch(base() + "/storage/v1/object/" + bucket, {
+        method: "DELETE",
+        headers: { ...dbKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ prefixes: files }),
+      });
+      await res.body?.cancel();
+      if (!res.ok) {
+        console.error("chronia-comments drop " + bucket + " " + res.status + " " + files.join(","));
+        done = false;
+      }
+    } catch (e) {
+      console.error("chronia-comments drop " + bucket + " " + String((e as Json)?.message || e).slice(0, 100) + " " + files.join(","));
+      done = false;
+    }
   }
+  return done;
+}
+
+// Moves a picture's file between the buckets. "absent" when the file is not in the bucket it is moved from (a move
+// already made, or a file gone): then nothing of it is public either way, and the move can be recorded.
+async function shift(name: string, toKept: boolean): Promise<"moved" | "absent" | "failed"> {
+  try {
+    const res = await fetch(base() + "/storage/v1/object/move", {
+      method: "POST",
+      headers: { ...dbKey(), "Content-Type": "application/json" },
+      body: JSON.stringify({ bucketId: toKept ? BUCKET : KEPT, sourceKey: name, destinationBucket: toKept ? KEPT : BUCKET, destinationKey: name }),
+    });
+    let why = "";
+    try {
+      why = String((await res.json()).error || "");
+    } catch (_) { /* no body */ }
+    if (res.ok) return "moved";
+    if ((res.status === 400 || res.status === 404) && /not.?found/i.test(why)) return "absent";
+    console.error("chronia-comments move " + res.status + " " + name);
+  } catch (e) {
+    console.error("chronia-comments move " + String((e as Json)?.message || e).slice(0, 100) + " " + name);
+  }
+  return "failed";
+}
+
+// Brings pictures' files to the bucket their state calls for (one account's, or any), and records each move made.
+// The database's change comes first and stands; the file follows. If a move fails, the record still says where the
+// file is, so the page shows no picture and the next sweep tries again.
+async function settle(user: string | null) {
+  const due = await rpc("chronia_avatar_moves", { p_user: user, p_limit: SWEEP_MOVES });
+  for (const m of Array.isArray(due) ? due : []) {
+    if (typeof m.name !== "string" || !FILE.test(m.name)) continue;
+    const how = await shift(m.name, m.kept === true);
+    if (how !== "failed") await rpc("chronia_avatar_moved", { p_user: m.user, p_name: m.name, p_kept: m.kept === true });
+  }
+}
+
+// Deletes the files in the trash (of profiles deleted by any route, and of pictures past their 30 days), and
+// forgets those deleted; what can't be deleted stays for the next sweep.
+async function emptyTrash() {
+  const rows = await rpc("chronia_avatar_trash_take", { p_limit: SWEEP_TRASH });
+  if (!Array.isArray(rows) || !rows.length) return;
+  if (await drop(rows.map((r: Json) => r.name))) await rpc("chronia_avatar_trash_done", { p_ids: rows.map((r: Json) => r.id) });
+}
+
+// The housekeeping that must not wait for anyone to open the dashboard: removed pictures past their time go to the
+// trash, files are moved to where their state calls for, and the trash is emptied. Each step on its own, best effort.
+async function sweep() {
+  const steps: [string, () => Promise<unknown>][] = [
+    ["expire", () => rpc("chronia_avatars_expired", { p_days: KEEP_DAYS })],
+    ["settle", () => settle(null)],
+    ["trash", emptyTrash],
+  ];
+  for (const [what, step] of steps) {
+    try {
+      await step();
+    } catch (e) {
+      console.error("chronia-comments sweep " + what + ": " + String((e as Json)?.message || e).slice(0, 120));
+    }
+  }
+}
+
+// Runs a job after the answer is sent, kept alive by the runtime, so that it never slows or fails a request.
+function later(job: () => Promise<void>) {
+  const run = new Promise((r) => setTimeout(r, 0)).then(job).catch((e) => console.error(e));
+  const rt = (globalThis as Json).EdgeRuntime;
+  if (rt && typeof rt.waitUntil === "function") rt.waitUntil(run);
+}
+
+// Addresses for the team to see files in the private bucket, signed for an hour. Missing ones (the signing failed)
+// are simply absent: never the public address.
+async function signed(names: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const files = [...new Set(names.filter((n) => FILE.test(n)))];
+  if (!files.length) return out;
+  try {
+    const res = await fetch(base() + "/storage/v1/object/sign/" + KEPT, {
+      method: "POST",
+      headers: { ...dbKey(), "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn: SIGN_S, paths: files }),
+    });
+    if (!res.ok) {
+      await res.body?.cancel();
+      console.error("chronia-comments sign " + res.status);
+      return out;
+    }
+    for (const r of await res.json()) {
+      if (r && typeof r.path === "string" && typeof r.signedURL === "string" && !r.error) out.set(r.path, base() + "/storage/v1" + r.signedURL);
+    }
+  } catch (e) {
+    console.error("chronia-comments sign " + String((e as Json)?.message || e).slice(0, 100));
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- the actions
@@ -375,8 +481,9 @@ async function me(user: Account) {
 }
 
 // Who holds a username's key, if anyone.
-async function holder(key: string): Promise<string | null> {
-  const rows = await db("chronia_profiles?select=user_id&limit=1&username_key=eq." + encodeURIComponent(key));
+// Who holds a name, by its lowercase key (for a report of a picture) or its folded form (whether a name is free).
+async function holder(column: "username_key" | "username_fold", value: string): Promise<string | null> {
+  const rows = await db("chronia_profiles?select=user_id&limit=1&" + column + "=eq." + encodeURIComponent(value));
   return Array.isArray(rows) && rows.length ? String(rows[0].user_id) : null;
 }
 
@@ -384,18 +491,43 @@ async function name(user: Account, body: Json) {
   if (typeof body.username !== "string") throw new Bad("username");
   const r = checkUsername(body.username);
   if (!r.ok) return { ok: false, why: r.why };
-  const who = await holder(r.key);
+  const who = await holder("username_fold", r.fold);
   return who && who !== user.id ? { ok: false, why: "taken" } : { ok: true };
 }
 
+// A new picture: counted (under the lock on the account's row, which must exist), checked, and uploaded. A check
+// that can't be made gives the count back; a refusal keeps it.
+async function newPicture(user: Account, b64: string, bytes: Uint8Array<ArrayBuffer>, kind: string): Promise<string> {
+  const counted = await rpc("chronia_avatar_count", { p_user: user.id, p_cap: PICTURE_CAP });
+  if (!counted || counted.error) refused(counted, PICTURE_CAP);
+  try {
+    await check(b64, kind);
+  } catch (e) {
+    if (e instanceof No && e.status === 503) {
+      await rpc("chronia_avatar_uncount", { p_user: user.id }).catch((x) => console.error(x));
+    }
+    throw e;
+  }
+  const stored = crypto.randomUUID() + "." + (kind === "jpeg" ? "jpg" : kind);
+  await upload(stored, bytes, kind);
+  return stored;
+}
+
+// What a failed picture on a first save is called in its answer.
+function pictureError(e: unknown): "picture" | "check" | "limit" | "store" {
+  if (e instanceof No && e.status === 400 && e.message === "picture") return "picture";
+  if (e instanceof No && e.status === 503) return "check";
+  if (e instanceof No && e.status === 429) return "limit";
+  return "store";
+}
+
 async function profile(user: Account, body: Json) {
-  let username: string | null = null, key: string | null = null;
+  let username: string | null = null, key: string | null = null, fold: string | null = null;
   if (body.username !== undefined && body.username !== null) {
     if (typeof body.username !== "string") throw new Bad("username");
     const r = checkUsername(body.username);
     if (!r.ok) throw new No(400, r.why);
-    username = body.username;
-    key = r.key;
+    [username, key, fold] = [body.username, r.key, r.fold];
   }
   const age = body.age === true;
   let picture: string | null = null; // the base64, if a new picture is given
@@ -403,45 +535,58 @@ async function profile(user: Account, body: Json) {
     if (typeof body.avatar !== "string") throw new Bad("avatar");
     picture = body.avatar;
   }
+  // The cheap checks of a picture come before anything is made or counted.
+  let bytes: Uint8Array<ArrayBuffer> | null = null, kind: string | null = null;
+  if (picture) {
+    bytes = decode(picture);
+    kind = imageKind(bytes);
+    if (!kind) throw new No(400, "picture");
+  }
 
   // The database decides again under its lock; asking first spares a first profile without the age box, or a
-  // blocked account, the picture check and the upload.
+  // blocked account, a call that would be refused.
   const rows = await db("chronia_profiles?select=blocked&user_id=eq." + encodeURIComponent(user.id));
   const had = Array.isArray(rows) && rows.length ? rows[0] : null;
+  const save = (avatar: string | null, named: boolean) =>
+    rpc("chronia_profile_save", {
+      p_user: user.id,
+      p_username: named ? username : null,
+      p_key: named ? key : null,
+      p_avatar: avatar,
+      p_age: age,
+      p_name_days: NAME_DAYS,
+      p_fold: named ? fold : null,
+    });
+
+  // A first save makes the profile without the picture, so that a taken name or a missing age box is answered
+  // before any paid check, and the picture is then counted against the new profile like any other.
+  let made: Json = null;
   if (!had) {
     if (!age) throw new No(400, "age");
     if (!username) throw new Bad("username");
+    made = await save(null, true);
+    if (!made || !made.ok) refused(made, PICTURE_CAP);
+    if (!picture) return { profile: profileOut({ ...made, blocked: false }) };
   } else if (had.blocked) throw new No(403, "blocked");
 
   let stored: string | null = null; // the new file's name, once uploaded
-  if (picture) {
-    const bytes = decode(picture);
-    const kind = imageKind(bytes);
-    if (!kind) throw new No(400, "picture");
-    const counted = await rpc("chronia_avatar_count", { p_user: user.id, p_cap: PICTURE_CAP });
-    if (!counted || counted.error) refused(counted, PICTURE_CAP);
-    await check(picture, kind);
-    stored = crypto.randomUUID() + "." + (kind === "jpeg" ? "jpg" : kind);
-    await upload(stored, bytes, kind);
-  }
-
   let out: Json;
   try {
-    out = await rpc("chronia_profile_save", {
-      p_user: user.id,
-      p_username: username,
-      p_key: key,
-      p_avatar: picture === null ? null : stored || "",
-      p_age: age,
-      p_name_days: NAME_DAYS,
-    });
-    if (!out || !out.ok) refused(out, PICTURE_CAP);
+    if (picture) stored = await newPicture(user, picture, bytes!, kind!);
+    try {
+      out = await save(picture === null ? null : stored || "", !made);
+      if (!out || !out.ok) refused(out, PICTURE_CAP);
+    } catch (e) {
+      if (stored) await drop([stored]);
+      throw e;
+    }
   } catch (e) {
-    if (stored) await drop([stored]);
+    // The profile was made in this request: it stands, without the picture, and the answer says why.
+    if (made) return { profile: profileOut({ ...made, blocked: false }), picture_error: pictureError(e) };
     throw e;
   }
   await drop([out.old_avatar, out.removed_avatar]);
-  return { profile: profileOut({ username: out.username, avatar: out.avatar, avatar_state: out.avatar_state || "ok", blocked: false }) };
+  return { profile: profileOut({ ...out, avatar_state: out.avatar_state || "ok", blocked: false }) };
 }
 
 async function post(user: Account, body: Json) {
@@ -467,11 +612,12 @@ async function post(user: Account, body: Json) {
     p_gap_s: GAP_S,
   });
   if (!out || out.id === undefined || out.id === null) refused(out, DAY_CAP);
+  later(sweep);
   return {
     comment: {
       id: out.id,
       username: p.username,
-      avatar: p.avatar_state === "ok" ? avatarUrl(p.avatar) : null,
+      avatar: profileOut(p).avatar,
       polity,
       at: body.at,
       text: said.text,
@@ -500,7 +646,7 @@ async function flag(user: Account, body: Json) {
   if (hasId) n = id(body.id);
   else {
     if (typeof body.user !== "string" || !USERNAME_SHAPE.test(body.user)) throw new Bad("user");
-    target = await holder(body.user.toLowerCase());
+    target = await holder("username_key", body.user.toLowerCase());
     if (!target) throw new No(404, "missing");
   }
   const out = await rpc("chronia_flag_add", { p_user: user.id, p_comment: n, p_target: target, p_cap: FLAG_CAP, p_hide: HIDE_AT });
@@ -508,24 +654,30 @@ async function flag(user: Account, body: Json) {
     if (out && out.error === "field") throw new Bad(hasId ? "id" : "user");
     refused(out, FLAG_CAP);
   }
+  // The report that hides a picture takes its file out of the public bucket at once (or, failing that, the sweep).
+  if (target && out.hidden === true) {
+    await settle(target).catch((e) => console.error(e));
+  }
   return { ok: true };
 }
 
 async function queue(role: string) {
-  // Removed pictures kept past their time are forgotten and their files deleted first, best effort.
-  try {
-    const expired = await rpc("chronia_avatars_expired", { p_days: KEEP_DAYS });
-    if (Array.isArray(expired)) await drop(expired);
-  } catch (e) {
-    console.error(e);
-  }
   const out = await rpc("chronia_queue", {});
+  const comments = out && Array.isArray(out.comments) ? out.comments : [];
+  const pictures = out && Array.isArray(out.pictures) ? out.pictures : [];
+  // Hidden and removed pictures are in the private bucket: the team sees them through signed addresses.
+  const sign = await signed([
+    ...comments.filter((c: Json) => c.avatar_kept === true).map((c: Json) => c.avatar),
+    ...pictures.filter((p: Json) => p.kept === true).map((p: Json) => p.avatar),
+  ]);
+  const look = (name: unknown, kept: unknown) => (kept === true ? (typeof name === "string" && sign.get(name)) || null : avatarUrl(name));
+  later(sweep);
   return {
     role,
-    comments: (out && Array.isArray(out.comments) ? out.comments : []).map((c: Json) => comment(c, true)),
-    pictures: (out && Array.isArray(out.pictures) ? out.pictures : []).map((p: Json) => ({
+    comments: comments.map((c: Json) => ({ ...comment(c, true), avatar: look(c.avatar, c.avatar_kept) })),
+    pictures: pictures.map((p: Json) => ({
       username: p.username,
-      avatar: avatarUrl(p.avatar),
+      avatar: look(p.avatar, p.kept),
       user: p.user,
       flags: Number(p.flags) || 0,
       state: p.state,
@@ -539,7 +691,9 @@ async function review(action: string, body: Json) {
   if (action === "restore" || action === "remove") {
     const out = await rpc(action === "restore" ? "chronia_comment_restore" : "chronia_comment_remove", { p_comment: id(body.id) });
     if (!out || !out.ok) refused(out, 0);
-    return { comment: comment(out.comment, true) };
+    const c = out.comment || {};
+    const sign = c.avatar_kept === true ? await signed([c.avatar]) : new Map<string, string>();
+    return { comment: { ...comment(c, true), avatar: c.avatar_kept === true ? sign.get(c.avatar) || null : avatarUrl(c.avatar) } };
   }
   if (action === "block") {
     const out = await rpc("chronia_block", { p_user: uuid(body.user), p_on: on(body.on) });
@@ -547,9 +701,12 @@ async function review(action: string, body: Json) {
     return { ok: true };
   }
   if (action === "picture") {
-    const out = await rpc("chronia_avatar_set", { p_user: uuid(body.user), p_on: on(body.on) });
+    // The database first: its state is what the page shows. Then the file follows it between the buckets.
+    const who = uuid(body.user);
+    const out = await rpc("chronia_avatar_set", { p_user: who, p_on: on(body.on) });
     if (!out || !out.ok) refused(out, 0);
     await drop([out.removed_avatar]);
+    await settle(who).catch((e) => console.error(e));
     return { ok: true };
   }
   if (action === "move") {
@@ -557,10 +714,11 @@ async function review(action: string, body: Json) {
     const n = await rpc("chronia_comments_move", { p_from: from, p_to: to });
     return { moved: Number(n) || 0 };
   }
-  // erase: the database first, so that nothing points at the file, then the files.
+  // erase: the database first, so that nothing points at the files; its trigger puts them in the trash, which is
+  // emptied now (and, if that fails, by the next sweep), as it is for a sign-in account deleted in Supabase.
   const out = await rpc("chronia_account_erase", { p_user: uuid(body.user) });
   if (!out || !out.ok) refused(out, 0);
-  await drop([out.avatar, out.removed_avatar]);
+  await emptyTrash().catch((e) => console.error(e));
   return { ok: true };
 }
 
