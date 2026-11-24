@@ -390,11 +390,18 @@
       ctx.lineJoin = "round"; ctx.strokeStyle = pal.glow;
       ctx.lineWidth = 14; ctx.globalAlpha = 0.45; ctx.stroke(); ctx.lineWidth = 6; ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1;
       ctx.fillStyle = pal.ocean; ctx.fill();
-    } else if (r * 1.07 < Math.hypot(W, H)) {
-      var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.07);
-      glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
+    } else {
+      var far = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy));
+      var ga = Math.max(0, Math.min(1, (far - r) / (0.12 * r + 40)));
+      if (ga > 0.01) {
+        var gw = Math.min(r * 0.07, 60) + 6;
+        var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r + gw);
+        glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.globalAlpha = ga * 0.8;
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(cx, cy, r + gw, 0, 2 * Math.PI); ctx.arc(cx, cy, r, 0, 2 * Math.PI, true); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
     }
     var live = !flat && !flatOnly && satOn && !!sat && sat.ready();
     if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
@@ -471,6 +478,7 @@
     collectUi();
     collectCities();
     drawCountryLabels(feats);
+    updateScale();
     if (flat) { ctx.restore(); ctx.beginPath(); path({ type: "Sphere" }); }
     else { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); }
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
@@ -948,6 +956,24 @@
   function roomAt(lat, lonC, lonL, lonR, need) {
     var pp = parallelPath(lat, lonC, lonL, lonR, need);
     return pp ? 2 * Math.min(pp.left, pp.right) : 0;
+  }
+  var scaleKey = "";
+  function updateScale() {
+    var el = $("scale");
+    if (!el) return;
+    var a = projection.invert([cx - 50, cy]), b = projection.invert([cx + 50, cy]);
+    if (!a || !b || !isFinite(a[0]) || !isFinite(b[0]) || (!flat && (!visible(a) || !visible(b)))) { if (!el.hidden) { el.hidden = true; scaleKey = ""; } return; }
+    var kmPerPx = G.sphereDistanceKm(a[0], a[1], b[0], b[1]) / 100;
+    var u = UNITS[state.units], perPx = kmPerPx * u.f, maxLen = W <= 640 ? 90 : 120;
+    var raw = perPx * maxLen, p10 = Math.pow(10, Math.floor(Math.log10(raw))), nice = p10;
+    [1, 2, 5, 10].forEach(function (m) { if (m * p10 <= raw) nice = m * p10; });
+    var px = Math.round(nice / perPx), label = (nice >= 1 ? nice.toLocaleString() : nice.toPrecision(1)) + " " + u.label;
+    var key = px + "|" + label;
+    if (key === scaleKey) return;
+    scaleKey = key;
+    el.hidden = false;
+    el.querySelector(".gc-scale-bar").style.width = px + "px";
+    el.querySelector(".gc-scale-label").textContent = label;
   }
   function drawCountryLabels() {
     labelBoxes = [];

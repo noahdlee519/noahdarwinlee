@@ -137,6 +137,10 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   cities go first, and if a city's name can only go where an airport is, the
   airport is left out rather than the city.
 
+  A scale bar in the corner gives the distance across the middle of the view,
+  rounded to 1, 2, or 5 of a power of ten in the chosen units. The glow round
+  the globe is drawn outside it only, and fades as the globe fills the screen.
+
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its
   content and it follows the finger, stretches past either end, and settles
