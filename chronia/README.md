@@ -1500,6 +1500,8 @@ Since 24 November 2026 a country's or a people's card ends, after Sources, with 
 - `deno test` in `supabase/functions/chronia-comments/`: the rules (`rules.test.ts`) and the function (`index.test.ts`), with the database, the sign-in, the storage, and Anthropic played by stand-ins.
 - `node tools/chronia-comments-check.mjs [base URL] [folder for screenshots]`: the card's section and the Account panel's profile in headless Chromium, against an in-memory stand-in for the function. Serve the repository root first (`python3 -m http.server 8101`); the base defaults to `http://localhost:8101/chronia/`.
 - `node tools/chronia-comments-team-check.mjs [base URL]`: the dashboard's Comments list, the same way; the base defaults to `http://localhost:8101/chronia/reports/`.
+- `tools/chronia-comments-integration.sh`: the function's real code against the real SQL on a throwaway local cluster, every action in turn. Only sign-in, storage, and the picture check are stand-ins, so this is the test that catches a field or a parameter the function and the database name differently.
+- Both page checks also pass against the built, minified site: `node tools/build-chronia-site.mjs`, serve `chronia-site/`, and give its address as the base (`http://localhost:PORT/` and `http://localhost:PORT/reports/`).
 
 The privacy policy (section 8, and sections 9 to 15) and the terms (section 15) say what is kept, what is public, the rules, and the age rule, and the Sources page credits the two word lists; a change to what is kept or how it is moderated changes them too.
 
