@@ -142,7 +142,7 @@ body {
   border-radius: 50%;
 }
 
-.theme-btn::before {
+.gc-page .theme-btn::before {
   content: attr(data-tip);
   position: absolute;
   top: calc(100% + 10px);
@@ -161,12 +161,12 @@ body {
 }
 
 @media (hover: hover) {
-  .theme-btn:hover::before {
+  .gc-page .theme-btn:hover::before {
     opacity: 1;
   }
 }
 
-.theme-btn.is-flash::before {
+.gc-page .theme-btn.is-flash::before {
   opacity: 1;
 }
 
@@ -5164,6 +5164,10 @@ body.is-resizing-mail {
     position: relative;
   }
 
+  .mail-rail .mail-compose {
+    display: none;
+  }
+
   .mail-window.is-rail-open .mail-rail {
     display: block;
     position: absolute;
@@ -5213,6 +5217,20 @@ body.is-resizing-mail {
     display: block;
     margin: 0 8px 8px 8px;
     border-radius: 12px;
+  }
+
+  .mail-listpane {
+    min-height: min(68vh, 560px);
+    min-height: min(68svh, 560px);
+  }
+
+  .mail-empty {
+    padding: 48px 16px;
+    text-align: center;
+  }
+
+  .mail-list:empty {
+    display: none;
   }
 
   #mail-divider-list {

@@ -7,10 +7,11 @@
   var ROOT = "/projects/";
   // The closest zoom: 6x is a regional view, where a city is a grey patch with its main roads; from there to 16x the
   // cities open up into their streets, cores, and parks.
-  var MAX_ZOOM = 16;
+  var MAX_ZOOM = 8; // Noah, 24 November 2026: 16x showed the land cover's coarse facets; 8x is the limit.
   // The water's blue by zoom, as the reference draws it (measured on Noah's screenshots, read through their colour
   // profiles into sRGB): deeper when the whole world shows, paler the closer in.
-  var WATER_BY_ZOOM = [[1, [112, 211, 229]], [3, [127, 213, 233]], [6, [136, 215, 235]], [16, [144, 217, 237]]];
+  // One steady blue at every zoom (Noah, 24 November 2026: the zoom-1 blue read too cyan): the reference's at regional zoom.
+  var WATER_BY_ZOOM = [[1, [127, 213, 233]], [8, [127, 213, 233]]];
   function waterAt(z) {
     var W = WATER_BY_ZOOM, n = W.length;
     if (z <= W[0][0]) return hex(W[0][1]);
@@ -106,8 +107,8 @@
 
   // Each kind of label's smallest and largest size on screen, in pixels.
   // Water names are small, as on the reference: about a town's size, an ocean a little more.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 13.5, city: 12.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, channel: 10.5, sound: 10.5, fjord: 10, lagoon: 10, harbour: 10, inlet: 10, cove: 10, river: 10.5, town: 11.5, village: 10.5, peak: 10, park: 11, citypark: 9.5, district: 10, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
-  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 14.5, city: 13, province: 15, range: 13, lake: 12.5, strait: 12, channel: 12, sound: 12, fjord: 11.5, lagoon: 11.5, harbour: 11, inlet: 11, cove: 11, river: 12, town: 12, village: 11, peak: 12, park: 15, citypark: 11, district: 12, region: 14, island: 13, cape: 12, shield: 11 };
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 12, city: 11.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, channel: 10.5, sound: 10.5, fjord: 10, lagoon: 10, harbour: 10, inlet: 10, cove: 10, river: 10.5, town: 11.5, village: 10.5, peak: 10, park: 11, citypark: 9.5, district: 10, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
+  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 13, city: 12.5, province: 15, range: 13, lake: 12.5, strait: 12, channel: 12, sound: 12, fjord: 11.5, lagoon: 11.5, harbour: 11, inlet: 11, cove: 11, river: 12, town: 12, village: 11, peak: 12, park: 15, citypark: 11, district: 12, region: 14, island: 13, cape: 12, shield: 11 };
   var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, channel: 80, sound: 80, fjord: 82, river: 85, lagoon: 86, harbour: 87, inlet: 88, town: 90, cape: 92, cove: 94, village: 96, district: 97, citypark: 98 };
   // Water's names: the open sea's, the coast's, lakes', and rivers'.
   var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, channel: 1, sound: 1, fjord: 1, lagoon: 1, harbour: 1, inlet: 1, cove: 1, river: 1 };
@@ -528,6 +529,7 @@
 
   // A place's symbol, in label units round its origin: a white dot in a dark ring for a town (larger for a city,
   // smaller for a village), a ring with a dark centre for a capital, a small triangle for a peak.
+  var PLACE_MIN_ZOOM = { capital: 3, city: 3.5, town: 4 };
   var DOT = { capital: 0.34, city: 0.3, town: 0.25, village: 0.22 };
   function symbolFor(kind, size, parent, volcano) {
     if (kind === "peak") {
@@ -586,7 +588,14 @@
       if (hidden[l.kind]) { if (it.shown) { it.shown = false; it.el.classList.remove("is-on"); } return; }
       var forced = it.country && it.country === self.selected;
       var inProvince = l.kind === "province" && self.selected === l.parent;
-      if ((z + 1e-6 >= l.minZoom) || forced || (inProvince && z * 1.6 >= l.minZoom)) {
+      // The worlds name some places for zooms up to 16x; with the limit at 8x, everything set for 6x and beyond appears
+      // by 8x, in the same order.
+      var mz = l.minZoom <= 6 ? l.minZoom : Math.min(MAX_ZOOM, 6 + (l.minZoom - 6) * (MAX_ZOOM - 6) / 10);
+      // Noah, 24 November 2026: far out, only the countries are named, as on Google Maps; capitals and cities wait
+      // for a closer zoom, even for the country that is selected.
+      var placeMin = PLACE_MIN_ZOOM[l.kind];
+      if (placeMin) { mz = Math.max(mz, placeMin); if (z + 1e-6 < placeMin - 1) forced = false; }
+      if ((z + 1e-6 >= mz) || forced || (inProvince && z * 1.6 >= mz)) {
         var px = clamp(Ppx * l.size, it.floor, it.cap);
         var k = px / l.size; // screen px per label unit
         var span = self.world.width * s, rcx = r.l + r.w / 2;
@@ -714,9 +723,9 @@
     this.host.classList.toggle("is-z4", z >= 3.9);
     this.host.classList.toggle("is-z5", z >= 4.9);
     this.host.classList.toggle("is-z55", z >= 5.85);
-    this.host.classList.toggle("is-z7", z >= 6.9);
-    this.host.classList.toggle("is-z9", z >= 8.9);
-    this.host.classList.toggle("is-z12", z >= 11.9);
+    this.host.classList.toggle("is-z7", z >= 5.9);
+    this.host.classList.toggle("is-z9", z >= 6.9);
+    this.host.classList.toggle("is-z12", z >= 7.9);
     var water = waterAt(z);
     if (water !== this.water) {
       this.water = water;
