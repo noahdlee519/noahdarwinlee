@@ -7967,7 +7967,7 @@
     var a = document.createElement("a"), t = document.createElement("span"), sub = document.createElement("span");
     a.className = "ch-ad-house"; a.href = "premium/";
     t.className = "ch-ad-house-title"; t.textContent = T("Get CHRONIA Premium");
-    sub.className = "ch-ad-house-sub"; sub.textContent = T("No ads | no watermark | 5× the notes");
+    sub.className = "ch-ad-house-sub"; sub.textContent = el.id === "ad-right" ? T("$10, once, for good") : T("No ads | no watermark | 5× the notes");
     a.appendChild(t); a.appendChild(sub);
     if (parseFloat(el.style.width) < 230) a.classList.add("is-narrow");
     el.appendChild(a);
@@ -7989,6 +7989,7 @@
     }).observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
   }
   function adsFill(el, slot, size) {
+    if (el.firstChild && el.querySelector(".ch-ad-house") && el.style.width !== size[0] + "px") el.textContent = "";
     if (el.firstChild) return;
     el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
     if (!adsDemo && (!ADS_ON || !ADS.client)) { houseAd(el); return; }
@@ -8042,6 +8043,14 @@
     // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
     var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
     if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
+    // While AdSense is off, the atlas's own banners for Premium go only in the gaps beside the date, one each side, and only
+    // where both fit; on narrower screens there are none (Noah, 25 November 2026). They are the atlas's own, so they are
+    // placed afresh at every layout, at the size the gaps allow.
+    var houseOnly = !ADS_ON && !adsDemo;
+    if (houseOnly) {
+      adsMode = "";
+      [L, R].forEach(function (e) { delete e.dataset.unfilled; });
+    }
     // The date is in the top row's middle column (since 19 November 2026), which is in the page's middle only where the
     // title and the tools leave room; its own offset says where it is.
     wide(inTop && !phoneQuery.matches && adsMode !== "below");
@@ -8052,16 +8061,18 @@
     var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
     if (!adsMode) {
       adsSize = null;
-      if (room >= AD_SIDE_W[0] + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
+      // The atlas's own banners fit a narrower gap than Google's units (130 px, the name on two lines).
+      var minW = houseOnly ? 130 : AD_SIDE_W[0];
+      if (room >= minW + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
       adsMode = adsSize ? "side" : "below";
       if (!adsSize) wide(false);
     }
     if (adsMode === "side") {
       B.hidden = true;
-      if (!ADS_ON && !adsDemo) R.dataset.unfilled = "1";
       L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
       if (room < adsSize[0] + 2) {
         wide(false);
+        if (houseOnly) { L.hidden = R.hidden = true; return 0; }
         [L, R].forEach(function (e) { if (!e.firstChild) e.hidden = true; });
         var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2;
         if (phoneQuery.matches) {
@@ -8099,6 +8110,7 @@
     }
     L.hidden = R.hidden = true;
     wide(false);
+    if (houseOnly) { B.hidden = true; return 0; }
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
     // On a phone the banner runs from the left of the title to the right of the buttons, so it is as wide as the top row on
     // every phone; elsewhere it is 320 wide, centred. It goes wherever Google leaves it unfilled (Noah, 19 November 2026). The room for it is kept from the first layout, and the banner itself shows only once the page has
