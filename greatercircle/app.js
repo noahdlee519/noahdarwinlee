@@ -982,6 +982,28 @@
     el.querySelector(".gc-scale-bar").style.width = px + "px";
     el.querySelector(".gc-scale-label").textContent = label;
   }
+  function anchorsInView(L) {
+    var c0 = projection.invert([cx, cy]);
+    if (!c0 || !isFinite(c0[0])) return [];
+    var cellPx = Math.min(W, H) * 0.55, cell = Math.max(0.05, cellPx * degPerPx());
+    var cosC = Math.max(0.2, Math.cos(c0[1] * RAD)), cellLon = Math.min(90, cell / cosC);
+    var baseLat = Math.round(c0[1] / cell), baseLon = Math.round(c0[0] / cellLon), out = [], geo = { type: "MultiPolygon", coordinates: L.polys };
+    for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+      var lat = Math.max(-85, Math.min(85, (baseLat + dy) * cell)), lon = ((baseLon + dx) * cellLon + 540) % 360 - 180;
+      if (!d3.geoContains(geo, [lon, lat])) continue;
+      var v = G.toVec(lon, lat);
+      if (!screenOf(lon, lat, v[0], v[1], v[2]) || FX < 40 || FY < 40 || FX > W - 40 || FY > H - 40) continue;
+      var sp = spanAt(L.polys, lon, lat);
+      if (!sp) continue;
+      out.push({ lat: lat, lonL: sp[0], lonR: sp[1], lon: lon, v: v, d: Math.hypot(FX - cx, FY - cy) });
+    }
+    out.sort(function (p, q) { return p.d - q.d; });
+    var last = L.anchor;
+    if (last) {
+      for (var k = 0; k < out.length; k++) if (Math.abs(out[k].lat - last[1]) < 1e-6 && Math.abs(((out[k].lon - last[0] + 540) % 360) - 180) < 1e-6 && Math.abs(out[k].lat - last[1]) < 1e-6) { out.unshift(out.splice(k, 1)[0]); break; }
+    }
+    return out.slice(0, 3);
+  }
   function drawCountryLabels() {
     labelBoxes = [];
     if (!labelInfo) { if (!labelBuilding && features.length) buildLabelInfo(); return; }
@@ -994,13 +1016,7 @@
       var cap = Math.min(22, 6 + 2.4 * Math.log2(areaPx / 900));
       if (cap < MIN_FS) continue;
       var cands = L.cands, onScreen = cands.filter(function (c) { return screenOf(c.lon, c.lat, c.v[0], c.v[1], c.v[2]) && FX > 0 && FY > 0 && FX < W && FY < H; });
-      if (!onScreen.length && areaPx > W * H * 0.2) {
-        if (centerLL === null) centerLL = projection.invert([cx, cy]) || false;
-        if (centerLL && d3.geoContains({ type: "MultiPolygon", coordinates: L.polys }, centerLL)) {
-          var sp = spanAt(L.polys, centerLL[0], centerLL[1]);
-          if (sp) onScreen = [{ lat: centerLL[1], lonL: sp[0], lonR: sp[1], lon: Math.max(sp[0], Math.min(sp[1], centerLL[0])), v: G.toVec(centerLL[0], centerLL[1]), center: true }];
-        }
-      }
+      if (!onScreen.length && areaPx > W * H * 0.2) onScreen = anchorsInView(L);
       var chosen = null;
       for (var ci = 0; ci < onScreen.length && !chosen; ci++) {
         var c = onScreen[ci], u1 = unitWidths(L.text), base1 = lineWidth(u1, 1, TRACK);
@@ -1012,7 +1028,7 @@
           if (fs < cap - 0.5) t = TRACK;
           fs = Math.round(fs * 2) / 2;
           var line = setLine(L.text, c.lat, c.lon, c.lonL, c.lonR, fs, t);
-          if (line) chosen = { lines: [line], fs: fs, fit: FILL * room / base1 };
+          if (line) chosen = { lines: [line], fs: fs, fit: FILL * room / base1, cand: c };
         }
         if (!chosen) {
           var two = splitTwo(L.words);
@@ -1026,10 +1042,11 @@
           var sA = spanAt(L.polys, c.lon, latA), sB = spanAt(L.polys, c.lon, latB);
           if (!sA || !sB) continue;
           var lA = setLine(two[0], latA, c.lon, sA[0], sA[1], fs2, TRACK), lB = lA && setLine(two[1], latB, c.lon, sB[0], sB[1], fs2, TRACK);
-          if (lA && lB) chosen = { lines: [lA, lB], fs: fs2, fit: FILL * room / bw };
+          if (lA && lB) chosen = { lines: [lA, lB], fs: fs2, fit: FILL * room / bw, cand: c };
         }
       }
       if (!chosen) continue;
+      if (chosen.cand && chosen.cand.d != null) L.anchor = [chosen.cand.lon, chosen.cand.lat];
       var half = chosen.fs * 0.6, boxes = [], clash = false;
       chosen.lines.forEach(function (ln) { ln.forEach(function (g) { boxes.push({ x: g.x - half, y: g.y - half, w: 2 * half, h: 2 * half }); }); });
       for (var b1 = 0; b1 < boxes.length && !clash; b1++) {
@@ -3086,6 +3103,11 @@
     var max = panel.scrollHeight - panel.clientHeight;
     panel.classList.toggle("is-scrolled", panel.scrollTop > 2);
     panel.classList.toggle("has-more", panel.scrollTop < max - 2);
+    var o = W <= 640 ? 1 : Math.max(0, Math.min(1, 1 - panel.scrollTop / 56));
+    Array.prototype.forEach.call(document.querySelectorAll(".header-line, .back-link"), function (el) {
+      el.style.opacity = o < 1 ? String(o) : "";
+      el.classList.toggle("is-scrolled-away", o < 0.05);
+    });
   }
   function queueFades() { if (!fadeQueued) { fadeQueued = true; requestAnimationFrame(updateFades); } }
   panel.addEventListener("scroll", queueFades, { passive: true });

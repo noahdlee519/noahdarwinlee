@@ -260,6 +260,15 @@ body.gc-page {
 .gc-page .name,
 .gc-page .back-link,
 .gc-page .header-line {
+  transition: opacity 120ms linear;
+}
+.gc-page .is-scrolled-away {
+  pointer-events: none;
+  visibility: hidden;
+}
+.gc-page .name,
+.gc-page .back-link,
+.gc-page .header-line {
   position: fixed !important;
   z-index: 30;
   margin: 0;
@@ -514,7 +523,7 @@ body.gc-page {
 @media (min-width: 641px) {
   .gc-panel > .gc-result {
     position: sticky;
-    top: -12px;
+    top: -70px;
     z-index: 3;
     transition: box-shadow 160ms ease;
   }
@@ -596,7 +605,7 @@ body.gc-page {
 .gc-panel {
   position: fixed;
   z-index: 20;
-  top: calc(var(--page-top) + 58px);
+  top: 0;
   left: calc(var(--page-left) - 20px);
   bottom: 0;
   width: 444px;
@@ -606,7 +615,7 @@ body.gc-page {
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
-  padding: 12px 20px 24px;
+  padding: calc(var(--page-top) + 70px) 20px 24px;
   color: var(--gc-text);
   font-size: 15px;
   line-height: 1.35;
