@@ -457,8 +457,9 @@
         optOpener = opener || null;
         if (app.W() <= 640) setSheet(true);
         var k = opener && opener.dataset.opt;
+        if (k === "buffer") { var row = $("buffer-row"); row.classList.remove("is-flash"); void row.offsetWidth; row.classList.add("is-flash"); requestAnimationFrame(function () { row.scrollIntoView({ block: "center", behavior: app.reduceMotion() ? "auto" : "smooth" }); }); setTimeout(function () { row.classList.remove("is-flash"); }, 1500); }
         var target = k === "buffer" ? $("buffer") : k === "units" ? ui.options.querySelector("input[name=units]:checked") : $("in-avoid");
-        if (target && !(k === "avoid" && !canHover)) target.focus();
+        if (target && !(k === "avoid" && !canHover)) target.focus({ preventScroll: k === "buffer" });
       } else if (optOpener) { if (byKey) optOpener.focus(); else if (ui.options.contains(document.activeElement)) document.activeElement.blur(); optOpener = null; }
       layoutSoon();
     }
@@ -548,11 +549,18 @@
     });
     $("buffer").addEventListener("change", function () { setBuffer(+$("buffer").value / unitF()); });
 
+    var shareTimer = 0;
     $("share").addEventListener("click", function () {
       var url = location.href, label = $("share-label");
-      var done = function (text) { label.textContent = text; ui.status.textContent = text; setTimeout(function () { label.textContent = "Share this route"; }, 2000); };
-      if (navigator.share && !canHover) { navigator.share({ title: "GREATERCIRCLE: " + endName("a") + " to " + endName("b"), url: url }).catch(function () {}); return; }
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done("Link copied"); }, function () { done("Copy the address bar to share"); });
+      var btn = $("share");
+      var done = function (text, ok) {
+        label.textContent = text; ui.status.textContent = text;
+        btn.classList.toggle("is-done", !!ok);
+        clearTimeout(shareTimer);
+        shareTimer = setTimeout(function () { label.textContent = "Share this route"; btn.classList.remove("is-done"); }, 2000);
+      };
+      if (navigator.share && !canHover) { navigator.share({ title: "GREATERCIRCLE: " + endName("a") + " to " + endName("b"), url: url }).then(function () { done("Shared", true); }, function () {}); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done("Link copied", true); }, function () { done("Copy the address bar to share"); });
       else done("Copy the address bar to share");
     });
 

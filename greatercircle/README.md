@@ -129,7 +129,9 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   and buttons. On the globe each letter is set along its parallel, so the
   names curve with the latitude lines; on the flat map, where the parallels
   are straight, they are straight. Zoomed into a large country whose
-  parallels are all off the screen, its name follows the middle of the view.
+  parallels are all off the screen, its name is set at a point of a coarse
+  grid fixed to the map near the middle of the view, and kept there while it
+  stays in view, so it moves with the map rather than following you.
   Long names are shortened (DR Congo, Central African Rep.).
 
   City and airport names try four places, right, left, above, and below,
@@ -138,8 +140,13 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   airport is left out rather than the city.
 
   On a wide screen the result card (the tabs and the distance) sticks to the
-  top of the panel as the rest scrolls under it. The zoom buttons ease to
+  top of the screen as the rest scrolls under it; the panel scrolls up
+  over the name and back link, which fade out as it does. The zoom buttons ease to
   the new zoom, and the drawing tools slide out one after another.
+
+  Avoided countries and drawn regions are a flat tint with a solid edge, not
+  a striped pattern: a pattern filled across a large country on a sharp
+  screen cost more than the rest of the map.
 
   A scale bar in the corner gives the distance across the middle of the view,
   rounded to 1, 2, or 5 of a power of ten in the chosen units. The glow round

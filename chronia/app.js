@@ -1580,7 +1580,7 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_EDGE_PX = 7, ISLAND_EDGE = 0.3, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
   var canOff = typeof OffscreenCanvas === "function";
   var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
   var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
@@ -1615,22 +1615,12 @@
     c.lineJoin = "round"; c.lineCap = "round";
     return c;
   }
-  // An island too small for the full band but big enough to show an edge (Corsica or Mallorca seen across the
-  // Mediterranean) gets a band of its own, narrower in step with its size, so it keeps a coloured border and a lighter
-  // inside like the mainland; until 24 November 2026 every island under BAND_ISLAND bands was tinted all over. Only the
-  // smallest, under ISLAND_EDGE_PX, are still tinted all over.
+  // Every island gets the mainland's band, at the mainland's width (24 November 2026): until then an island under
+  // BAND_ISLAND bands across was tinted all over instead, so Corsica or Crete, seen across the Mediterranean, read as solid
+  // colour with no border, and for a few hours that day such islands got a narrower band of their own.
   function paintCoastMask(list, landPath, n, m, line, res) {
-    var k = resetLayer(maskCanvas, res), kp = kmPx(), i;
-    k.beginPath(); traceCoast(k, list, n); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
-    for (i = n; i < m; i++) {
-      var p = list[i], px = p.km * kp;
-      if (px < ISLAND_EDGE_PX) break;
-      if (!inView(p)) continue;
-      k.beginPath(); traceArcs(k, p.coast); k.lineWidth = Math.min(line, Math.max(1.5, px * ISLAND_EDGE)); k.stroke();
-    }
-    k.beginPath();
-    for (; i < m; i++) traceFeature(k, list[i]);
-    k.fillStyle = "rgba(0,0,0," + ISLAND_TINT + ")"; k.fill();
+    var k = resetLayer(maskCanvas, res);
+    k.beginPath(); traceCoast(k, list, m); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
     k.globalCompositeOperation = "destination-in"; k.fillStyle = "#000"; k.fill(landPath);
     k.globalCompositeOperation = "source-over";
   }
@@ -5025,8 +5015,9 @@
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
       if (devMode && devMode !== "label" && devClick(e.clientX, e.clientY)) { drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
-      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
+      if ((playTimer || lapse) && (town || p)) { pauseNote(e.clientX, e.clientY); drag = null; downAt = null; return; }
+      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       if (town) openCity(town); else select(p ? p.id : -1);
     } else if (drag && drag.spin === null && drag.samples.length >= 2 && !reduceMotion) {
       var s = drag.samples, a = s[0], b = s[s.length - 1];
@@ -5199,6 +5190,25 @@
     tip.style.top = y + "px";
   }
   function hideTip() { tip.hidden = true; }
+  // While the map plays or follows a country, a click on a state or a city opens nothing: a note on the atlas's paper,
+  // where the click was, says to pause first, and fades after two and a half seconds (since 25 November 2026).
+  var pauseNoteEl = $("pause-note"), pauseNoteTimer = 0;
+  function pauseNote(x, y) {
+    if (!pauseNoteEl) return;
+    hideTip();
+    pauseNoteEl.textContent = T("Pause the map first, then click a country.");
+    pauseNoteEl.hidden = false;
+    var w = pauseNoteEl.offsetWidth, h = pauseNoteEl.offsetHeight;
+    pauseNoteEl.style.left = Math.round(Math.max(8 + w / 2, Math.min(window.innerWidth - 8 - w / 2, x))) + "px";
+    pauseNoteEl.style.top = Math.round(Math.max(8 + h + 14, y)) + "px";
+    void pauseNoteEl.offsetWidth;
+    pauseNoteEl.classList.add("is-on");
+    clearTimeout(pauseNoteTimer);
+    pauseNoteTimer = setTimeout(function () {
+      pauseNoteEl.classList.remove("is-on");
+      pauseNoteTimer = setTimeout(function () { pauseNoteEl.hidden = true; }, 250);
+    }, 2500);
+  }
   // With Shift held, the coordinates under the cursor, beside it (Noah's request, 15 November 2026).
   var coords = $("coords"), mouseAt = null;
   function syncCoords(shift) {
@@ -5246,16 +5256,22 @@
 
   function eraYear(y) { return y < 0 ? T("{y} BC", { y: -y }) : y < 1000 ? T("AD {y}", { y: y }) : String(y); }
   function fmtYear(y) { return T("@year", { y: eraYear(y) }); }
-  function monthYear(y, m) { return T("@my", { month: MONTHS_L[m - 1], m: m, y: y > 0 ? String(y) : eraYear(y) }); }
+  // Years under 1000 carry their era ("July AD 800"), as the year alone does, so "January 1" can't be read as a day.
+  function monthYear(y, m) { return T("@my", { month: MONTHS_L[m - 1], m: m, y: y >= 1000 ? String(y) : eraYear(y) }); }
   // Month, day, year ("August 23, 1815"), as the date's frame writes it.
-  function fmtMDY(y, m, d) { return T("@mdy", { month: MONTHS_G[m - 1], m: m, d: d, y: y > 0 ? String(y) : eraYear(y) }); }
+  function fmtMDY(y, m, d) { return T("@mdy", { month: MONTHS_G[m - 1], m: m, d: d, y: y >= 1000 ? String(y) : eraYear(y) }); }
   function fmtDay(day) { var d = dateOfDay(day); return fmtMDY(d[0], d[1], d[2]); }
   function fmtDate(day) { return fmtDay(day); }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry); }
+    if (!isMonthly(t)) {
+      var ry = Math.round(t);
+      if (preDate && Math.abs(t - now) < 1e-9) return preDate.d ? fmtMDY(ry, preDate.m, preDate.d) : monthYear(ry, preDate.m);
+      return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry);
+    }
     var d = dateOfDay(dayOfTime(t));
-    return d[2] === MID_DAY ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
+    // The day is always shown (Noah, 25 November 2026); until then the 15th stood for the whole month and showed as one.
+    return fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
@@ -5606,7 +5622,16 @@
       setTimeout(wait, 40);
     })();
   }
+  // The 15th of a month stands for the whole month (MID_DAY), so the date shows only the month there; after the day keys
+  // have been used, the 15th shows as a day like any other, until the date is moved some other way.
+  var dayMode = false, keepDayMode = false;
+  // Before 1648 the map goes by the year, but a month and a day can still be chosen (Noah, 25 November 2026): preDate holds
+  // them, for the year on screen, as the date's frame shows them; the map is the year's either way. Cleared when the date
+  // moves some other way.
+  var preDate = null, keepPre = false, preWarned = false;
   function setTime(t, fromRange) {
+    if (!keepDayMode) dayMode = false;
+    if (!keepPre) preDate = null;
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
     if (!isMonthly(t)) { t = Math.round(t); if (t === 0) t = 1; }
@@ -5700,13 +5725,26 @@
       else if (k > 0) setTime(points[k - 1]);
     } else if (k + 1 < points.length) setTime(points[k + 1]);
   }
+  // The same day of another month, where the date is a day (a date shown by the month stays one; the 31st becomes the
+  // month's last day).
+  function sameDay(y, m, day) {
+    if (dayMode) keepDayMode = true;
+    if (day === MID_DAY) return monthTime(y, m);
+    var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return timeOfDay(dayFromDate(y, m, Math.min(day, last)));
+  }
+  // The month keys: from 1648, and through a war's months, as stepUnit; otherwise before 1648, a chosen month (stepPre).
+  function stepMonthKey(dir) {
+    if (!isMonthly(now) && !ctlFineYear(Math.round(now))) { stepPre(dir, false); return; }
+    stepUnit(dir);
+  }
   function stepUnit(dir) {
     var mf = monthlyFrom();
     if (isMonthly(now)) {
       var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + dir;
       if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
       if (y < mf) setTime(mf - 1);
-      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) { setTime(sameDay(y, m, d[2])); keepDayMode = false; }
       return;
     }
     var yr = Math.round(now);
@@ -5740,22 +5778,89 @@
       var d = dateOfDay(dayOfTime(now)), y = d[0] + dir, m = d[1];
       if (y < mf) setTime(y === 0 ? -1 : y);
       // A year on that would pass the last month stays put: going to the last month would be a step of months, not of a year.
-      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) { setTime(sameDay(y, m, d[2])); keepDayMode = false; }
       return;
     }
     var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
     if (next === 0) next = dir;
+    if (preDate) {
+      var pd = preDate, got = preShift(yr, pd.m, pd.d || 1, 0, 12 * dir);
+      if (got[0] < monthlyFrom()) {
+        keepPre = true;
+        try { setTime(got[0]); if (Math.round(now) === got[0]) preDate = { m: got[1], d: pd.d ? got[2] : 0 }; } finally { keepPre = false; }
+        syncTime(); writeHash();
+        return;
+      }
+      if (pd.d) { keepDayMode = true; dayMode = true; }
+      try { setTime(pd.d ? timeOfDay(dayFromDate(got[0], got[1], got[2])) : monthTime(got[0], got[1])); } finally { keepDayMode = false; }
+      return;
+    }
     setTime((modern || dated) && next >= mf ? monthTime(next, 7) : next);
     if (mo && ctlFineYear(next) && Math.round(now) === next) { ctlMonth = mo; syncTime(); writeHash(); scheduleRender(); }
   }
-  // The month buttons step by the month from 1648, and before that only through a war's months.
+  // The map's years have no year 0 (1 BC is -1); a calendar's do (1 BC is 0). Dates before 1648 are counted on the
+  // proleptic Gregorian calendar, which is one more reason they are approximate.
+  function astroYear(y) { return y < 0 ? y + 1 : y; }
+  function mapYear(a) { return a <= 0 ? a - 1 : a; }
+  function preShift(y, m, d, days, months) {
+    var dt = new Date(Date.UTC(2000, 0, 1));
+    dt.setUTCFullYear(astroYear(y), m - 1 + months, 1);
+    var last = new Date(dt.getTime()); last.setUTCMonth(last.getUTCMonth() + 1, 0);
+    dt.setUTCDate(Math.min(d, last.getUTCDate()));
+    dt.setUTCDate(dt.getUTCDate() + days);
+    return [mapYear(dt.getUTCFullYear()), dt.getUTCMonth() + 1, dt.getUTCDate()];
+  }
+  function preWarn() {
+    if (preWarned) return;
+    preWarned = true;
+    yearHint(T("Before {from} the map changes only by the year, so a month or a day here may not be accurate.", { from: fmtYear(monthlyFrom()) }));
+  }
+  // Moves the chosen day or month before 1648 (byDay: days, else months), into 1648 where the map has days.
+  function stepPre(n, byDay) {
+    var yr = Math.round(now), base = preDate || { m: 7, d: 0 };
+    var got = preShift(yr, base.m, base.d || MID_DAY, byDay ? n : 0, byDay ? 0 : n), y = got[0];
+    var mf = monthlyFrom();
+    if (y >= mf) {
+      if (byDay || base.d) { keepDayMode = true; dayMode = true; }
+      try { setTime(byDay || base.d ? timeOfDay(dayFromDate(y, got[1], got[2])) : monthTime(y, got[1])); } finally { keepDayMode = false; }
+      return;
+    }
+    if (y < FIRST_T) return;
+    keepPre = true;
+    try {
+      if (y !== yr) setTime(y);
+      if (Math.round(now) !== y) return;
+      preDate = { m: got[1], d: byDay || base.d ? got[2] : 0 };
+    } finally { keepPre = false; }
+    syncTime();
+    writeHash();
+    preWarn();
+  }
+  // A day back or forward; before 1648 the day is kept beside the year's map (stepPre).
+  function stepDay(dir) {
+    if (!isMonthly(now)) { stepPre(dir, true); return; }
+    var day = dayOfTime(now) + dir, d = dateOfDay(day);
+    if (d[0] < monthlyFrom()) return;
+    if (d[0] * 12 + d[1] > LAST_YEAR * 12 + LAST_MONTH) return;
+    keepDayMode = true; dayMode = true;
+    try { setTime(timeOfDay(day)); } finally { keepDayMode = false; }
+  }
+  // The month buttons step by the month from 1648, and before that only through a war's months; the day buttons by the
+  // day from 1648.
   function syncSpin() {
-    var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : T("By the month from {year}", { year: fmtYear(1648) });
+    var daily = isMonthly(now), rough = daily ? "" : " " + T("(approximate before {year})", { year: fmtYear(1648) });
+    ["day-up", "day-down"].forEach(function (id) {
+      var b = $(id);
+      if (!b) return;
+      b.classList.remove("is-off");
+      b.setAttribute("aria-disabled", "false");
+      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day (8)") : T("Back a day (3)")) + rough);
+    });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
-      b.classList.toggle("is-off", !fine);
-      b.setAttribute("aria-disabled", fine ? "false" : "true");
-      b.setAttribute("data-tip", tip || (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")));
+      b.classList.remove("is-off");
+      b.setAttribute("aria-disabled", "false");
+      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (9)") : T("Back a month (2)")) + rough);
     });
   }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
@@ -5916,8 +6021,16 @@
       return;
     }
     stopPlay();
-    if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
-    if (p && p[1] && t === p[0]) yearHint(T("Before {from} the map goes by the year, so this is {year}.", { from: fmtYear(monthlyFrom()), year: fmtYear(p[0]) }));
+    if (p && p[1] && t === p[0]) {
+      keepPre = true;
+      try { if (Math.abs(t - now) > 1e-9) setTime(t); preDate = { m: p[1], d: p[2] || 0 }; } finally { keepPre = false; }
+      syncTime(); writeHash();
+      preWarned = false; preWarn();
+      return;
+    }
+    // A typed day is shown as a day, the 15th too (which otherwise stands for the whole month).
+    if (p && p[2]) { keepDayMode = true; dayMode = true; }
+    try { if (Math.abs(t - now) > 1e-9) setTime(t); else { syncTime(); yearInput.value = fitDate(fmtNow(now)); } } finally { keepDayMode = false; }
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -5934,7 +6047,8 @@
     else if (e.key === "Escape") { yearInput.value = fitDate(fmtNow(now)); yearInput.blur(); }
   });
   yearInput.addEventListener("blur", commitYearInput);
-  // The buttons beside the date: back a year and back a month on its left, forward a month and forward a year on its right.
+  // The buttons beside the date: back a year, a month, and a day on its left (three, two, and one arrows), forward a day,
+  // a month, and a year on its right.
   // Hovering a button underlines what it moves: the year (with its era) or the month's name, in a copy of the date laid
   // over the field (an input cannot underline part of its text).
   var yearMark = $("year-mark"), markPart = "";
@@ -5944,14 +6058,19 @@
     if (!part || document.activeElement === yearInput || !m) { yearMark.classList.remove("is-on"); return; }
     var head = m[1], year = m[2], mm = /^(\d+ )?([A-Za-z]+)( )$/.exec(head);
     if (part === "month" && (!mm || $("month-up").getAttribute("aria-disabled") === "true")) { yearMark.classList.remove("is-on"); return; }
+    var dm = part === "day" ? /^(\D*?)(\d+)(\D*)$/.exec(head) : null;
+    if (part === "day" && (!dm || $("day-up").getAttribute("aria-disabled") === "true")) { yearMark.classList.remove("is-on"); return; }
     var esc = function (t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
-    yearMark.innerHTML = part === "year" ? esc(head) + "<u>" + esc(year) + "</u>" : esc(mm[1] || "") + "<u>" + esc(mm[2]) + "</u>" + " " + esc(year);
+    yearMark.innerHTML = part === "year" ? esc(head) + "<u>" + esc(year) + "</u>" : part === "day" ? esc(dm[1]) + "<u>" + esc(dm[2]) + "</u>" + esc(dm[3]) + esc(year) : esc(mm[1] || "") + "<u>" + esc(mm[2]) + "</u>" + " " + esc(year);
     yearMark.style.left = yearInput.offsetLeft + "px";
     yearMark.style.width = yearInput.offsetWidth + "px";
     yearMark.classList.add("is-on");
   }
+  var DATE_KEYS = { Digit1: "year-down", Digit2: "month-down", Digit3: "day-down", Digit8: "day-up", Digit9: "month-up", Digit0: "year-up",
+    Numpad1: "year-down", Numpad2: "month-down", Numpad3: "day-down", Numpad8: "day-up", Numpad9: "month-up", Numpad0: "year-up" };
   [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
-   ["month-up", function () { stepUnit(1); }, "month"], ["month-down", function () { stepUnit(-1); }, "month"]].forEach(function (b) {
+   ["month-up", function () { stepMonthKey(1); }, "month"], ["month-down", function () { stepMonthKey(-1); }, "month"],
+   ["day-up", function () { stepDay(1); }, "day"], ["day-down", function () { stepDay(-1); }, "day"]].forEach(function (b) {
     var el = $(b[0]);
     el.addEventListener("click", function () {
       if (el.getAttribute("aria-disabled") === "true") return;
@@ -5977,9 +6096,10 @@
   function playNext(t) {
     if (lapse) return lapseNext(t);
     if (isMonthly(t)) {
+      if (playDaily()) return timeOfDay(dayOfTime(t) + playDays());
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
-      return monthTime(y, m);
+      return sameDay(y, m, d[2]);
     }
     if (t < PLAY.yearlyFrom && isDated(t)) {
       var ny = Math.floor(t + 1e-6) + 1;
@@ -5990,15 +6110,17 @@
       return mi < maps.length - 1 ? Math.min(maps[mi + 1].y, PLAY.yearlyFrom) : PLAY.yearlyFrom;
     }
     var next = Math.round(t) + 1, mf = monthlyFrom();
-    return (modern || dated) && next >= mf ? monthTime(mf, 1) : next;
+    return (modern || dated) && next >= mf ? (playDaily() ? timeOfDay(dayFromDate(mf, 1, 1)) : monthTime(mf, 1)) : next;
   }
   // The time before t when playing backwards: a month back from 1648, a year back to 1200, and the
   // previous change before that, the steps forward play takes.
   function playPrev(t) {
     if (isMonthly(t)) {
-      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1, mf = monthlyFrom();
+      var mf = monthlyFrom();
+      if (playDaily()) { var pd = dayOfTime(t) - playDays(); return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
+      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
       if (m < 1) { m = 12; y--; }
-      return y < mf ? mf - 1 : monthTime(y, m);
+      return y < mf ? mf - 1 : sameDay(y, m, d[2]);
     }
     if (t <= PLAY.yearlyFrom && dated && t - 1 >= dated.from - 1e-6) {
       var py = Math.ceil(t - 1e-6) - 1;
@@ -6113,32 +6235,52 @@
   }
   // playMode is "normal", "fast", "back", or "back-fast".
   function playBack() { return playMode.indexOf("back") === 0; }
-  var SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], SPEED_MIN = -2, SPEED_MAX = 2, playSpeed = 0, speedOut = $("speed");
+  // The speed: the - and + keys step through SPEEDS; any speed above 0 and up to 4, to two decimals, can be typed in the
+  // field between them (since 25 November 2026). It is kept as a power of two (playSpeed = log2 of the speed). At 0.5x and
+  // slower, play goes by the day from 1648; faster, by the month.
+  var SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], SPEED_MIN = Math.log2(0.01), SPEED_MAX = 2, playSpeed = 0, speedOut = $("speed");
   try { var sv = parseFloat(localStorage.getItem(STORE_SPEED)); if (isFinite(sv)) playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, sv)); } catch (e) {}
   function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
-  function speedIndex(v) {
-    var x = Math.pow(2, v), best = 0;
-    for (var i = 1; i < SPEEDS.length; i++) if (Math.abs(Math.log(SPEEDS[i] / x)) < Math.abs(Math.log(SPEEDS[best] / x))) best = i;
-    return best;
-  }
-  function speedText(v) {
-    var x = Math.pow(2, v);
-    return String(+x.toFixed(2)) + "×";
-  }
+  function speedX(v) { return Math.round(Math.pow(2, v) * 100) / 100; }
+  function playDaily() { return speedX(playSpeed) <= 0.5; }
+  // At 0.5x and slower play steps by days, as many in a step as keep its pace even with the month's steps above it (a month
+  // a step at 0.5x, about a week at 0.25x, a day at 0.1x and slower), each step taking the month step's time (PLAY.month).
+  // Until 25 November 2026 it went a day a step from 0.5x down, which made 0.51x thirty times faster than 0.5x.
+  function playDays() { return Math.max(1, Math.round(30.44 * Math.pow(speedX(playSpeed) / 0.5, DAY_CURVE))); }
+  var DAY_CURVE = Math.log(30.44) / Math.log(5);
+  // "0.25x", with a plain x in the figures' own type, where a × came out thinner than the figures (Noah, 25 November 2026).
+  function speedText(v) { return String(speedX(v)) + "x"; }
   function setPlaySpeed(v, keep) {
-    var i = speedIndex(Math.max(SPEED_MIN, Math.min(SPEED_MAX, v)));
-    playSpeed = Math.log2(SPEEDS[i]);
-    speedOut.textContent = speedText(playSpeed);
-    speedOut.setAttribute("aria-label", playSpeed === 0 ? T("Speed of play: usual speed") : T("Speed of play: {x} times the usual speed", { x: speedText(playSpeed).replace("×", "") }));
-    $("speed-down").disabled = i === 0;
-    $("speed-up").disabled = i === SPEEDS.length - 1;
+    playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, v));
+    var x = speedX(playSpeed);
+    if (document.activeElement !== speedOut) speedOut.value = speedText(playSpeed);
+    speedOut.setAttribute("aria-label", x === 1 ? T("Speed of play: usual speed") : T("Speed of play: {x} times the usual speed", { x: String(x) }));
+    $("speed-down").disabled = !(x > SPEEDS[0]);
+    $("speed-up").disabled = !(x < SPEEDS[SPEEDS.length - 1]);
     if (keep === false) return;
     try { localStorage.setItem(STORE_SPEED, String(playSpeed)); } catch (e) {}
   }
-  function stepPlaySpeed(d) { setPlaySpeed(Math.log2(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, speedIndex(playSpeed) + d))])); }
+  // The next preset faster or slower than the speed now, so a typed 0.6x steps to 0.75x or 0.5x.
+  function stepPlaySpeed(d) {
+    var x = speedX(playSpeed), pick = null;
+    SPEEDS.forEach(function (s) { if (d > 0 ? s > x + 1e-9 && pick === null : s < x - 1e-9) pick = s; });
+    if (pick !== null) setPlaySpeed(Math.log2(pick));
+  }
   $("speed-down").addEventListener("click", function () { stepPlaySpeed(-1); });
   $("speed-up").addEventListener("click", function () { stepPlaySpeed(1); });
-  speedOut.addEventListener("dblclick", function () { setPlaySpeed(0); });
+  function commitSpeed() {
+    var raw = String(speedOut.value).trim().replace(/[x×]$/i, "").trim().replace(",", "."), x = /^\d*\.?\d+$/.test(raw) ? Math.round(parseFloat(raw) * 100) / 100 : NaN;
+    if (x > 0 && x <= 4) { setPlaySpeed(Math.log2(x)); speedOut.value = speedText(playSpeed); return; }
+    speedOut.value = speedText(playSpeed);
+    if (raw && raw !== String(speedX(playSpeed))) yearHint(T("Type a speed above 0 and up to 4, such as {a} or {b}.", { a: "0.25", b: "1.5" }));
+  }
+  speedOut.addEventListener("focus", function () { speedOut.value = String(speedX(playSpeed)); speedOut.select(); });
+  speedOut.addEventListener("keydown", function (e) {
+    e.stopPropagation();
+    if (e.key === "Enter") { e.preventDefault(); speedOut.blur(); }
+    else if (e.key === "Escape") { speedOut.value = String(speedX(playSpeed)); speedOut.blur(); }
+  });
+  speedOut.addEventListener("blur", commitSpeed);
   setPlaySpeed(playSpeed, false);
   var PLAY_BUTTONS = [["play", "normal", T("Play through time")], ["play-back", "back", T("Play backwards")]];
   function syncPlayTips() {
@@ -7814,9 +7956,27 @@
   // "filled" but draws it blank, so the page showed two empty grey boxes beside the date; with it false, no banner is
   // placed and none of Google's advertising code loads. Set it true once AdSense shows the site as "Ready".
   var ADS_ON = false;
-  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo) && !premium.on && premium.known; }
+  // Where Google has no advertisement to show (AdSense still off, a slot left unfilled, or an ad blocker), a reader
+  // without Premium sees the atlas's own banner for Premium in its place (Noah, 25 November 2026). While AdSense is off,
+  // only one banner is placed, so the date isn't flanked by two of the same.
+  var HOUSE = PREMIUM_LIVE;
+  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo || HOUSE) && !premium.on && premium.known; }
+  function houseAd(el) {
+    el.textContent = "";
+    delete el.dataset.waiting;
+    var a = document.createElement("a"), t = document.createElement("span"), sub = document.createElement("span");
+    a.className = "ch-ad-house"; a.href = "premium/";
+    t.className = "ch-ad-house-title"; t.textContent = T("Get CHRONIA Premium");
+    sub.className = "ch-ad-house-sub"; sub.textContent = T("No ads | no watermark | 5× the notes");
+    a.appendChild(t); a.appendChild(sub);
+    if (parseFloat(el.style.width) < 230) a.classList.add("is-narrow");
+    el.appendChild(a);
+  }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
-  function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
+  function adsGone(el) {
+    if (HOUSE && !premium.on) { if (!el.querySelector(".ch-ad-house")) houseAd(el); return; }
+    if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); }
+  }
   function adsWatch(el, ins) {
     // Nothing from Google within 12 seconds (its script blocked by an ad blocker, or the network): the banner goes too.
     setTimeout(function () { if (!ins.getAttribute("data-ad-status")) adsGone(el); }, 12000);
@@ -7831,6 +7991,7 @@
   function adsFill(el, slot, size) {
     if (el.firstChild) return;
     el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
+    if (!adsDemo && (!ADS_ON || !ADS.client)) { houseAd(el); return; }
     if (adsDemo || !ADS.client) {
       var d = document.createElement("div");
       d.className = "ch-ad-demo";
@@ -7854,6 +8015,12 @@
       sc.async = true; sc.crossOrigin = "anonymous";
       sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ADS.client);
       sc.onerror = function () { ["ad-left", "ad-right", "ad-below"].forEach(function (id) { var e = $(id); if (e && e.firstChild) adsGone(e); }); };
+      // Google's consent message (AdSense, Privacy & messaging: the European regulations message, set up in AdSense)
+      // comes with this script and asks readers in the EEA, the UK, and Switzerland before any advertisement is chosen.
+      // Once Google's consent API is ready, the about note offers "Privacy and cookie settings" to change the choice.
+      window.googlefc = window.googlefc || {};
+      window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
+      window.googlefc.callbackQueue.push({ CONSENT_API_READY: function () { var c = $("about-consent"); if (c) c.hidden = false; } });
       document.head.appendChild(sc);
     }
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
@@ -7891,6 +8058,7 @@
     }
     if (adsMode === "side") {
       B.hidden = true;
+      if (!ADS_ON && !adsDemo) R.dataset.unfilled = "1";
       L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
       if (room < adsSize[0] + 2) {
         wide(false);
@@ -8175,6 +8343,10 @@
   $("tour-back").addEventListener("click", function () { showTourStep(tourAt - 1); });
   $("tour-skip").addEventListener("click", closeTour);
   $("tour-again").addEventListener("click", function () { setAbout(false); openTour(); });
+  $("consent-btn").addEventListener("click", function () {
+    setAbout(false);
+    try { window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage); } catch (e) {}
+  });
   window.addEventListener("keydown", function (e) {
     if ($("tour").hidden) return;
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
@@ -9324,6 +9496,22 @@
     var tb = timeOfDay(dayOfTime(p) - 1);
     return isMonthly(tb) ? tb : Math.floor(tb);
   }
+  // The day an event of the dated table shows on, when the map does not change on its own day: a change between two
+  // files (one span ending in a file's last year, the next beginning in the next file's first) is drawn on 1 January
+  // between them (prepDays), so the Treaty of Adrianople of 14 September 1829 and Greece's independence of 3 February
+  // 1830 both show on 1 January 1830, with their own dates beside them (since 25 November 2026).
+  function eventShownOn(ds) {
+    if (!dated || !/^\d{4}-\d\d-\d\d$/.test(ds)) return null;
+    var y = +ds.slice(0, 4), dn = dayFromDate(y, +ds.slice(5, 7), +ds.slice(8, 10));
+    if (!changeDaySet) changeDaySet = new Set(dated.days || []);
+    if (changeDaySet.has(dn)) return null;
+    for (var i = 1; i < dated.chunks.length; i++) {
+      var f = dated.chunks[i].from;
+      if (f > DAYS_FROM && (y === f || y === f - 1)) return f + "-01-01";
+    }
+    return null;
+  }
+  var changeDaySet = null;
   function changeDate(p) { return p < DAYS_FROM ? fmtYear(yearOf(p)) : fmtDay(dayOfTime(p)); }
   function snapFor(t) {
     if (isModern(t)) return loadModern().then(function () { return modernSnap(Math.min(dayOfTime(t), modern.toDay)); });
@@ -9339,11 +9527,31 @@
     snap.polys.forEach(function (p, i) {
       if (!p || p.people || p.claims || !p.label) return;
       var s = m.get(p.id);
-      if (!s) { s = { id: p.id, km2: 0, big: -1, ll: null, ruler: -1 }; m.set(p.id, s); }
+      if (!s) { s = { id: p.id, km2: 0, big: -1, ll: null, ruler: -1, status: 0, cap: null, rows: [] }; m.set(p.id, s); }
       s.km2 += p.label[5];
-      if (p.label[5] > s.big) { s.big = p.label[5]; s.ll = [p.label[0], p.label[1]]; s.ruler = p.ruler >= 0 && p.ruler !== p.id ? p.ruler : -1; }
+      s.rows.push(p.row);
+      if (p.label[5] > s.big) { s.big = p.label[5]; s.ll = [p.label[0], p.label[1]]; s.ruler = p.ruler >= 0 && p.ruler !== p.id ? p.ruler : -1; s.status = p.status || 0; s.cap = p.cap || null; }
     });
     return m;
+  }
+  // The rows each state's land (every piece, the ones too small for a name too), each people's land, or each piece of
+  // disputed land is drawn from, to tell whether it changed.
+  function pieceRows(snap, kind) {
+    var m = new Map();
+    snap.polys.forEach(function (p) {
+      if (!p || p.row == null || (kind === "people" ? !p.people : kind === "claims" ? !p.claims : p.people || p.claims)) return;
+      var s = m.get(p.id);
+      if (!s) { s = { id: p.id, km2: 0, ll: p.label ? [p.label[0], p.label[1]] : null, rows: [] }; m.set(p.id, s); }
+      s.rows.push(p.row);
+      if (p.label) s.km2 += p.label[5];
+    });
+    return m;
+  }
+  function sameRows(a, b) {
+    if (a.length !== b.length) return false;
+    var x = a.slice().sort(), y = b.slice().sort();
+    for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+    return true;
   }
   function holderAt(snap, ll) {
     for (var i = 0; i < snap.polys.length; i++) {
@@ -9357,8 +9565,14 @@
     }
     return -1;
   }
-  function changeLines(before, after) {
-    var A = polityTotals(before), B = polityTotals(after), out = [], used = new Set(), gained = new Set(), gone = [], added = [];
+  // What changed from one map to the next, as lines for the Changes panel. Since 24 November 2026 it also names the
+  // smaller changes that used to leave only "The borders shift a little on this date": a colony becoming a protectorate
+  // and the like, a capital that moves, a small territory that grows or shrinks by a fifth or more (Hong Kong in 1898),
+  // and, when nothing larger changes, the states whose borders move by less than the threshold or are redrawn with no
+  // change of area, and the peoples whose land changes. Rows are compared only when both maps come from the same file,
+  // since rows are numbered per file.
+  function changeLines(before, after, tb, ta) {
+    var A = polityTotals(before), B = polityTotals(after), out = [], used = new Set(), gained = new Set(), gone = [], added = [], told = new Set();
     var big = function (x, y) { return y.km2 - x.km2; };
     A.forEach(function (s, id) { if (!B.has(id)) gone.push(s); });
     B.forEach(function (s, id) { if (!A.has(id)) added.push(s); });
@@ -9376,19 +9590,96 @@
       if (g.to >= 0 && B.has(g.to)) { out.push({ kind: "joined", g: g, a: B.get(g.to) }); gained.add(g.to); }
       else out.push({ kind: "ended", g: g });
     });
-    var moved = [];
+    var moved = [], slight = [], sameFile = before.topo && after.topo && before.topo.lo === after.topo.lo;
+    var dayA = tb == null ? null : dayOfTime(tb), dayB = ta == null ? null : dayOfTime(ta);
+    out.forEach(function (l) { [l.a, l.g].forEach(function (x) { if (x) told.add(x.id); }); });
     B.forEach(function (s, id) {
       var p = A.get(id);
       if (!p) return;
-      var who = function (r) { return B.get(r) || A.get(r) || { id: r, ll: null, km2: 0 }; };
-      if (p.ruler !== s.ruler) out.push(s.ruler >= 0 ? { kind: "under", a: s, r: who(s.ruler) } : { kind: "free", a: s, r: who(p.ruler) });
-      var d = s.km2 - p.km2;
-      if (!gained.has(id) && Math.abs(d) >= Math.max(1500, 0.02 * p.km2)) moved.push({ s: s, d: Math.abs(d) });
+      var who = function (r) { return B.get(r) || A.get(r) || { id: r, ll: null, km2: 0 }; }, said = false;
+      if (p.ruler !== s.ruler) { out.push(s.ruler >= 0 ? { kind: "under", a: s, r: who(s.ruler) } : { kind: "free", a: s, r: who(p.ruler) }); said = true; }
+      else if (s.ruler >= 0 && s.status !== p.status && s.status > 0 && s.status < DISPUTED) { out.push({ kind: "status", a: s, r: who(s.ruler), st: s.status }); said = true; }
+      if (p.cap && s.cap && dayA != null && dayB != null) {
+        var ca = capitalAt(p.cap, dayA), cb = capitalAt(s.cap, dayB);
+        if (ca[0] && cb[0] && ca[0] !== cb[0] && Math.hypot(ca[1] - cb[1], ca[2] - cb[2]) > 0.1) { out.push({ kind: "capital", a: s, x: ca, y: cb }); said = true; }
+      }
+      var d = s.km2 - p.km2, ad = Math.abs(d);
+      if (gained.has(id)) return;
+      if (ad >= 1) s.sd = d;
+      if ((ad >= 1500 && ad >= 0.02 * p.km2) || (ad >= 10 && ad >= 0.2 * p.km2)) moved.push({ s: s, d: ad });
+      else if (!said && !told.has(id) && ad >= 1) slight.push({ s: s, d: ad });
     });
+    moved = takings(before, after, moved, out);
     moved.sort(function (x, y) { return y.d - x.d; });
     if (moved.length) out.push({ kind: "moved", list: moved.map(function (m) { return m.s; }) });
+    if (out.length) return out;
+    slight = takings(before, after, slight, out);
+    if (sameFile) {
+      var RA = pieceRows(before, "state"), RB = pieceRows(after, "state"), inSlight = new Set(slight.map(function (m) { return m.s.id; }));
+      RB.forEach(function (s, id) {
+        var p = RA.get(id);
+        if (p && !inSlight.has(id) && !told.has(id) && !sameRows(p.rows, s.rows)) slight.push({ s: B.get(id) || s, d: 0 });
+      });
+    }
+    slight.sort(function (x, y) { return y.d - x.d || y.s.km2 - x.s.km2; });
+    var paired = new Set();
+    slight.forEach(function (m, i) {
+      if (paired.has(m.s.id)) return;
+      for (var j = i + 1; j < slight.length; j++) {
+        var o = slight[j];
+        if (paired.has(o.s.id) || !(bordering(after, m.s.id, o.s.id) || bordering(before, m.s.id, o.s.id))) continue;
+        paired.add(m.s.id); paired.add(o.s.id);
+        out.push({ kind: "between", a: m.s, b: o.s });
+        return;
+      }
+    });
+    slight = slight.filter(function (m) { return !paired.has(m.s.id); });
+    if (slight.length) out.push({ kind: "slight", list: slight.map(function (m) { return m.s; }) });
+    if (sameFile) {
+      var CA = new Set(), disputed = new Map(), PA = pieceRows(before, "people"), PB = pieceRows(after, "people"), lands = [];
+      before.polys.forEach(function (p) { if (p && p.claims) CA.add(p.row); });
+      after.polys.forEach(function (p) {
+        if (p && p.claims && !CA.has(p.row)) p.claims.forEach(function (c) { if (!disputed.has(c)) { var w = B.get(c) || A.get(c); disputed.set(c, { id: c, ll: w ? w.ll : null, km2: w ? w.km2 : 0 }); } });
+      });
+      if (disputed.size) out.push({ kind: "disputed", list: Array.from(disputed.values()) });
+      PB.forEach(function (s, id) { var p = PA.get(id); if (p && !sameRows(p.rows, s.rows)) lands.push(s); });
+      lands.sort(function (x, y) { return y.km2 - x.km2; });
+      if (lands.length) out.push({ kind: "lands", list: lands });
+    }
     return out;
   }
+  // Pairs a state that gained land with a neighbour (on either map) that lost about as much (from half to twice of what it
+  // has not yet given to a larger gainer), and says the one took it from the other; returns the rest (since 25 November 2026).
+  function takings(before, after, list, out) {
+    var gain = list.filter(function (m) { return m.s.sd > 0; }).sort(function (x, y) { return y.d - x.d; });
+    var lose = list.filter(function (m) { return m.s.sd < 0; }), used = new Set(), left = new Map();
+    lose.forEach(function (l) { left.set(l.s.id, l.d); });
+    gain.forEach(function (g) {
+      var best = null, fit = 0;
+      lose.forEach(function (l) {
+        var rest = left.get(l.s.id), f = Math.min(g.d, rest) / Math.max(g.d, rest);
+        if (f >= 0.5 && f > fit && (bordering(after, g.s.id, l.s.id) || bordering(before, g.s.id, l.s.id))) { best = l; fit = f; }
+      });
+      if (!best) return;
+      used.add(g.s.id); used.add(best.s.id);
+      left.set(best.s.id, Math.max(0, left.get(best.s.id) - g.d));
+      out.push({ kind: "took", a: g.s, b: best.s, km: g.d });
+    });
+    return list.filter(function (m) { return !used.has(m.s.id); });
+  }
+  function bordering(snap, a, b) {
+    if (!snap.geoms || !snap.geoms.lo) return false;
+    if (!snap.nb) snap.nb = topojson.neighbors(snap.geoms.lo);
+    for (var i = 0; i < snap.polys.length; i++) {
+      var p = snap.polys[i];
+      if (!p || p.id !== a || p.people) continue;
+      var n = snap.nb[i];
+      for (var j = 0; j < n.length; j++) { var q = snap.polys[n[j]]; if (q && q.id === b) return true; }
+    }
+    return false;
+  }
+  function fmtKm(n) { return Number(n >= 100 ? n.toPrecision(2) : Math.round(n)).toLocaleString(LANG); }
+  function withKm(parts, x) { return typeof x.sd === "number" ? parts.concat(" (" + (x.sd > 0 ? "+" : "\u2212") + fmtKm(Math.abs(x.sd)) + " km\u00b2)") : parts; }
   function changeName(s, here) {
     var b = document.createElement("button");
     b.type = "button";
@@ -9409,6 +9700,8 @@
     var n = polityName(s.id) || "";
     return THE_FIRST.test(n) || THE_LAST.test(n) ? [first ? "The " : "the ", changeName(s, here)] : [changeName(s, here)];
   }
+  var STATUS_A = ["", "a colony", "a protectorate", "a mandate", "an occupied territory", "a dependency"];
+  var STATUS_BECOMES = ["", "{a} becomes a colony of {b}.", "{a} becomes a protectorate of {b}.", "{a} becomes a mandate of {b}.", "{a} becomes an occupied territory of {b}.", "{a} becomes a dependency of {b}."];
   function changeLine(parts, cls) {
     var p = document.createElement("p");
     p.className = "ch-changes-line" + (cls ? " " + cls : "");
@@ -9429,7 +9722,7 @@
     tpl.split(/(\{\w+\})/).forEach(function (part) { var m = /^\{(\w+)\}$/.exec(part); if (!m) { if (part) out.push(part); } else out = out.concat(vals[m[1]]); });
     return out;
   }
-  function renderChanges(p, lines, events, seam) {
+  function renderChanges(p, lines, events, seam, still) {
     changesList.textContent = "";
     events.forEach(function (e) {
       var parts = [e[1].replace(/\.?$/, ".")];
@@ -9447,9 +9740,9 @@
     lines.forEach(function (l) {
       if (shown >= CHANGES_MAX) return;
       shown++;
-      var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return named(x, here, false); }); };
+      var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return withKm(named(x, here, false), x); }); };
       if (LANG !== "en") {
-        var nm = function (x, here) { return [changeName(x, here)]; }, lst = function (list, here) { return listOf(list.slice(0, 6).map(function (x) { return nm(x, here); }), Math.max(0, list.length - 6)); };
+        var nm = function (x, here) { return [changeName(x, here)]; }, lst = function (list, here) { return listOf(list.slice(0, 6).map(function (x) { return withKm(nm(x, here), x); }), Math.max(0, list.length - 6)); };
         row = l.kind === "new" ? tplParts(T("{a} appears on the map."), { a: nm(l.a, true) })
           : l.kind === "renamed" ? tplParts(T("{a} becomes {b}."), { a: nm(l.g, false), b: nm(l.a, true) })
           : l.kind === "formed" ? tplParts(T("{a} is formed from {list}."), { a: nm(l.a, true), list: lst(l.from, false) })
@@ -9457,6 +9750,13 @@
           : l.kind === "ended" ? tplParts(T("{a} leaves the map."), { a: nm(l.g, false) })
           : l.kind === "under" ? tplParts(T("{a} comes under {b}."), { a: nm(l.a, true), b: nm(l.r, true) })
           : l.kind === "free" ? tplParts(T("{a} is no longer under {b}."), { a: nm(l.a, true), b: nm(l.r, false) })
+          : l.kind === "status" ? tplParts(T(STATUS_BECOMES[l.st]), { a: nm(l.a, true), b: nm(l.r, true) })
+          : l.kind === "capital" ? tplParts(T("The capital of {a} moves from {x} to {y}."), { a: nm(l.a, true), x: [capitalNameL(l.x)], y: [capitalNameL(l.y)] })
+          : l.kind === "slight" ? tplParts(T("The borders of {list} shift slightly."), { list: lst(l.list, true) })
+          : l.kind === "lands" ? tplParts(T("The lands of {list} change."), { list: lst(l.list, true) })
+          : l.kind === "disputed" ? tplParts(T("Land becomes disputed between {list}."), { list: lst(l.list, true) })
+          : l.kind === "between" ? tplParts(T("The border between {a} and {b} shifts slightly."), { a: nm(l.a, true), b: nm(l.b, true) })
+          : l.kind === "took" ? tplParts(T("{a} takes about {n} km² from {b}."), { a: nm(l.a, true), n: [fmtKm(l.km)], b: nm(l.b, true) })
           : tplParts(T(lines.length > 1 ? "Borders also move for {list}." : "Borders move for {list}."), { list: lst(l.list, true) });
       }
       else if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
@@ -9467,10 +9767,17 @@
       else if (l.kind === "under") row = named(l.a, true, true).concat(verb(l.a, " comes", " come") + " under ", named(l.r, true, false), ".");
       else if (l.kind === "free") row = named(l.a, true, true).concat(verb(l.a, " is", " are") + " no longer under ", named(l.r, false, false), ".");
       else if (l.kind === "moved") row = [lines.length > 1 ? "Borders also move for " : "Borders move for "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      else if (l.kind === "status") row = named(l.a, true, true).concat(verb(l.a, " becomes ", " become ") + STATUS_A[l.st] + " of ", named(l.r, true, false), ".");
+      else if (l.kind === "capital") row = ["The capital of "].concat(named(l.a, true, false), " moves from " + capitalNameL(l.x) + " to " + capitalNameL(l.y) + ".");
+      else if (l.kind === "slight") row = ["The borders of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " shift slightly.");
+      else if (l.kind === "lands") row = ["The lands of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " change.");
+      else if (l.kind === "disputed") row = ["Land becomes disputed between "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      else if (l.kind === "between") row = ["The border between "].concat(named(l.a, true, false), " and ", named(l.b, true, false), " shifts slightly.");
+      else if (l.kind === "took") row = named(l.a, true, true).concat(verb(l.a, " takes", " take") + " about " + fmtKm(l.km) + " km\u00b2 from ", named(l.b, true, false), ".");
       changesList.appendChild(changeLine(row));
     });
     if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine([T(lines.length - CHANGES_MAX === 1 ? "And {n} more change." : "And {n} more changes.", { n: lines.length - CHANGES_MAX })], "ch-changes-none"));
-    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine([T("The borders shift a little on this date, with no state gained or lost.")], "ch-changes-none"));
+    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine([T(still ? "Nothing on the map changes on this date." : "The borders shift a little on this date, with no state gained or lost.")], "ch-changes-none"));
     scheduleRender();
   }
   function showChanges(k, key) {
@@ -9485,8 +9792,11 @@
     var day = p >= DAYS_FROM ? storedDate(p) : null;
     Promise.all([seam ? null : snapFor(tb), seam ? null : snapFor(p), changesEventsLoad()]).then(function (r) {
       if (changesKey !== key) return;
-      var events = day ? r[2].filter(function (e) { return e[0] === day; }) : [];
-      renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1]) : [], events, seam);
+      var events = day ? r[2].filter(function (e) { return e[0] === day; }).concat(r[2].filter(function (e) { return e[0] !== day && eventShownOn(e[0]) === day; }).map(function (e) {
+        var d = e[0].split("-");
+        return [e[0], fmtDay(dayFromDate(+d[0], +d[1], +d[2])) + ": " + e[1], e[2]];
+      })) : [];
+      renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1], tb, p) : [], events, seam, !!(r[0] && r[1] && r[0].key === r[1].key));
     }).catch(function (e) {
       console.warn("changes", e);
       if (changesKey !== key) return;
@@ -9559,6 +9869,9 @@
     else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "D" && e.shiftKey) openDev();
+    // The number keys move the date as the keys beside it do: 1, 2, 3 back a year, a month, a day; 8, 9, 0 forward a day,
+    // a month, a year (Noah, 25 November 2026). The top row's digits or the keypad's, without Shift.
+    else if (!e.shiftKey && DATE_KEYS[e.code]) { e.preventDefault(); $(DATE_KEYS[e.code]).click(); }
     else if (e.key === "p" || e.key === "P") togglePlay(false);
     else if (e.key === "o" || e.key === "O") togglePlay(true);
     else if (e.key === "," || e.key === "<") stepPlaySpeed(-1);
@@ -9583,7 +9896,7 @@
   function hashTime() {
     if (!isMonthly(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
     var d = dateOfDay(dayOfTime(now));
-    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function readHash() {
     var out = {};
@@ -10091,6 +10404,9 @@
       if (fine && +fine[1] < monthlyFrom() && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
       var t0 = h.y ? parseTime(h.y) : null;
       now = Math.max(KNOTS[0][0], t0 !== null ? t0 : parseTime(String(START_YEAR)));
+      // Opened without a date, the atlas starts on a day, July 15, 1815, not on the month (Noah, 25 November 2026); a link
+      // with the 15th written out opens on that day too.
+      if ((t0 === null || /-15$/.test(h.y)) && isMonthly(now)) dayMode = true;
       land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
       buildCoastGrid(land.lo);
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
@@ -10103,7 +10419,8 @@
       return Promise.all([first, geogLoad]).then(function (r) {
         var snap = r[0];
         current = snap;
-        setTime(now);
+        if (dayMode) keepDayMode = true;
+        try { setTime(now); } finally { keepDayMode = false; }
         reveal();
         afterIntro(function () { if (gridBase === "lo") upgradeGrid("hi", function (ms) { hiGridMs = ms; scheduleRender(); }); });
         var seaData = fetchJSON(UC + "data/sea.json");

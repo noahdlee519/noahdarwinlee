@@ -229,6 +229,38 @@ body.ch-page {
   background-color: var(--bg);
 }
 
+/* The note that asks to pause before clicking a state, on the atlas's paper under a brass rail, as the panels are. */
+.ch-pause-note {
+  position: fixed;
+  z-index: 26;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 8px 13px 9px;
+  border: 1px solid var(--rule);
+  border-top: 6px solid var(--ch-brass);
+  border-image: var(--ch-plate) 6 1 1 1;
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  box-shadow: var(--ch-lift);
+  font-size: 15px;
+  line-height: 1.3;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 14px));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ch-pause-note.is-on {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-pause-note {
+    transition: none;
+  }
+}
+
 /* Two kinds of frame, as on an instrument. The title, the date, and the tools sit in brass bezels (--ch-bezel). The
    card, the panels, the key, the changes, and the wars are plates of the atlas's paper under one ink rule, with a
    brass rail along the top (--ch-plate). Where border images are not drawn, each keeps a plain border. */
@@ -264,10 +296,10 @@ body.ch-page {
   left: calc(var(--ch-gap) + env(safe-area-inset-left, 0px));
   right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
   display: grid;
-  /* The date in the middle column, at most 336 px: the two outer columns share what is left equally, so the date is in
+  /* The date in the middle column, at most 440 px (336 until six keys came, 25 November 2026): the two outer columns share what is left equally, so the date is in
      the page's middle wherever the title and the tools leave room, and each keeps at least its own width (max-content),
      so where they do not the date narrows (see .ch-year-box's container rules) rather than dropping below them. */
-  grid-template-columns: minmax(max-content, 1fr) minmax(0, 336px) minmax(max-content, 1fr);
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, 440px) minmax(max-content, 1fr);
   align-items: start;
   gap: var(--ch-gap);
   pointer-events: none;
@@ -1131,8 +1163,16 @@ select.ch-save-input {
   line-height: 1;
   text-align: center;
   color: var(--ink);
-  cursor: default;
-  user-select: none;
+  width: 100%;
+  margin: 0;
+  /* A field to type the speed into (since 25 November 2026), drawn as the little window it was. */
+  font-family: var(--ch-num);
+  cursor: text;
+}
+
+.ch-speed-now:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 
 @media (hover: none) and (pointer: coarse) {
@@ -1161,7 +1201,7 @@ select.ch-save-input {
 
 /* The date sits at the top, in the middle column of the top row, in a frame like the title's, at every width above a
    phone's (Noah, 19 November 2026: it used to drop under the row at 880 px and below). It is as wide as the column, at
-   most 336 px; narrower, its keys and figures narrow with it (the container rules below). */
+   most 440 px; narrower, its keys and figures narrow with it (the container rules below). */
 .ch-top > .ch-year-box {
   position: relative;
   grid-column: 2;
@@ -1928,21 +1968,69 @@ select.ch-save-input {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.ch-card-pin-btn {
+/* The card's close and back-to-top buttons are small brass discs, as the tools and the play buttons are, with their
+   icons engraved on them (lines and hatching in the darker ink kept for brass). */
+.ch-card-pin-btn,
+.ch-card-close {
   flex: none;
+  position: relative;
   width: 32px;
   height: 32px;
-  padding: 7px;
+  padding: 0;
   border: 0;
   background: none;
-  color: var(--ink);
+  color: var(--ch-on-brass);
   cursor: pointer;
+  isolation: isolate;
 }
-.ch-card-pin-btn:hover {
-  background: var(--ch-btn-hover);
+.ch-card-pin-btn::after,
+.ch-card-close::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  box-sizing: border-box;
+  width: 29px;
+  height: 29px;
+  translate: -50% -50%;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 50%;
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
+  pointer-events: none;
 }
-.ch-card-pin-btn svg {
+.ch-card-pin-btn:hover::after,
+.ch-card-close:hover::after {
+  background: var(--ch-metal-lit);
+}
+.ch-card-pin-btn:active::after,
+.ch-card-close:active::after {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
+}
+.ch-card-pin-btn:active > svg,
+.ch-card-close:active > svg {
+  translate: 0 1px;
+}
+.ch-card-pin-btn > .ch-ico,
+.ch-card-close > .ch-ico {
   display: block;
+  margin: 0 auto;
+  stroke-width: 1.6;
+}
+.ch-card-pin-btn > .ch-ico .h,
+.ch-card-close > .ch-ico .h {
+  stroke-width: 0.9;
+}
+.ch-card-pin-btn:focus-visible,
+.ch-card-close:focus-visible {
+  outline: none;
+}
+.ch-card-pin-btn:focus-visible::after,
+.ch-card-close:focus-visible::after {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-card-pin-bar,
@@ -1956,21 +2044,6 @@ select.ch-save-input {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 32px;
-  height: 32px;
-  padding: 7px;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.ch-card-close:hover {
-  background: var(--ch-btn-hover);
-}
-
-.ch-card-close svg {
-  display: block;
 }
 
 .ch-card-kind {
@@ -3225,16 +3298,16 @@ select.ch-save-input {
   }
 }
 
-/* The date's keys and figures narrow with its frame: under 300 px the keys are 28 px wide; under 250, 24 px and the
-   figures a size smaller; under 205 only the month keys are kept (the year moves by the arrow keys, the timeline, and
-   typing). */
-@container (max-width: 300px) {
+/* The date's keys and figures narrow with its frame (six keys since 25 November 2026: a year, a month, and a day each way):
+   under 420 px the keys are 28 px wide; under 340, 24 px and the figures a size smaller; under 270 the year keys go, and
+   under 220 the day keys too (the year moves by the arrow keys, the timeline, and typing). */
+@container (max-width: 420px) {
   .ch-spin-btn {
     width: 28px;
   }
 }
 
-@container (max-width: 250px) {
+@container (max-width: 340px) {
   .ch-spin-btn {
     width: 24px;
   }
@@ -3245,7 +3318,7 @@ select.ch-save-input {
   }
 }
 
-@container (max-width: 205px) {
+@container (max-width: 270px) {
   #year-down,
   #year-up {
     display: none;
@@ -3258,6 +3331,20 @@ select.ch-save-input {
   .ch-year,
   .ch-year-mark {
     font-size: 16px;
+  }
+}
+
+@container (max-width: 220px) {
+  #day-down,
+  #day-up {
+    display: none;
+  }
+}
+
+/* On the narrowest phones the six keys of the date in the timeline bar are 28 px wide, so the date keeps its year. */
+@media (max-width: 360px) {
+  .ch-time > .ch-year-box .ch-spin-btn {
+    width: 28px;
   }
 }
 
@@ -3527,7 +3614,7 @@ select.ch-save-input {
   }
 
   .ch-spin-btn {
-    width: 44px;
+    width: 32px;
   }
 
   .ch-when {
@@ -3618,7 +3705,7 @@ select.ch-save-input {
   .ch-card-close {
     width: 44px;
     height: 44px;
-    padding: 13px;
+    padding: 0;
     top: 2px;
     right: 2px;
   }
@@ -4466,6 +4553,41 @@ select.ch-save-input {
   z-index: 29;
   left: 50%;
   translate: -50% 0;
+}
+/* The atlas's own banner for Premium, where Google has none to show. */
+.ch-ad-house {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+  color: var(--ink);
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+}
+.ch-ad-house:hover {
+  background: var(--ch-btn-hover);
+}
+.ch-ad-house:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+}
+.ch-ad-house-title {
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+}
+.ch-ad-house-sub {
+  font-size: 11.5px;
+  color: var(--ch-muted);
+}
+.ch-ad-house.is-narrow .ch-ad-house-sub {
+  display: none;
 }
 .ch-ad-demo {
   display: flex;
