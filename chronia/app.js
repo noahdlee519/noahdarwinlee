@@ -7791,9 +7791,27 @@
   // "filled" but draws it blank, so the page showed two empty grey boxes beside the date; with it false, no banner is
   // placed and none of Google's advertising code loads. Set it true once AdSense shows the site as "Ready".
   var ADS_ON = false;
-  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo) && !premium.on && premium.known; }
+  // Where Google has no advertisement to show (AdSense still off, a slot left unfilled, or an ad blocker), a reader
+  // without Premium sees the atlas's own banner for Premium in its place (Noah, 25 November 2026). While AdSense is off,
+  // only one banner is placed, so the date isn't flanked by two of the same.
+  var HOUSE = PREMIUM_LIVE;
+  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo || HOUSE) && !premium.on && premium.known; }
+  function houseAd(el) {
+    el.textContent = "";
+    delete el.dataset.waiting;
+    var a = document.createElement("a"), t = document.createElement("span"), sub = document.createElement("span");
+    a.className = "ch-ad-house"; a.href = "premium/";
+    t.className = "ch-ad-house-title"; t.textContent = T("Get CHRONIA Premium");
+    sub.className = "ch-ad-house-sub"; sub.textContent = T("No ads | no watermark | 5× the notes");
+    a.appendChild(t); a.appendChild(sub);
+    if (parseFloat(el.style.width) < 230) a.classList.add("is-narrow");
+    el.appendChild(a);
+  }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
-  function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
+  function adsGone(el) {
+    if (HOUSE && !premium.on) { if (!el.querySelector(".ch-ad-house")) houseAd(el); return; }
+    if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); }
+  }
   function adsWatch(el, ins) {
     // Nothing from Google within 12 seconds (its script blocked by an ad blocker, or the network): the banner goes too.
     setTimeout(function () { if (!ins.getAttribute("data-ad-status")) adsGone(el); }, 12000);
@@ -7808,6 +7826,7 @@
   function adsFill(el, slot, size) {
     if (el.firstChild) return;
     el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
+    if (!adsDemo && (!ADS_ON || !ADS.client)) { houseAd(el); return; }
     if (adsDemo || !ADS.client) {
       var d = document.createElement("div");
       d.className = "ch-ad-demo";
@@ -7831,6 +7850,12 @@
       sc.async = true; sc.crossOrigin = "anonymous";
       sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ADS.client);
       sc.onerror = function () { ["ad-left", "ad-right", "ad-below"].forEach(function (id) { var e = $(id); if (e && e.firstChild) adsGone(e); }); };
+      // Google's consent message (AdSense, Privacy & messaging: the European regulations message, set up in AdSense)
+      // comes with this script and asks readers in the EEA, the UK, and Switzerland before any advertisement is chosen.
+      // Once Google's consent API is ready, the about note offers "Privacy and cookie settings" to change the choice.
+      window.googlefc = window.googlefc || {};
+      window.googlefc.callbackQueue = window.googlefc.callbackQueue || [];
+      window.googlefc.callbackQueue.push({ CONSENT_API_READY: function () { var c = $("about-consent"); if (c) c.hidden = false; } });
       document.head.appendChild(sc);
     }
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
@@ -7868,6 +7893,7 @@
     }
     if (adsMode === "side") {
       B.hidden = true;
+      if (!ADS_ON && !adsDemo) R.dataset.unfilled = "1";
       L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
       if (room < adsSize[0] + 2) {
         wide(false);
@@ -8152,6 +8178,10 @@
   $("tour-back").addEventListener("click", function () { showTourStep(tourAt - 1); });
   $("tour-skip").addEventListener("click", closeTour);
   $("tour-again").addEventListener("click", function () { setAbout(false); openTour(); });
+  $("consent-btn").addEventListener("click", function () {
+    setAbout(false);
+    try { window.googlefc.callbackQueue.push(window.googlefc.showRevocationMessage); } catch (e) {}
+  });
   window.addEventListener("keydown", function (e) {
     if ($("tour").hidden) return;
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }

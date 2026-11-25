@@ -4467,6 +4467,41 @@ select.ch-save-input {
   left: 50%;
   translate: -50% 0;
 }
+/* The atlas's own banner for Premium, where Google has none to show. */
+.ch-ad-house {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+  color: var(--ink);
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+}
+.ch-ad-house:hover {
+  background: var(--ch-btn-hover);
+}
+.ch-ad-house:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+}
+.ch-ad-house-title {
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+}
+.ch-ad-house-sub {
+  font-size: 11.5px;
+  color: var(--ch-muted);
+}
+.ch-ad-house.is-narrow .ch-ad-house-sub {
+  display: none;
+}
 .ch-ad-demo {
   display: flex;
   align-items: center;
