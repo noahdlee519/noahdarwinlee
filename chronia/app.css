@@ -1131,8 +1131,16 @@ select.ch-save-input {
   line-height: 1;
   text-align: center;
   color: var(--ink);
-  cursor: default;
-  user-select: none;
+  width: 100%;
+  margin: 0;
+  /* A field to type the speed into (since 25 November 2026), drawn as the little window it was. */
+  font-family: var(--ch-num);
+  cursor: text;
+}
+
+.ch-speed-now:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 
 @media (hover: none) and (pointer: coarse) {

@@ -5250,7 +5250,8 @@
       return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry);
     }
     var d = dateOfDay(dayOfTime(t));
-    return d[2] === MID_DAY && !(dayMode && Math.abs(t - now) < 1e-9) ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
+    // The day is always shown (Noah, 25 November 2026); until then the 15th stood for the whole month and showed as one.
+    return fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
@@ -6065,7 +6066,7 @@
   // same kind takes the same time, divided by the speed slider's.
   // Before 1200 it goes year by year as well, at `early` a year (about four and a half minutes from 3400 BC); before
   // 10 November 2026 it jumped from one change to the next there, 0.8 seconds each, however many years lay between.
-  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, load: 100 };
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, day: 40, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return lapse ? lapse.endT : dataEnd(); }
@@ -6073,9 +6074,10 @@
   function playNext(t) {
     if (lapse) return lapseNext(t);
     if (isMonthly(t)) {
+      if (playDaily()) return timeOfDay(dayOfTime(t) + 1);
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
-      return monthTime(y, m);
+      return sameDay(y, m, d[2]);
     }
     if (t < PLAY.yearlyFrom && isDated(t)) {
       var ny = Math.floor(t + 1e-6) + 1;
@@ -6086,15 +6088,17 @@
       return mi < maps.length - 1 ? Math.min(maps[mi + 1].y, PLAY.yearlyFrom) : PLAY.yearlyFrom;
     }
     var next = Math.round(t) + 1, mf = monthlyFrom();
-    return (modern || dated) && next >= mf ? monthTime(mf, 1) : next;
+    return (modern || dated) && next >= mf ? (playDaily() ? timeOfDay(dayFromDate(mf, 1, 1)) : monthTime(mf, 1)) : next;
   }
   // The time before t when playing backwards: a month back from 1648, a year back to 1200, and the
   // previous change before that, the steps forward play takes.
   function playPrev(t) {
     if (isMonthly(t)) {
-      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1, mf = monthlyFrom();
+      var mf = monthlyFrom();
+      if (playDaily()) { var pd = dayOfTime(t) - 1; return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
+      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
       if (m < 1) { m = 12; y--; }
-      return y < mf ? mf - 1 : monthTime(y, m);
+      return y < mf ? mf - 1 : sameDay(y, m, d[2]);
     }
     if (t <= PLAY.yearlyFrom && dated && t - 1 >= dated.from - 1e-6) {
       var py = Math.ceil(t - 1e-6) - 1;
@@ -6109,7 +6113,7 @@
   }
   function playWait(from, to) {
     if (lapse) return lapseWait();
-    if (isMonthly(to)) return PLAY.month;
+    if (isMonthly(to)) return playDaily() ? PLAY.day : PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return PLAY.year;
   }
@@ -6209,32 +6213,47 @@
   }
   // playMode is "normal", "fast", "back", or "back-fast".
   function playBack() { return playMode.indexOf("back") === 0; }
-  var SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], SPEED_MIN = -2, SPEED_MAX = 2, playSpeed = 0, speedOut = $("speed");
+  // The speed: the - and + keys step through SPEEDS; any speed above 0 and up to 4, to two decimals, can be typed in the
+  // field between them (since 25 November 2026). It is kept as a power of two (playSpeed = log2 of the speed). At 0.5x and
+  // slower, play goes by the day from 1648; faster, by the month.
+  var SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], SPEED_MIN = Math.log2(0.01), SPEED_MAX = 2, playSpeed = 0, speedOut = $("speed");
   try { var sv = parseFloat(localStorage.getItem(STORE_SPEED)); if (isFinite(sv)) playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, sv)); } catch (e) {}
   function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
-  function speedIndex(v) {
-    var x = Math.pow(2, v), best = 0;
-    for (var i = 1; i < SPEEDS.length; i++) if (Math.abs(Math.log(SPEEDS[i] / x)) < Math.abs(Math.log(SPEEDS[best] / x))) best = i;
-    return best;
-  }
-  function speedText(v) {
-    var x = Math.pow(2, v);
-    return String(+x.toFixed(2)) + "×";
-  }
+  function speedX(v) { return Math.round(Math.pow(2, v) * 100) / 100; }
+  function playDaily() { return speedX(playSpeed) <= 0.5; }
+  // "0.25x", with a plain x in the figures' own type, where a × came out thinner than the figures (Noah, 25 November 2026).
+  function speedText(v) { return String(speedX(v)) + "x"; }
   function setPlaySpeed(v, keep) {
-    var i = speedIndex(Math.max(SPEED_MIN, Math.min(SPEED_MAX, v)));
-    playSpeed = Math.log2(SPEEDS[i]);
-    speedOut.textContent = speedText(playSpeed);
-    speedOut.setAttribute("aria-label", playSpeed === 0 ? T("Speed of play: usual speed") : T("Speed of play: {x} times the usual speed", { x: speedText(playSpeed).replace("×", "") }));
-    $("speed-down").disabled = i === 0;
-    $("speed-up").disabled = i === SPEEDS.length - 1;
+    playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, v));
+    var x = speedX(playSpeed);
+    if (document.activeElement !== speedOut) speedOut.value = speedText(playSpeed);
+    speedOut.setAttribute("aria-label", x === 1 ? T("Speed of play: usual speed") : T("Speed of play: {x} times the usual speed", { x: String(x) }));
+    $("speed-down").disabled = !(x > SPEEDS[0]);
+    $("speed-up").disabled = !(x < SPEEDS[SPEEDS.length - 1]);
     if (keep === false) return;
     try { localStorage.setItem(STORE_SPEED, String(playSpeed)); } catch (e) {}
   }
-  function stepPlaySpeed(d) { setPlaySpeed(Math.log2(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, speedIndex(playSpeed) + d))])); }
+  // The next preset faster or slower than the speed now, so a typed 0.6x steps to 0.75x or 0.5x.
+  function stepPlaySpeed(d) {
+    var x = speedX(playSpeed), pick = null;
+    SPEEDS.forEach(function (s) { if (d > 0 ? s > x + 1e-9 && pick === null : s < x - 1e-9) pick = s; });
+    if (pick !== null) setPlaySpeed(Math.log2(pick));
+  }
   $("speed-down").addEventListener("click", function () { stepPlaySpeed(-1); });
   $("speed-up").addEventListener("click", function () { stepPlaySpeed(1); });
-  speedOut.addEventListener("dblclick", function () { setPlaySpeed(0); });
+  function commitSpeed() {
+    var raw = String(speedOut.value).trim().replace(/[x×]$/i, "").trim().replace(",", "."), x = /^\d*\.?\d+$/.test(raw) ? Math.round(parseFloat(raw) * 100) / 100 : NaN;
+    if (x > 0 && x <= 4) { setPlaySpeed(Math.log2(x)); speedOut.value = speedText(playSpeed); return; }
+    speedOut.value = speedText(playSpeed);
+    if (raw && raw !== String(speedX(playSpeed))) yearHint(T("Type a speed above 0 and up to 4, such as {a} or {b}.", { a: "0.25", b: "1.5" }));
+  }
+  speedOut.addEventListener("focus", function () { speedOut.value = String(speedX(playSpeed)); speedOut.select(); });
+  speedOut.addEventListener("keydown", function (e) {
+    e.stopPropagation();
+    if (e.key === "Enter") { e.preventDefault(); speedOut.blur(); }
+    else if (e.key === "Escape") { speedOut.value = String(speedX(playSpeed)); speedOut.blur(); }
+  });
+  speedOut.addEventListener("blur", commitSpeed);
   setPlaySpeed(playSpeed, false);
   var PLAY_BUTTONS = [["play", "normal", T("Play through time")], ["play-back", "back", T("Play backwards")]];
   function syncPlayTips() {
@@ -9824,7 +9843,7 @@
   function hashTime() {
     if (!isMonthly(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
     var d = dateOfDay(dayOfTime(now));
-    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY && !dayMode ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function readHash() {
     var out = {};
