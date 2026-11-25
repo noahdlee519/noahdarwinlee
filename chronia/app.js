@@ -5015,8 +5015,9 @@
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
       if (devMode && devMode !== "label" && devClick(e.clientX, e.clientY)) { drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
-      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
+      if ((playTimer || lapse) && (town || p)) { pauseNote(e.clientX, e.clientY); drag = null; downAt = null; return; }
+      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       if (town) openCity(town); else select(p ? p.id : -1);
     } else if (drag && drag.spin === null && drag.samples.length >= 2 && !reduceMotion) {
       var s = drag.samples, a = s[0], b = s[s.length - 1];
@@ -5189,6 +5190,25 @@
     tip.style.top = y + "px";
   }
   function hideTip() { tip.hidden = true; }
+  // While the map plays or follows a country, a click on a state or a city opens nothing: a note on the atlas's paper,
+  // where the click was, says to pause first, and fades after two and a half seconds (since 25 November 2026).
+  var pauseNoteEl = $("pause-note"), pauseNoteTimer = 0;
+  function pauseNote(x, y) {
+    if (!pauseNoteEl) return;
+    hideTip();
+    pauseNoteEl.textContent = T("Pause the map first, then click a country.");
+    pauseNoteEl.hidden = false;
+    var w = pauseNoteEl.offsetWidth, h = pauseNoteEl.offsetHeight;
+    pauseNoteEl.style.left = Math.round(Math.max(8 + w / 2, Math.min(window.innerWidth - 8 - w / 2, x))) + "px";
+    pauseNoteEl.style.top = Math.round(Math.max(8 + h + 14, y)) + "px";
+    void pauseNoteEl.offsetWidth;
+    pauseNoteEl.classList.add("is-on");
+    clearTimeout(pauseNoteTimer);
+    pauseNoteTimer = setTimeout(function () {
+      pauseNoteEl.classList.remove("is-on");
+      pauseNoteTimer = setTimeout(function () { pauseNoteEl.hidden = true; }, 250);
+    }, 2500);
+  }
   // With Shift held, the coordinates under the cursor, beside it (Noah's request, 15 November 2026).
   var coords = $("coords"), mouseAt = null;
   function syncCoords(shift) {
@@ -5834,13 +5854,13 @@
       if (!b) return;
       b.classList.remove("is-off");
       b.setAttribute("aria-disabled", "false");
-      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day") : T("Back a day")) + rough);
+      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day (8)") : T("Back a day (3)")) + rough);
     });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
       b.classList.remove("is-off");
       b.setAttribute("aria-disabled", "false");
-      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")) + rough);
+      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (9)") : T("Back a month (2)")) + rough);
     });
   }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
@@ -6046,6 +6066,8 @@
     yearMark.style.width = yearInput.offsetWidth + "px";
     yearMark.classList.add("is-on");
   }
+  var DATE_KEYS = { Digit1: "year-down", Digit2: "month-down", Digit3: "day-down", Digit8: "day-up", Digit9: "month-up", Digit0: "year-up",
+    Numpad1: "year-down", Numpad2: "month-down", Numpad3: "day-down", Numpad8: "day-up", Numpad9: "month-up", Numpad0: "year-up" };
   [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
    ["month-up", function () { stepMonthKey(1); }, "month"], ["month-down", function () { stepMonthKey(-1); }, "month"],
    ["day-up", function () { stepDay(1); }, "day"], ["day-down", function () { stepDay(-1); }, "day"]].forEach(function (b) {
@@ -6066,7 +6088,7 @@
   // same kind takes the same time, divided by the speed slider's.
   // Before 1200 it goes year by year as well, at `early` a year (about four and a half minutes from 3400 BC); before
   // 10 November 2026 it jumped from one change to the next there, 0.8 seconds each, however many years lay between.
-  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, day: 40, load: 100 };
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return lapse ? lapse.endT : dataEnd(); }
@@ -6074,7 +6096,7 @@
   function playNext(t) {
     if (lapse) return lapseNext(t);
     if (isMonthly(t)) {
-      if (playDaily()) return timeOfDay(dayOfTime(t) + 1);
+      if (playDaily()) return timeOfDay(dayOfTime(t) + playDays());
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
       return sameDay(y, m, d[2]);
@@ -6095,7 +6117,7 @@
   function playPrev(t) {
     if (isMonthly(t)) {
       var mf = monthlyFrom();
-      if (playDaily()) { var pd = dayOfTime(t) - 1; return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
+      if (playDaily()) { var pd = dayOfTime(t) - playDays(); return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
       if (m < 1) { m = 12; y--; }
       return y < mf ? mf - 1 : sameDay(y, m, d[2]);
@@ -6113,7 +6135,7 @@
   }
   function playWait(from, to) {
     if (lapse) return lapseWait();
-    if (isMonthly(to)) return playDaily() ? PLAY.day : PLAY.month;
+    if (isMonthly(to)) return PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return PLAY.year;
   }
@@ -6221,6 +6243,11 @@
   function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
   function speedX(v) { return Math.round(Math.pow(2, v) * 100) / 100; }
   function playDaily() { return speedX(playSpeed) <= 0.5; }
+  // At 0.5x and slower play steps by days, as many in a step as keep its pace even with the month's steps above it (a month
+  // a step at 0.5x, about a week at 0.25x, a day at 0.1x and slower), each step taking the month step's time (PLAY.month).
+  // Until 25 November 2026 it went a day a step from 0.5x down, which made 0.51x thirty times faster than 0.5x.
+  function playDays() { return Math.max(1, Math.round(30.44 * Math.pow(speedX(playSpeed) / 0.5, DAY_CURVE))); }
+  var DAY_CURVE = Math.log(30.44) / Math.log(5);
   // "0.25x", with a plain x in the figures' own type, where a × came out thinner than the figures (Noah, 25 November 2026).
   function speedText(v) { return String(speedX(v)) + "x"; }
   function setPlaySpeed(v, keep) {
@@ -9819,6 +9846,9 @@
     else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "D" && e.shiftKey) openDev();
+    // The number keys move the date as the keys beside it do: 1, 2, 3 back a year, a month, a day; 8, 9, 0 forward a day,
+    // a month, a year (Noah, 25 November 2026). The top row's digits or the keypad's, without Shift.
+    else if (!e.shiftKey && DATE_KEYS[e.code]) { e.preventDefault(); $(DATE_KEYS[e.code]).click(); }
     else if (e.key === "p" || e.key === "P") togglePlay(false);
     else if (e.key === "o" || e.key === "O") togglePlay(true);
     else if (e.key === "," || e.key === "<") stepPlaySpeed(-1);
