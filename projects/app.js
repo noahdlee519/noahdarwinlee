@@ -677,7 +677,8 @@
   (function dragSheet() {
     var drag = null;
     els.panel.addEventListener("pointerdown", function (e) {
-      if (!isPhone() || (e.pointerType === "mouse" && e.button !== 0)) return;
+      // (A finger is handled by the touch events below; these serve a mouse or a pen.)
+      if (!isPhone() || e.pointerType === "touch" || (e.pointerType === "mouse" && e.button !== 0)) return;
       var onGrip = els.grip.contains(e.target);
       // When the sheet is all the way up, its content scrolls; only the grip moves it.
       if (state.sheet === "full" && !onGrip && els.panelScroll.scrollTop > 0) return;
@@ -718,6 +719,57 @@
     }
     els.panel.addEventListener("pointerup", end);
     els.panel.addEventListener("pointercancel", end);
+
+    // A finger, as in a mapping app's sheet (Noah, 24 November 2026: the list needed a hard push to scroll, and
+    // pulling down at its top stretched it instead of lowering the sheet). The decision is made on the first move,
+    // the only moment a browser lets a page take a touch from its own scrolling: a lowered or half-raised sheet
+    // follows the finger; a raised sheet scrolls its list, except that pulling down with the list at its top
+    // lowers the sheet. Sideways belongs to the pictures.
+    var t = null;
+    function snap(y, v) {
+      var to = y + clamp(v, -3, 3) * 160, best = "peek", dist = Infinity;
+      ["full", "half", "peek"].forEach(function (k) { var dd = Math.abs(sheetY[k] - to); if (dd < dist) { dist = dd; best = k; } });
+      setSheet(best);
+    }
+    els.panel.addEventListener("touchstart", function (e) {
+      if (!isPhone() || e.touches.length !== 1) { t = null; return; }
+      var p = e.touches[0];
+      t = { x: p.clientX, y: p.clientY, y0: sheetY[state.sheet], mode: null, last: p.clientY, tm: performance.now(), v: 0, grip: els.grip.contains(e.target), top: els.panelScroll.scrollTop <= 0 };
+    }, { passive: true });
+    els.panel.addEventListener("touchmove", function (e) {
+      if (!t || e.touches.length !== 1) return;
+      var p = e.touches[0], dx = p.clientX - t.x, dy = p.clientY - t.y;
+      if (!t.mode) {
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 2) { t.mode = "side"; return; }
+        if (state.sheet !== "full" || t.grip || (dy > 0 && t.top)) t.mode = "sheet";
+        else t.mode = "scroll";
+        if (t.mode === "sheet") els.panel.classList.add("is-dragging");
+      }
+      if (t.mode !== "sheet") return;
+      if (e.cancelable) e.preventDefault();
+      var now = performance.now();
+      t.v = 0.7 * (p.clientY - t.last) / Math.max(now - t.tm, 1) + 0.3 * t.v;
+      t.tm = now; t.last = p.clientY;
+      var y = t.y0 + dy;
+      if (y < 0) y = y / 4;
+      if (y > sheetY.peek) y = sheetY.peek + (y - sheetY.peek) / 4;
+      t.cur = y;
+      els.panel.style.setProperty("--sheet-y", y + "px");
+    }, { passive: false });
+    function tend() {
+      if (!t) return;
+      var d = t; t = null;
+      if (d.mode !== "sheet") return;
+      els.panel.classList.remove("is-dragging");
+      if (d.cur == null) { setSheet(state.sheet); return; }
+      snap(d.cur, d.v);
+      // A drag is not a tap: keep the click that follows from opening anything.
+      var stop = function (ev) { ev.stopPropagation(); ev.preventDefault(); };
+      els.panel.addEventListener("click", stop, { capture: true, once: true });
+      setTimeout(function () { els.panel.removeEventListener("click", stop, { capture: true }); }, 60);
+    }
+    els.panel.addEventListener("touchend", tend);
+    els.panel.addEventListener("touchcancel", tend);
     // A tap on the grip or the heading of a lowered sheet raises it.
     els.panel.addEventListener("click", function (e) {
       if (!isPhone() || e.target.closest("a,button,summary,.track")) return;

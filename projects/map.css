@@ -121,15 +121,23 @@ textarea {
   background: var(--m-water, var(--water));
 }
 
-.map-svg {
+.map-pane {
   position: absolute;
   top: calc(-1 * var(--overscan));
   left: calc(-1 * var(--overscan));
-  display: block;
   width: calc(100% + 2 * var(--overscan));
   height: calc(100% + 2 * var(--overscan));
   transform-origin: 0 0;
   will-change: transform;
+  contain: strict;
+}
+
+.map-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   cursor: default;
   outline: none;
   font-family: var(--font);
@@ -2304,9 +2312,12 @@ body:not(.is-panel) .panel-tab .ic {
     border-radius: 28px 28px 0 0;
   }
 
+  /* Raised, the list scrolls, with no rubber band at either end: at the top, a pull down lowers the sheet instead. */
   .panel[data-sheet="full"] .panel-scroll {
     overflow-y: auto;
+    overscroll-behavior-y: none;
     touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .panel[data-sheet="full"] .sheet-grip {

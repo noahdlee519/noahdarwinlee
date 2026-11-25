@@ -118,8 +118,14 @@
     // The drawing is larger than the screen by a margin on every side, so a drag can slide it as one composited
     // layer and the vectors are redrawn only when the map comes to rest.
     this.M = 240;
-    this.svg = svg("svg", { class: "map-svg", role: "application", "aria-label": "Map", tabindex: "0" }, host);
-    this.svg.style.setProperty("--overscan", this.M + "px");
+    // The layer slides in a plain box round the drawing, never on the drawing itself: moving the drawing's own root
+    // made the browser measure every line again each frame (its lines keep their width at any zoom, so they hang on
+    // the drawing's transform), and a drag stuttered on a phone (Noah, 24 November 2026).
+    this.pane = document.createElement("div");
+    this.pane.className = "map-pane";
+    this.pane.style.setProperty("--overscan", this.M + "px");
+    host.appendChild(this.pane);
+    this.svg = svg("svg", { class: "map-svg", role: "application", "aria-label": "Map", tabindex: "0" }, this.pane);
     this.svg.setAttribute("aria-roledescription", "map");
     this.ocean = svg("rect", { class: "map-ocean", x: 0, y: 0, width: "100%", height: "100%" }, this.svg);
     this.root = svg("g", { class: "map-world" }, this.svg);
@@ -707,7 +713,7 @@
   MapView.prototype._compose = function () {
     var self = this, c = this.c, M = this.M, k = this.s / c.s;
     var dx = this.tx + M - k * (c.tx + M), dy = this.ty + M - k * (c.ty + M);
-    this.svg.style.transform = "translate(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px) scale(" + k.toFixed(5) + ")";
+    this.pane.style.transform = "translate(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px) scale(" + k.toFixed(5) + ")";
     clearTimeout(this.idle);
     this.idle = setTimeout(function () { if (!self.anim) self.render(); }, 140);
     this.onView(this);
@@ -726,7 +732,7 @@
     this.copies = ks;
     for (var li = 0; li < this.layers.length; li++) if (this.layers[li].tpl) this._place(this.layers[li]);
     this.c = { s: s, tx: this.tx, ty: this.ty };
-    this.svg.style.transform = "";
+    this.pane.style.transform = "";
     this.root.setAttribute("transform", "matrix(" + s + " 0 0 " + s + " " + (this.tx + M) + " " + (this.ty + M) + ")");
     var st = this.root.style;
     st.setProperty("--P", this.labelScale().toFixed(4));

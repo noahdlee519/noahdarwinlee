@@ -555,11 +555,13 @@ async function interfaceStage(browser) {
   const drag = (from, to) => page.evaluate(async ([a, b]) => {
     const el = document.querySelector('.sheet-grip');
     const r = el.getBoundingClientRect(), x = r.left + r.width / 2;
-    const fire = (type, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true }));
+    // (A finger: the sheet follows touch events, as a phone sends them.)
+    const touch = (y) => new Touch({ identifier: 9, target: el, clientX: x, clientY: y });
+    const fire = (type, y) => el.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [touch(y)], changedTouches: [touch(y)], bubbles: true, cancelable: true }));
     const y0 = r.top + 8;
-    fire('pointerdown', y0);
-    for (let i = 1; i <= 12; i++) { fire('pointermove', y0 + ((b - a) * i) / 12); await new Promise((res) => setTimeout(res, 16)); }
-    fire('pointerup', y0 + (b - a));
+    fire('touchstart', y0);
+    for (let i = 1; i <= 12; i++) { fire('touchmove', y0 + ((b - a) * i) / 12); await new Promise((res) => setTimeout(res, 16)); }
+    fire('touchend', y0 + (b - a));
   }, [from, to]);
   await drag(0, -420);
   await page.waitForTimeout(600);

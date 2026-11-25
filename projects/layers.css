@@ -103,8 +103,8 @@
   transition: opacity 300ms ease;
 }
 
-/* Highways as Google Maps draws them (Noah, 24 November 2026): thin and pale, never louder than the land, and gone
-   at the closest zoom, where the streets take over. */
+/* Highways as Google Maps draws them (Noah, 24 November 2026): thin and pale, never louder than the land, and not
+   drawn at all at the farthest zoom, where the whole world is in view; they come in from the first zoom in. */
 .r-highway {
   stroke: var(--m-road-hw);
   stroke-width: 1.1px;
@@ -334,7 +334,7 @@
   stroke-width: 1.3px;
 }
 
-/* The roads widen a little close in, and the highways leave the map at the closest zoom, their numbers with them. */
+/* The roads widen a little close in. At the farthest zoom there are no highways, nor their numbers. */
 .map.is-z9 .r-motorway {
   stroke-width: 2.2px;
 }
@@ -344,14 +344,14 @@
   stroke-width: 1.8px;
 }
 
-.map.is-z12 .r-highway,
-.map.is-z12 .r-motorway,
-.map.is-z12 .r-trunk,
-.map.is-z12 .r-ring {
+.map:not(.is-z15) .r-highway,
+.map:not(.is-z15) .r-motorway,
+.map:not(.is-z15) .r-trunk,
+.map:not(.is-z15) .r-ring {
   opacity: 0;
 }
 
-.map.is-z12 .lbl.k-shield {
+.map:not(.is-z15) .lbl.k-shield {
   visibility: hidden !important;
 }
 
