@@ -183,7 +183,9 @@
   MapView.prototype.ref = function () { return Math.max(this.fit(), 0.6); };
   MapView.prototype.limits = function () {
     var r = this.rect(), W = this.world.width, H = this.world.height, f = this.fit();
-    return { min: Math.min(f, r.w / W, r.h / H), max: this.ref() * MAX_ZOOM };
+    // (Never smaller than half the whole-world view: with a phone's sheet raised, fitting the world into the sliver
+    // above it zoomed out to a dozen copies of the world side by side, and the map crawled. Noah, 25 November 2026.)
+    return { min: Math.max(Math.min(f, r.w / W, r.h / H), f * 0.5), max: this.ref() * MAX_ZOOM };
   };
   MapView.prototype.zoom = function () { return this.s / this.ref(); };
 
@@ -405,6 +407,15 @@
     L.clones.forEach(function (c) { c.remove(); });
     L.clones = []; L.ks = [];
     this._place(L);
+  };
+  // Adds a drawing to a group of a layer's template and to the same group in every copy already made.
+  MapView.prototype._grow = function (L, part, el) {
+    part.appendChild(el);
+    var cls = part === L.tpl ? null : (part.getAttribute("class") || "").split(" ")[0];
+    L.clones.forEach(function (c) {
+      var host = cls ? c.querySelector("." + cls) : c;
+      if (host) host.appendChild(el.cloneNode(true));
+    });
   };
   // Each layer gets one copy of its template for every world-width the drawing spans.
   // Copies no longer needed are hidden, not removed, and a layer always keeps a few spare: a new copy of the land's
@@ -851,15 +862,14 @@
       self.chunksAsked[key] = true;
       getJSON(ROOT + "worlds/" + C.src + key + ".json").then(function (c) {
         if (self.world !== w) return;
-        if (c.minor) svg("path", { class: "map-road r-minor", d: c.minor }, self.streetTpl);
-        if (c.street) svg("path", { class: "map-road r-street", d: c.street }, self.streetTpl);
-        if (c.parks) svg("path", { class: "map-citypark", d: c.parks }, self.cityParkTpl);
-        if (c.built) svg("path", { class: "map-built", d: c.built, "fill-rule": "evenodd" }, self.urbanLayer.tpl);
-        if (c.core) svg("path", { class: "map-built is-core", d: c.core, "fill-rule": "evenodd" }, self.urbanLayer.tpl);
-        if (c.built || c.core) self._refresh(self.urbanLayer);
-        if (c.lakes) svg("path", { class: "map-small-lakes", d: c.lakes }, self.reservoirTpl);
-        self._refresh(self.roadLayer);
-        self._refresh(self.waterLayer);
+        // A piece of a city is added to every copy of its layers where they stand; the layers are not built afresh,
+        // which faded every street on the map out and in again each time a piece arrived (Noah, 25 November 2026).
+        if (c.minor) self._grow(self.roadLayer, self.streetTpl, svg("path", { class: "map-road r-minor", d: c.minor }));
+        if (c.street) self._grow(self.roadLayer, self.streetTpl, svg("path", { class: "map-road r-street", d: c.street }));
+        if (c.parks) self._grow(self.roadLayer, self.cityParkTpl, svg("path", { class: "map-citypark", d: c.parks }));
+        if (c.built) self._grow(self.urbanLayer, self.urbanLayer.tpl, svg("path", { class: "map-built", d: c.built, "fill-rule": "evenodd" }));
+        if (c.core) self._grow(self.urbanLayer, self.urbanLayer.tpl, svg("path", { class: "map-built is-core", d: c.core, "fill-rule": "evenodd" }));
+        if (c.lakes) self._grow(self.waterLayer, self.reservoirTpl, svg("path", { class: "map-small-lakes", d: c.lakes }));
       }).catch(function () { self.chunksAsked[key] = false; });
     });
   };

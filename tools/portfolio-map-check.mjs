@@ -754,8 +754,10 @@ async function sharpStage(browser) {
       const m = window.__portfolioMap.map, c = m.world.projects.find((p) => p.id === 'chronia').capital, r = m.rect(), s = m.limits().max;
       m.set({ s, tx: r.l + r.w / 2 - c[0] * s, ty: r.t + r.h / 2 - c[1] * s });
       m.render(true);
-      for (let i = 0; i < 80 && (m.tiles.pending || !document.querySelector('.map-urban path') || !document.querySelector('.map-streets path')); i++) { await new Promise((res) => setTimeout(res, 100)); m.render(true); }
-      await new Promise((res) => setTimeout(res, 400));
+      // (Waiting for the lanes too: they can come in a later piece of the city than its streets.)
+      for (let i = 0; i < 120 && (m.tiles.pending || !document.querySelector('.map-urban path') || !document.querySelector('.map-streets .r-street') || !document.querySelector('.map-streets .r-minor')); i++) { await new Promise((res) => setTimeout(res, 100)); m.render(true); }
+      // (Long enough for the lanes' fade in, which starts as the zoom passes 7x and can run late on a busy page.)
+      await new Promise((res) => setTimeout(res, 1000));
       const lv = m.tiles.level, T = m.world.tiles.levels;
       const on = (q) => [...document.querySelectorAll(q)].some((e) => getComputedStyle(e).opacity !== '0' && e.getBoundingClientRect().width > 0);
       return { zoom: m.zoom(), finest: lv && lv.scale === T[T.length - 1].scale, shown: document.querySelectorAll('.map-tile.is-in').length, urban: on('.map-urban .map-built'), streets: on('.map-streets .r-street'), minor: on('.map-streets .r-minor') };

@@ -310,16 +310,16 @@
   }
 
   // On a phone, the sheet at rest is headed Projects (Noah, 24 November 2026: no world's name on a phone); raised, it
-  // lists the countries, the large ones first with no heading, then the islands and small states.
+  // lists the countries in one list, the large ones first.
   function viewWorld() {
-    var n = state.world.projects.length, h = "";
+    var h = "";
     h += '<header class="head head-world"><h2 class="title" tabindex="-1">Projects</h2>';
     // On a phone the opening line lives here, under the world's name, until the visitor acts.
-    h += '<p class="sub">' + (hintShown() ? "Click on a project to learn more." : "A world of " + n + " countries, each one of my projects") + "</p></header>";
+    h += '<p class="sub">' + (hintShown() ? "Click on a project to learn more." : "Welcome to my projects page. Feel free to explore this imaginary world of real projects.") + "</p></header>";
+    // One list, with no headings (Noah, 25 November 2026): the large countries first, then the islands and small states.
     var flag = state.projects.filter(function (p) { return p.tier === "flagship"; });
     var small = state.projects.filter(function (p) { return p.tier !== "flagship"; });
-    h += '<section class="block block-first"><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
-    h += '<section class="block"><h3 class="block-title">Islands and small states</h3><ul class="rows">' + small.map(rowFor).join("") + "</ul></section>";
+    h += '<section class="block block-first"><ul class="rows">' + flag.concat(small).map(rowFor).join("") + "</ul></section>";
     return h;
   }
 
@@ -357,7 +357,7 @@
       h.classList.add("is-gone");
       setTimeout(function () { h.hidden = true; }, 450);
       var sub = $(".head-world .sub", els.panelBody);
-      if (sub && state.world) sub.textContent = "A world of " + state.world.projects.length + " countries, each one of my projects";
+      if (sub && state.world) sub.textContent = "Welcome to my projects page. Feel free to explore this imaginary world of real projects.";
     }
   }
 
@@ -1231,6 +1231,19 @@
     var wake = function () { if (document.visibilityState === "visible") requestAnimationFrame(function () { state.map.resized(); layout(); }); };
     document.addEventListener("visibilitychange", wake);
     window.addEventListener("pageshow", wake);
+    // And whenever the map's own box changes size, window or no: an app's built-in browser (Instagram's) can lay the
+    // page out at no size first and grow it without telling the window, which left the map blank (Noah, 25 November
+    // 2026).
+    if (window.ResizeObserver) {
+      var lastBox = "";
+      new ResizeObserver(function () {
+        var box = state.map.host.clientWidth + "x" + state.map.host.clientHeight;
+        if (box === lastBox) return;
+        lastBox = box;
+        cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(function () { state.map.resized(); layout(); });
+      }).observe(state.map.host);
+    }
     return loadWorld(pickWorld(state.worlds));
   }).then(function () {
     var askedProject = params.get("project"), askedProvince = params.get("province");
