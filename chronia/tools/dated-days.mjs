@@ -179,7 +179,7 @@ if (import.meta.url === "file://" + process.argv[1]) {
   const res = dateChanges(spans, table, clip, (m) => console.log(m));
   ch.days = spans.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
   writeFileSync(file, JSON.stringify(ch));
-  eras.dated.days = res.days;
+  eras.dated.days = (await import("./change-days.mjs")).changeDays(eras, (f) => JSON.parse(readFileSync(resolve(data, f))));
   writeFileSync(resolve(data, "eras.json"), JSON.stringify(eras));
   if (process.argv[3]) writeFileSync(resolve(process.argv[3]), JSON.stringify({ dated: res.report, unused: res.unused.map((e) => [e.y, e.date, e.what]) }, null, 1));
   console.log(res.report.length + " changes dated, " + ch.days.length + " rows with days, " + res.days.length + " change days from 1800, " + res.unused.length + " entries unused, in " + Math.round((Date.now() - t0) / 1000) + " s");

@@ -103,19 +103,13 @@
     pickDirty = true;
   }
 
-  var pal = {}, hatch = null;
+  var pal = {};
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow", "country-label", "country-halo"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow", "country-label", "country-halo", "avoided-fill"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
-    var c = document.createElement("canvas");
-    c.width = c.height = 8;
-    var hc = c.getContext("2d");
-    hc.strokeStyle = pal.hatch; hc.lineWidth = 1.4; hc.lineCap = "square";
-    hc.beginPath(); hc.moveTo(-2, 10); hc.lineTo(10, -2); hc.moveTo(-2, 2); hc.lineTo(2, -2); hc.moveTo(6, 10); hc.lineTo(10, 6); hc.stroke();
-    hatch = ctx.createPattern(c, "repeat");
   }
 
   var renderQueued = false, interacting = 0, settleTimer = null;
@@ -446,7 +440,8 @@
       var fi = f.index;
       ctx.beginPath(); traceFeature(ctx, feats[fi]);
       ctx.fillStyle = fi === state.hover ? pal["land-hover"] : pal.land; ctx.fill();
-      ctx.fillStyle = hatch; ctx.fill();
+      ctx.fillStyle = pal["avoided-fill"]; ctx.fill();
+      ctx.strokeStyle = pal.hatch; ctx.lineWidth = 1.3; ctx.lineJoin = "round"; ctx.stroke();
     });
 
     mark("avoid");
@@ -477,7 +472,9 @@
 
     collectUi();
     collectCities();
+    mark("prep");
     drawCountryLabels(feats);
+    mark("labels");
     updateScale();
     if (flat) { ctx.restore(); ctx.beginPath(); path({ type: "Sphere" }); }
     else { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); }
@@ -811,7 +808,29 @@
     }
     return [best.x, best.y];
   }
+  function unwrapPoly(poly) {
+    var out = poly.map(function (ring) {
+      var prev = null;
+      return ring.map(function (pt) {
+        var l = pt[0];
+        if (prev !== null) l = prev + (((l - prev) % 360) + 540) % 360 - 180;
+        prev = l;
+        return [l, pt[1]];
+      });
+    });
+    var m = 0; out[0].forEach(function (pt) { m += pt[0]; }); m /= out[0].length;
+    var shift = Math.round(m / 360) * 360;
+    return out.map(function (ring, k) {
+      var s = shift;
+      if (k > 0) { var mk = 0; ring.forEach(function (pt) { mk += pt[0]; }); mk /= ring.length; s = Math.round((mk - (m - shift)) / 360) * 360; }
+      return ring.map(function (pt) { return [pt[0] - s, pt[1]]; });
+    });
+  }
   function spanAt(polys, lon, lat) {
+    for (var w = 0; w < 3; w++) { var o = [0, 360, -360][w], sp = spanAt1(polys, lon + o, lat); if (sp) { sp.off = o; return sp; } }
+    return null;
+  }
+  function spanAt1(polys, lon, lat) {
     var xs = [];
     for (var p = 0; p < polys.length; p++) for (var r = 0; r < polys[p].length; r++) {
       var ring = polys[p][r];
@@ -868,6 +887,8 @@
         var best = null, bestA = 0, total = 0;
         polys.forEach(function (poly) { var ar = d3.geoArea({ type: "Polygon", coordinates: poly }); if (ar > 2 * Math.PI) ar = 4 * Math.PI - ar; total += ar; if (ar > bestA) { bestA = ar; best = poly; } });
         if (best) {
+          best = unwrapPoly(best);
+          polys = polys.map(unwrapPoly);
           var name = (SHORT_NAMES[f.properties.name] || f.properties.name).toLocaleUpperCase("en"), cands;
           if (f.id === ANTARCTICA) cands = [{ lat: -80, lonL: -180, lonR: 180, lon: 0, width: 4000, score: 1, v: G.toVec(0, -80) }];
           else {
@@ -949,7 +970,8 @@
     var u = unitWidths(text), w = lineWidth(u, fs, t);
     var pp = parallelPath(lat, lonC, lonL, lonR, w / 2 + fs);
     if (!pp || pp.pts.length < 3 || pp.left < w / 2 || pp.right < w / 2) return null;
-    var flip = Math.cos(pointAt(pp.pts, 0)[2]) < 0, pos = [], s = -w / 2, chars = text.split("");
+    var mid = pointAt(pp.pts, 0)[2], flip = Math.cos(mid) < 0, pos = [], s = -w / 2, chars = text.split("");
+    if (Math.abs(Math.sin(mid)) > 0.62) return null;
     for (var g = 0; g < chars.length; g++) {
       var adv = u[g] * fs, at = s + adv / 2, q = pointAt(pp.pts, flip ? -at : at);
       var m = fs * 0.6 + 2;
@@ -982,6 +1004,27 @@
     el.querySelector(".gc-scale-bar").style.width = px + "px";
     el.querySelector(".gc-scale-label").textContent = label;
   }
+  function anchorsInView(L) {
+    var c0 = projection.invert([cx, cy]);
+    if (!c0 || !isFinite(c0[0])) return [];
+    var cellPx = Math.min(W, H) * 0.55, cell = Math.max(0.05, cellPx * degPerPx());
+    var cosC = Math.max(0.2, Math.cos(c0[1] * RAD)), cellLon = Math.min(90, cell / cosC);
+    var baseLat = Math.round(c0[1] / cell), baseLon = Math.round(c0[0] / cellLon), out = [];
+    for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+      var lat = Math.max(-85, Math.min(85, (baseLat + dy) * cell)), lon = ((baseLon + dx) * cellLon + 540) % 360 - 180;
+      var v = G.toVec(lon, lat);
+      if (!screenOf(lon, lat, v[0], v[1], v[2]) || FX < 40 || FY < 40 || FX > W - 40 || FY > H - 40) continue;
+      var sp = spanAt(L.polys, lon, lat);
+      if (!sp) continue;
+      out.push({ lat: lat, lonL: sp[0], lonR: sp[1], lon: lon + sp.off, v: v, d: Math.hypot(FX - cx, FY - cy) });
+    }
+    out.sort(function (p, q) { return p.d - q.d; });
+    var last = L.anchor;
+    if (last) {
+      for (var k = 0; k < out.length; k++) if (Math.abs(out[k].lat - last[1]) < 1e-6 && Math.abs(((out[k].lon - last[0] + 540) % 360) - 180) < 1e-6 && Math.abs(out[k].lat - last[1]) < 1e-6) { out.unshift(out.splice(k, 1)[0]); break; }
+    }
+    return out.slice(0, 3);
+  }
   function drawCountryLabels() {
     labelBoxes = [];
     if (!labelInfo) { if (!labelBuilding && features.length) buildLabelInfo(); return; }
@@ -994,13 +1037,7 @@
       var cap = Math.min(22, 6 + 2.4 * Math.log2(areaPx / 900));
       if (cap < MIN_FS) continue;
       var cands = L.cands, onScreen = cands.filter(function (c) { return screenOf(c.lon, c.lat, c.v[0], c.v[1], c.v[2]) && FX > 0 && FY > 0 && FX < W && FY < H; });
-      if (!onScreen.length && areaPx > W * H * 0.2) {
-        if (centerLL === null) centerLL = projection.invert([cx, cy]) || false;
-        if (centerLL && d3.geoContains({ type: "MultiPolygon", coordinates: L.polys }, centerLL)) {
-          var sp = spanAt(L.polys, centerLL[0], centerLL[1]);
-          if (sp) onScreen = [{ lat: centerLL[1], lonL: sp[0], lonR: sp[1], lon: Math.max(sp[0], Math.min(sp[1], centerLL[0])), v: G.toVec(centerLL[0], centerLL[1]), center: true }];
-        }
-      }
+      if (!onScreen.length && areaPx > W * H * 0.2) onScreen = anchorsInView(L);
       var chosen = null;
       for (var ci = 0; ci < onScreen.length && !chosen; ci++) {
         var c = onScreen[ci], u1 = unitWidths(L.text), base1 = lineWidth(u1, 1, TRACK);
@@ -1012,7 +1049,7 @@
           if (fs < cap - 0.5) t = TRACK;
           fs = Math.round(fs * 2) / 2;
           var line = setLine(L.text, c.lat, c.lon, c.lonL, c.lonR, fs, t);
-          if (line) chosen = { lines: [line], fs: fs, fit: FILL * room / base1 };
+          if (line) chosen = { lines: [line], fs: fs, fit: FILL * room / base1, cand: c };
         }
         if (!chosen) {
           var two = splitTwo(L.words);
@@ -1026,10 +1063,11 @@
           var sA = spanAt(L.polys, c.lon, latA), sB = spanAt(L.polys, c.lon, latB);
           if (!sA || !sB) continue;
           var lA = setLine(two[0], latA, c.lon, sA[0], sA[1], fs2, TRACK), lB = lA && setLine(two[1], latB, c.lon, sB[0], sB[1], fs2, TRACK);
-          if (lA && lB) chosen = { lines: [lA, lB], fs: fs2, fit: FILL * room / bw };
+          if (lA && lB) chosen = { lines: [lA, lB], fs: fs2, fit: FILL * room / bw, cand: c };
         }
       }
       if (!chosen) continue;
+      if (chosen.cand && chosen.cand.d != null) L.anchor = [chosen.cand.lon, chosen.cand.lat];
       var half = chosen.fs * 0.6, boxes = [], clash = false;
       chosen.lines.forEach(function (ln) { ln.forEach(function (g) { boxes.push({ x: g.x - half, y: g.y - half, w: 2 * half, h: 2 * half }); }); });
       for (var b1 = 0; b1 < boxes.length && !clash; b1++) {
@@ -1292,7 +1330,14 @@
   var inertia = null;
 
   var focusByPointer = false;
-  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); scheduleRender("full"); });
+  var lastKeyAt = 0;
+  document.addEventListener("keydown", function () { lastKeyAt = performance.now(); }, true);
+  document.addEventListener("pointerdown", function () { lastKeyAt = 0; if (canvas.classList.contains("show-ring")) { canvas.classList.remove("show-ring"); scheduleRender("full"); } }, true);
+  canvas.addEventListener("focus", function () {
+    var keyboard = !focusByPointer && lastKeyAt && performance.now() - lastKeyAt < 1000;
+    canvas.classList.toggle("show-ring", !!keyboard);
+    scheduleRender("full");
+  });
   canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); scheduleRender("full"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale() * (flat ? 0.8707 : 1)); }
 
@@ -2622,8 +2667,7 @@
     state.regions.forEach(function (r) {
       var poly = regionPolygon(r);
       ctx.beginPath(); path(poly);
-      ctx.fillStyle = pal["region-fill"]; ctx.fill();
-      ctx.fillStyle = hatch; ctx.fill();
+      ctx.fillStyle = pal["avoided-fill"]; ctx.fill();
       ctx.strokeStyle = pal.route; ctx.lineWidth = r === selected ? 2 : 1.2; ctx.stroke();
     });
     if (selected) {
@@ -3086,6 +3130,11 @@
     var max = panel.scrollHeight - panel.clientHeight;
     panel.classList.toggle("is-scrolled", panel.scrollTop > 2);
     panel.classList.toggle("has-more", panel.scrollTop < max - 2);
+    var o = W <= 640 ? 1 : Math.max(0, Math.min(1, 1 - panel.scrollTop / 56));
+    Array.prototype.forEach.call(document.querySelectorAll(".header-line, .back-link"), function (el) {
+      el.style.opacity = o < 1 ? String(o) : "";
+      el.classList.toggle("is-scrolled-away", o < 0.05);
+    });
   }
   function queueFades() { if (!fadeQueued) { fadeQueued = true; requestAnimationFrame(updateFades); } }
   panel.addEventListener("scroll", queueFades, { passive: true });

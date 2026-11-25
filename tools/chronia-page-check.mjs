@@ -43,8 +43,10 @@ await page.evaluate(() => window.__chronia.setYear("2099-12-31"));
 await page.waitForTimeout(1500);
 const now = new Date(), month = now.toLocaleString("en-GB", { month: "long", timeZone: "UTC" }) + " " + now.getUTCFullYear();
 const last = await page.evaluate(() => [window.__chronia.shown(), window.__chronia.asof()]);
-console.log((last[0] === month ? "ok   " : "FAIL ") + "a date after the present goes to " + last[0] + " (" + last[1] + "), expected " + month);
-if (last[0] !== month) bad++;
+// The date shows its day since 25 November 2026 ("November 15, 2026"); the check is the present month and year.
+const inMonth = last[0] === month || last[0].replace(/ \d{1,2},/, "") === month;
+console.log((inMonth ? "ok   " : "FAIL ") + "a date after the present goes to " + last[0] + " (" + last[1] + "), expected a day of " + month);
+if (!inMonth) bad++;
 console.log("page errors: " + (errors.length ? errors.join(" | ") : "none"));
 await browser.close();
 process.exit(bad || errors.length ? 1 : 0);
