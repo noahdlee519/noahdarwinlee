@@ -988,7 +988,7 @@ function chain(s, polity) {
   await page.click("#account-btn");
   await settle(page, 800);
   const acct = await page.evaluate(() => { const m = document.querySelector("#account .ch-mine"); return { mine: !!m && !m.hidden && !m.closest("[hidden]"), user: document.getElementById("account-username").textContent }; });
-  say(!acct.mine && acct.user === "Strabo", "the Account panel drops Your comments when mine is unknown to the function", JSON.stringify(acct));
+  say(!acct.mine && acct.user === "Strabo", "the Account panel drops the link to Your comments when the function has no replies", JSON.stringify(acct));
   say(!page.errors.length, "no page errors", page.errors.join("; "));
   await page.close();
   // A list with votes from a function that then refuses thread: the window closes, and Reply goes.
@@ -1007,66 +1007,58 @@ function chain(s, polity) {
   await p2.close();
 }
 
-// 18. Your comments in the Account panel: newest first, the country, date, whom a reply answers, the text cut to
-// three lines, the upvotes, hidden ones said; pressing a reply moves the map, opens the card and the thread, marked.
+// 18. Your comments in the Account panel: one quiet line under the profile, a link to the page of them (comments/), shown
+// signed in with a profile and not while the profile is edited; opening the panel asks the function nothing for it.
 {
   const s = standIn();
   s.me = { username: "Strabo", avatar: PIC, blocked: false };
-  const top = s.add({ username: "Herodotus", polity: "Kingdom of France", at: "1789-07-14", text: "The Bastille fell this morning." });
-  s.add({ username: "Strabo", polity: TAGGED, at: "1900", text: "A comment of mine, and a long one: " + "the Exposition draws the world to Paris, and every pavilion has a story to tell. ".repeat(4), votes: 3, mine: true });
-  s.add({ username: "Strabo", polity: TAGGED, at: "1900-05-01", text: "One hidden by reports.", mine: true, state: "hidden" });
-  const myReply = s.add({ username: "Strabo", polity: "Kingdom of France", at: "1789-07-15", parent: top.id, text: "And the next day, the keys went to Washington.", votes: 5, mine: true });
-  for (let i = 0; i < 21; i++) s.add({ username: "Strabo", polity: TAGGED, at: "1901", text: "Older " + i, mine: true, id: 100 + i });
+  s.add({ username: "Strabo", polity: TAGGED, at: "1900", text: "A comment of mine, not for the panel.", votes: 3, mine: true });
   const page = await open(s, { signedIn: true });
   await setDate(page, "1900-01-01");
   await page.click("#account-btn");
   await settle(page, 1500);
-  const rows = () => page.evaluate(() => [...document.querySelectorAll("#account .ch-mine-item")].map((li) => ({
-    id: +li.getAttribute("data-id"), where: li.querySelector(".ch-mine-where").textContent, to: (li.querySelector(".ch-mine-to") || {}).textContent || "",
-    text: li.querySelector(".ch-mine-text").textContent, foot: li.querySelector(".ch-mine-foot").textContent, hidden: (li.querySelector(".ch-mine-hidden") || {}).textContent || "",
-    lines: Math.round(li.querySelector(".ch-mine-text").getBoundingClientRect().height / parseFloat(getComputedStyle(li.querySelector(".ch-mine-text")).lineHeight)),
-    acts: [...li.querySelectorAll(".ch-mine-acts button")].map((b) => b.textContent)
-  })));
-  let r = await rows();
-  const head = await page.evaluate(() => (document.querySelector("#account .ch-mine-head") || {}).textContent);
-  say(head === "Your comments" && s.calls.some((c) => c.action === "mine"), "the Account panel asks for and heads Your comments", head);
-  say(r.length === 20 && r[0].id === myReply.id, "twenty, newest first", JSON.stringify(r.map((x) => x.id)));
-  say(/Kingdom of France \| July 15, 1789/.test(r[0].where) && r[0].to === "Reply to @Herodotus" && r[0].foot === "△ 5", "a reply shows its country | date, Reply to @name, and its upvotes", JSON.stringify(r[0]));
-  const long = r.find((x) => /long one/.test(x.text)) || {};
-  say(long.lines === 3, "a long comment is cut to three lines", long.lines);
-  say((r.find((x) => x.text === "One hidden by reports.") || {}).hidden === "Hidden from others", "a hidden one says Hidden from others", JSON.stringify(r.find((x) => x.text === "One hidden by reports.")));
-  say(r.every((x) => JSON.stringify(x.acts) === '["Delete"]'), "each has Delete", JSON.stringify(r.map((x) => x.acts)));
+  const link = () => page.evaluate(() => {
+    const a = document.querySelector("#account .ch-mine a");
+    const prof = document.getElementById("account-profile");
+    return {
+      shown: !!a && !a.closest("[hidden]") && a.getClientRects().length > 0, text: a ? a.textContent : "", href: a ? a.href : "", raw: a ? a.getAttribute("href") : "",
+      underProfile: !!a && prof.contains(a) && !!(document.querySelector(".ch-profile-row").compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING),
+      lists: document.querySelectorAll("#account ol, #account .ch-mine li, #account .ch-mine button").length, inPanel: /not for the panel/.test(document.getElementById("account").textContent)
+    };
+  });
+  let l = await link();
+  say(l.shown && l.text === "Your comments" && l.href === new URL("comments/", base).href && l.raw === "comments/", "the Account panel has one link, Your comments, to the page of them (comments/)", JSON.stringify(l));
+  say(l.underProfile && !l.lists && !l.inPanel, "under the profile, with no list and no comments in the panel", JSON.stringify(l));
+  say(!s.calls.some((c) => c.action === "mine"), "opening the panel asks the function nothing for it", JSON.stringify(s.calls.map((c) => c.action)));
+  await page.click("#account-edit");
+  await settle(page, 300);
+  say(!(await link()).shown, "it is not shown while the profile is edited", "");
+  await page.click("#account .ch-pf-cancel");
+  await settle(page, 300);
+  say((await link()).shown, "and is back after Cancel", "");
   if (shots) await (await page.$("#account")).screenshot({ path: shots + "/account-your-comments.png" });
-  await page.click("#account .ch-mine-more");
-  await settle(page, 600);
-  r = await rows();
-  say(r.length === 24 && (s.calls.filter((c) => c.action === "mine").slice(-1)[0] || {}).offset === 20, "More asks from the 21st", r.length);
-  page.once("dialog", (d) => d.accept());
-  await page.click('#account .ch-mine-item[data-id="' + r[23].id + '"] .ch-mine-acts button');
-  await settle(page, 500);
-  r = await rows();
-  say(r.length === 23 && s.calls.some((c) => c.action === "delete"), "Delete takes it away", r.length);
-  await page.click('#account .ch-mine-item[data-id="' + myReply.id + '"] .ch-mine-open');
-  await settle(page, 1800);
-  await page.waitForFunction(() => window.__chronia.ready(), null, { timeout: 60000 });
-  await settle(page, 800);
-  const st = await page.evaluate(() => ({ acct: !document.getElementById("account").hidden, t: window.__chronia.year(), want: window.__chronia.timeOf("1789-07-15"), card: window.__chronia.card() }));
-  const t = await threadView(page);
-  const m = t.items && t.items.find((i) => i.mark);
-  say(!st.acct, "pressing one closes the Account panel", "");
-  say(Math.abs(st.t - st.want) < 1e-6 && st.card.open && st.card.name === "Kingdom of France", "moves the map to its date and opens its country's card", JSON.stringify(st).slice(0, 200));
-  say(t.open && m && m.id === myReply.id, "and for a reply opens the thread window with it marked", JSON.stringify(t.items && t.items.map((i) => [i.id, i.mark])));
-  say(m && await page.evaluate((id) => { const li = document.querySelector('.ch-th-item[data-id="' + id + '"]'), b = document.getElementById("thread-body").getBoundingClientRect(), r = li.getBoundingClientRect(); return document.activeElement === li && r.top >= b.top && r.bottom <= b.bottom; }, myReply.id), "scrolled into view and focused", "");
-  if (shots) await page.screenshot({ path: shots + "/account-opened-reply.png" });
+  await page.click("#account .ch-mine a");
+  await page.waitForURL(/\/comments\/$/, { timeout: 20000 }).catch(() => {});
+  say(new URL(page.url()).pathname === new URL("comments/", base).pathname, "pressing it goes to the page", page.url());
   say(!page.errors.length, "no page errors", page.errors.join("; "));
   await page.close();
-  // On a phone, the panel's list fits.
+  // Signed in with no profile yet, there is nothing to link to.
+  const s2 = standIn();
+  const p2 = await open(s2, { signedIn: true });
+  await setDate(p2, "1900-01-01");
+  await p2.click("#account-btn");
+  await settle(p2, 1500);
+  const l2 = await p2.evaluate(() => { const a = document.querySelector("#account .ch-mine a"); return { shown: !!a && !a.closest("[hidden]") && a.getClientRects().length > 0, user: document.getElementById("account-username").textContent }; });
+  say(!l2.shown && l2.user === "No username yet", "signed in with no profile, the link is not shown", JSON.stringify(l2));
+  say(!s2.calls.some((c) => c.action === "mine"), "and nothing is asked for it", "");
+  await p2.close();
+  // On a phone, the line fits the panel.
   const phone = await open(s, { signedIn: true, width: 390, height: 844 });
   await setDate(phone, "1900-01-01");
   await phone.evaluate(() => document.getElementById("account-btn").click());
   await settle(phone, 1500);
-  const fit = await phone.evaluate(() => { const a = document.getElementById("account").getBoundingClientRect(); return { right: a.right, left: a.left, vw: innerWidth, wide: [...document.querySelectorAll("#account .ch-mine *")].filter((e) => e.getBoundingClientRect().right > a.right + 0.5).length }; });
-  say(fit.left >= 0 && fit.right <= fit.vw && !fit.wide, "on a phone, Your comments fits the panel", JSON.stringify(fit));
+  const fit = await phone.evaluate(() => { const a = document.getElementById("account").getBoundingClientRect(), m = document.querySelector("#account .ch-mine"); return { right: a.right, left: a.left, vw: innerWidth, shown: !!m && m.getClientRects().length > 0, wide: m ? m.getBoundingClientRect().right > a.right + 0.5 : true }; });
+  say(fit.shown && fit.left >= 0 && fit.right <= fit.vw && !fit.wide, "on a phone, the link fits the panel", JSON.stringify(fit));
   if (shots) await (await phone.$("#account")).screenshot({ path: shots + "/account-your-comments-phone.png" });
   say(!phone.errors.length, "no page errors", phone.errors.join("; "));
   await phone.close();

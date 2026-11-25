@@ -9566,7 +9566,7 @@
     var out = {};
     [location.hash, location.search].map(function (s) { return String(s || "").replace(/^[#?]/, ""); }).join("&").split("&").forEach(function (kv) {
       var i = kv.indexOf("=");
-      if (i > 0) out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+      if (i > 0) try { out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) {}
       else if (/^-?\d+(-\d+){0,2}$/.test(kv)) out.y = kv;
     });
     return out;
@@ -9897,11 +9897,8 @@
       signIn: function () { setAccountOpen(true, false); },
       // A 401 from the comments function: the session is dropped, as reportAsk does, so sign-in is offered again.
       signedOut: function () { keepReportSession(null); },
-      // The Account panel opened (where the profile is edited), signed in; closed (a comment pressed in its list of the
-      // account's own takes the reader to the map); and whether it is open.
+      // The Account panel opened (where the profile is edited), signed in.
       openAccount: function () { setAccountOpen(true, false); },
-      closeAccount: function () { setAccountOpen(false, false); },
-      accountOpen: function () { return !accountPanel.hidden; },
       // The map's date as the page writes it in the address ("1815", "1941-06", "1941-06-22"); a date so written as
       // the page shows dates (the map's own date without one); and the map moved to a date, with the card of the
       // name given (or the card that was open) opened there.
@@ -9927,6 +9924,8 @@
         try { localStorage.setItem(PICTURE_STORE, JSON.stringify({ who: accountId(), url: url || null })); } catch (e) {}
         syncAccount();
       },
+      // A reply's thread to open once comments.js has come ({ root, mark }), from a link (openLinked).
+      linked: null,
       ui: null
     };
     var sc = document.createElement("script");
@@ -10028,6 +10027,28 @@
   });
   function devInHash() { return addrHas("dev"); }
 
+  // A link that opens a card, and a reply in its thread, at the date in ?y= (the page of the account's own comments,
+  // comments/, makes them): &card=<name> opens that name's card, if the map of the date has it, and &comment=<id>&root=<its
+  // thread's top comment> then opens the thread with the comment marked. They are read once, when the first map is drawn,
+  // and taken out of the address, so a reload or a link shared after does not carry them. A name the map lacks, or a
+  // comment since deleted, leaves the map at the date, and says nothing.
+  function openLinked(h) {
+    if (!h.card && !h.comment && !h.root) return;
+    var keep = function (s, lead) {
+      var kv = String(s || "").replace(/^[?#]/, "").split("&").filter(function (x) { return x && !/^(card|comment|root)(=|$)/.test(x); });
+      return kv.length ? lead + kv.join("&") : "";
+    };
+    try { history.replaceState(null, "", location.pathname + keep(location.search, "?") + keep(location.hash, "#")); } catch (e) {}
+    var p = h.card && current ? current.order.find(function (q) { return polityName(q.id) === h.card; }) : null;
+    if (!p) return;
+    select(p.id);
+    var mark = Math.floor(+h.comment), root = Math.floor(+h.root) || mark;
+    if (!(mark > 0) || !(root > 0)) return;
+    loadComments();
+    if (comments.ui) comments.ui.open(root, mark);
+    else comments.linked = { root: root, mark: mark };
+  }
+
   function start() {
     loadEdits();
     readPalette();
@@ -10082,6 +10103,7 @@
         current = snap;
         setTime(now);
         reveal();
+        openLinked(h);
         afterIntro(function () { if (gridBase === "lo") upgradeGrid("hi", function (ms) { hiGridMs = ms; scheduleRender(); }); });
         var seaData = fetchJSON(UC + "data/sea.json");
         afterIntro(function () {

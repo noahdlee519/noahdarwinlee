@@ -1,7 +1,8 @@
 // CHRONIA's comments on a country's card, and the profile (a username and a picture) they are written under (see
 // docs/superpowers/specs/2026-11-24-chronia-comments-design.md), with replies in a wider thread window, upvotes, and the
-// account's own comments in the Account panel (2026-11-25-chronia-replies-votes-design.md). app.js loads this file the
-// first time a country's card opens, or the Account panel opens signed in, and hands it window.CHRONIA_COMMENTS;
+// Account panel's link to the page of the account's own comments (2026-11-25-chronia-replies-votes-design.md; the page
+// is comments/, with its own script). app.js loads this file the first time a country's card opens, the Account panel
+// opens signed in, or a link opens a reply's thread (?comment=…&root=…), and hands it window.CHRONIA_COMMENTS;
 // everything here talks only to the chronia-comments function, whose contract is
 // docs/superpowers/plans/2026-11-24-chronia-comments-api.md. Text from users (usernames, comments, and the names comments
 // were posted under) reaches the page only as textContent.
@@ -21,7 +22,7 @@
   if (!sec || !body) return;
   // Replies, upvotes, and the account's own comments came with the function of 25 November 2026. A page served beside
   // the function before it is told so by its answers: comments without `votes` in a list, or 400 `action` to thread,
-  // vote, or mine. Until the function is known to have them, they are not offered. tree: true, false, or null (not
+  // or vote. Until the function is known to have them, they are not offered. tree: true, false, or null (not
   // known yet); gone: an action was refused as unknown, which no later list undoes.
   var feat = { tree: null, gone: false };
   function treeOn() { return feat.tree === true && !feat.gone; }
@@ -175,7 +176,7 @@
   function take(b, off) {
     var before = shown.length;
     // A function with replies and upvotes gives every comment its count of upvotes.
-    if (b.comments.length) feat.tree = b.comments.every(function (c) { return typeof c.votes === "number"; });
+    if (b.comments.length) { feat.tree = b.comments.every(function (c) { return typeof c.votes === "number"; }); mine.sync(); }
     if (!off) shown = b.comments.slice();
     else {
       var have = new Set(shown.map(function (c) { return c.id; }));
@@ -315,7 +316,7 @@
   }
   // An upvote's new count, everywhere the comment is drawn (the card, the thread window, and the account's own list).
   function setVotes(id, n, on) {
-    [shown, thread.comments(), mine.items].forEach(function (a) { a.forEach(function (c) { if (c.id === id) { c.votes = n; if (!c.mine) c.voted = on; } }); });
+    [shown, thread.comments()].forEach(function (a) { a.forEach(function (c) { if (c.id === id) { c.votes = n; if (!c.mine) c.voted = on; } }); });
     document.querySelectorAll('.ch-cm-vote[data-id="' + id + '"]').forEach(function (b) { paintVote(b, n, on); });
   }
   // Where a message about an action is said: the card's line, or the thread window's.
@@ -377,7 +378,6 @@
         // Deleted with replies under it, a comment keeps its place as "Deleted comment"; removed by a reviewer, as
         // "Hidden comment". Either way it goes where nothing replies to it.
         gone(c.id, r.status === 200 && (asReviewer ? "hidden" : r.body.soft ? "deleted" : false));
-        mine.forget(c.id);
         sayAt(where, asReviewer ? T("The comment is removed.") : T("Your comment is deleted."));
         return;
       }
@@ -528,7 +528,6 @@
           if (state === "box" && th === t) { box.value = ""; msg.textContent = ""; counts(); }
           if (typeof r.body.left === "number" && acct.me) acct.me.left = r.body.left;
           cache.clear();
-          mine.stale();
           if (th === t) {
             shown.unshift(Object.assign({}, r.body.comment, { mine: true }));
             total++;
@@ -552,8 +551,9 @@
   // count of replies on the card, and from a reply in the account's own list, which it marks; Esc or its close button
   // closes it, and focus goes back to what opened it. Reply opens a small composer right under the comment answered.
   var thread = (function () {
-    // st: { root, polity, title, items, more, mark, loose (opened from the account's list, not the card), opener,
-    // replyFor (the comment whose composer is open) }; rc: that composer's parts, kept while the window is drawn again.
+    // st: { root, polity, title, items, more, mark, loose (opened from a link to the comment, not the card), quiet (a
+    // thread gone since is not said), opener, replyFor (the comment whose composer is open) }; rc: that composer's parts,
+    // kept while the window is drawn again.
     var st = null, rc = null, tseq = 0, posting = false;
     var msg = el("p", "ch-cm-msg ch-th-msg"), wait = el("p", "ch-cm-note"), tree = el("ol", "ch-th-list"), foot = el("p", "ch-cm-note");
     msg.setAttribute("aria-live", "polite");
@@ -574,7 +574,7 @@
       o = o || {};
       if (!thBox || feat.gone) return;
       var my = ++tseq;
-      st = { root: id, polity: null, title: "", items: [], more: false, mark: o.mark || null, loose: !!o.loose,
+      st = { root: id, polity: null, title: "", items: [], more: false, mark: o.mark || null, loose: !!o.loose, quiet: !!o.quiet,
              opener: o.opener || document.activeElement, replyFor: o.reply || null };
       rc = null;
       thBox.hidden = false;
@@ -607,6 +607,7 @@
           renderAll();
           return;
         }
+        if (r.status === 404 && st.quiet) { hide(false); return; }
         msg.textContent = r.status === 404 ? T("That thread is no longer there.") : serverTrouble(r);
       });
     }
@@ -761,7 +762,6 @@
           drafts.delete("#" + c.id);
           if (typeof r.body.left === "number" && acct.me) acct.me.left = r.body.left;
           cache.clear();
-          mine.stale();
           // The card's count of replies for this thread goes up.
           shown.forEach(function (x) { if (x.id === s0.root) x.replies = (+x.replies || 0) + 1; });
           if (th) renderList();
@@ -812,7 +812,7 @@
       open: function () { return !!st; },
       comments: function () { return st ? st.items : []; },
       say: function (t) { msg.textContent = t; },
-      // The card changed: the window stays only for a thread of the new card (or, opened from the account's list, while
+      // The card changed: the window stays only for a thread of the new card (or, opened from a link to the comment, while
       // no card is open).
       card: function (t) {
         if (!st) return;
@@ -828,117 +828,17 @@
     };
   })();
 
-  // The account's own comments and replies, in the Account panel under the profile ("Your comments"): newest first,
-  // twenty at a time, each with its country, its map date, whom it replies to, its text (cut to three lines), and its
-  // upvotes, and "Hidden from others" for one hidden or removed. Pressing one takes the map to its date and its country's
-  // card, and, for a reply, opens its thread with it marked.
+  // "Your comments" in the Account panel: one line under the profile, a link to the page of the account's own comments
+  // and replies (comments/), offered signed in with a profile, not while the profile is edited, and not where the function
+  // is known to lack replies (from before `mine`). Nothing is asked of the function for it here.
   var mine = (function () {
-    var items = [], more = false, at = 0, isStale = true, busy = false, mseq = 0;
-    var wrap = el("div", "ch-mine"), ol = el("ol", "ch-mine-list"), none = el("p", "ch-mine-empty"), note = el("p", "ch-mine-note");
-    var moreB = button(T("More"), "ch-account-alt ch-mine-more", function () { load(items.length); });
-    note.setAttribute("aria-live", "polite");
-    [el("p", "ch-mine-head", T("Your comments")), ol, none, moreB, note].forEach(function (n) { wrap.appendChild(n); });
-    wrap.hidden = true;
-    if (acctBox) acctBox.appendChild(wrap);
-    function load(off) {
-      var my = ++mseq, who = api.who();
-      busy = true;
-      if (off) moreB.disabled = true;
-      ol.setAttribute("aria-busy", "true");
-      ask(off ? { action: "mine", offset: off } : { action: "mine" }).then(function (r) {
-        if (my !== mseq || who !== api.who()) return;
-        busy = false;
-        moreB.disabled = false;
-        ol.removeAttribute("aria-busy");
-        if (r.status === 200 && r.body && Array.isArray(r.body.comments)) {
-          if (!off) items = [];
-          var have = new Set(items.map(function (c) { return c.id; }));
-          items = items.concat(r.body.comments.filter(function (c) { return !have.has(c.id); }));
-          more = !!r.body.more;
-          at = Date.now();
-          isStale = false;
-          note.textContent = "";
-          render();
-          return;
-        }
-        if (unknownAction(r)) { feat.gone = true; renderAll(); return; }
-        isStale = false;
-        at = Date.now();
-        note.textContent = serverTrouble(r);
-      });
-    }
-    function render() {
-      ol.textContent = "";
-      items.forEach(function (c) { ol.appendChild(row(c)); });
-      none.hidden = !!items.length || busy;
-      none.textContent = T("You haven't commented yet.");
-      moreB.hidden = !more;
-    }
-    function row(c) {
-      var li = el("li", "ch-mine-item");
-      li.setAttribute("data-id", String(c.id));
-      var open = el("button", "ch-mine-open");
-      open.type = "button";
-      var where = el("span", "ch-mine-where"), polity = el("span", "", c.polity);
-      polity.dir = "auto";
-      where.appendChild(polity);
-      where.appendChild(document.createTextNode(" | " + api.when(c.at)));
-      open.appendChild(where);
-      if (c.parent !== null && c.parent !== undefined) {
-        var to = el("span", "ch-mine-to", c.replying_to ? T("Reply to @{name}", { name: c.replying_to }) : T("A reply"));
-        to.dir = "auto";
-        open.appendChild(to);
-      }
-      var text = el("span", "ch-mine-text", c.text);
-      text.dir = "auto";
-      open.appendChild(text);
-      open.addEventListener("click", function () { go(c); });
-      li.appendChild(open);
-      // Under it, its upvotes, whether others can't see it, and Delete.
-      var n = +c.votes || 0, acts = el("p", "ch-mine-acts"), votes = el("span", "ch-mine-foot", "△ " + n);
-      votes.setAttribute("aria-label", n === 1 ? T("1 upvote") : T("{n} upvotes", { n: n }));
-      acts.appendChild(votes);
-      if (c.state && c.state !== "live") {
-        acts.appendChild(document.createTextNode(" | "));
-        acts.appendChild(el("span", "ch-mine-hidden", T("Hidden from others")));
-      }
-      acts.appendChild(document.createTextNode(" | "));
-      acts.appendChild(button(T("Delete"), "ch-linkbtn", function (e) { del(c, e.currentTarget); }));
-      li.appendChild(acts);
-      return li;
-    }
-    function go(c) {
-      api.closeAccount();
-      api.goTo(c.at, c.polity);
-      if (c.parent !== null && c.parent !== undefined && !feat.gone) thread.show(c.root || c.id, { mark: c.id, loose: true, opener: $("account-btn") });
-    }
-    function del(c, btn) {
-      if (!window.confirm(T("Delete this comment? This can't be undone."))) return;
-      btn.disabled = true;
-      ask({ action: "delete", id: c.id }).then(function (r) {
-        if (r.status === 200 || r.status === 404) {
-          items = items.filter(function (x) { return x.id !== c.id; });
-          render();
-          note.textContent = T("Your comment is deleted.");
-          gone(c.id, r.status === 200 && r.body.soft ? "deleted" : false);
-          return;
-        }
-        btn.disabled = false;
-        note.textContent = actTrouble(r);
-      });
-    }
+    var line = el("p", "ch-mine"), a = el("a", "", T("Your comments"));
+    a.href = "comments/";
+    line.appendChild(a);
+    line.hidden = true;
+    if (acctBox) acctBox.appendChild(line);
     return {
-      get items() { return items; },
-      // Drawn (and asked for, when stale or a minute old, with the panel open) or hidden, with the Account panel.
-      sync: function () {
-        var on = !!profile() && !editing && !feat.gone && !!api.who();
-        wrap.hidden = !on;
-        if (!on) return;
-        if (api.accountOpen() && !busy && (isStale || Date.now() - at > CACHE_MS)) load(0);
-      },
-      stale: function () { isStale = true; },
-      forget: function (id) { items = items.filter(function (x) { return x.id !== id; }); render(); },
-      reset: function () { items = []; more = false; isStale = true; mseq++; busy = false; note.textContent = ""; render(); }
+      sync: function () { line.hidden = !(api.who() && profile() && !editing && !feat.gone && feat.tree !== false); }
     };
   })();
 
@@ -1186,7 +1086,7 @@
     });
   }
 
-  // The profile in the Account panel: the picture or initial, the username, Edit profile, and the account's own comments.
+  // The profile in the Account panel: the picture or initial, the username, Edit profile, and the link to Your comments.
   var editing = false;
   function renderAccount() {
     if (!acctBox) return;
@@ -1259,15 +1159,17 @@
       if (w !== acct.who) {
         acct = { who: "", me: null, asking: null };
         cache.clear();
-        mine.reset();
         if (w) loadMe();
         if (th) load(0);
         thread.render();
       }
       composer.render();
       renderAccount();
-    }
+    },
+    // A link opened a reply (?comment=…&root=…; see app.js): its thread, with it marked. A thread gone since says nothing.
+    open: function (root, mark) { thread.show(root, { mark: mark, loose: true, quiet: true }); }
   };
   api.ui.account();
   api.ui.card(api.thread());
+  if (api.linked) { api.ui.open(api.linked.root, api.linked.mark); api.linked = null; }
 })();

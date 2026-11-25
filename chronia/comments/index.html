@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="../go.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your comments | CHRONIA</title>
+    <meta name="description" content="The comments and replies you have written on CHRONIA's map." />
+    <meta name="robots" content="noindex" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://jvcmeuqlyygpwelmvxuv.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <link rel="canonical" href="https://chroniaatlas.com/comments/" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="../page.css" />
+    <link rel="stylesheet" href="mine.css" />
+    <!-- The atlas's language (its choice is kept in this site's storage), so the page reads in it as the atlas does. -->
+    <script src="../lang.js"></script>
+    <script src="/visit.js" defer></script>
+    <script src="/chronia/va.js" defer></script>
+  </head>
+  <body class="cp mc">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame">
+      <h1>Your comments</h1>
+      <p class="cp-lede">Every comment and reply you have written on the map, newest first.</p>
+
+      <p class="mc-status" id="mc-status" role="status">Loading</p>
+      <p class="mc-retry-line" hidden><button type="button" class="mc-btn" id="mc-retry">Try again</button></p>
+      <p class="mc-count" id="mc-count" hidden></p>
+      <ol class="mc-list" id="mc-list"></ol>
+      <p class="mc-more-line"><button type="button" class="mc-btn" id="mc-more" hidden>More</button></p>
+      <p class="mc-said" id="mc-said" aria-live="polite"></p>
+
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a class="cp-faq" href="../faq/">FAQ</a> | <a href="../premium/">Premium</a> | <a href="../privacy/">Privacy</a> | <a href="../terms/">Terms</a></footer>
+    </main>
+
+    <script src="mine.js" defer></script>
+  </body>
+</html>

@@ -2498,6 +2498,7 @@ select.ch-save-input {
 .ch-cm-date:focus-visible,
 .ch-cm .ch-linkbtn:focus-visible,
 .ch-profile .ch-linkbtn:focus-visible,
+.ch-mine a:focus-visible,
 .ch-pf a:focus-visible {
   outline: 1px dotted var(--ink);
   outline-offset: 2px;
@@ -2611,9 +2612,7 @@ select.ch-save-input {
 }
 
 .ch-cm-vote:focus-visible,
-.ch-thread .ch-linkbtn:focus-visible,
-.ch-mine .ch-linkbtn:focus-visible,
-.ch-mine-open:focus-visible {
+.ch-thread .ch-linkbtn:focus-visible {
   outline: 1px dotted var(--ink);
   outline-offset: 2px;
 }
@@ -2738,108 +2737,10 @@ select.ch-save-input {
   margin: 8px 0 0 !important;
 }
 
-/* "Your comments" in the Account panel: each pressed as a whole to go to it, with Delete beside. */
-.ch-mine {
-  margin: 12px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid rgba(42, 28, 18, 0.18);
-}
-
-.ch-account .ch-mine-head {
-  margin: 0 0 2px;
-  font-family: var(--ch-sc);
-  letter-spacing: 0.02em;
-}
-
-.ch-mine-list {
-  max-height: min(46vh, 420px);
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  list-style: none;
-}
-
-.ch-mine-item {
-  padding: 6px 0 5px;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 14%, transparent);
-}
-
-.ch-mine-item:first-child {
-  border-top: 0;
-}
-
-.ch-mine-open {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  line-height: 1.38;
-  text-align: left;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-
-.ch-mine-open > span {
-  display: block;
-}
-
-.ch-mine-where,
-.ch-mine-to,
-.ch-mine-foot {
-  font-size: 12.5px;
-  color: var(--ch-muted);
-}
-
-.ch-mine-to {
-  font-style: italic;
-}
-
-.ch-mine-open > .ch-mine-text {
-  display: -webkit-box;
-  margin: 1px 0;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 14px;
-  white-space: pre-wrap;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
-.ch-mine-open:hover .ch-mine-text {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
-.ch-mine-hidden {
-  font-size: 12.5px;
-  color: var(--ch-select);
-}
-
-.ch-account .ch-mine-acts {
-  margin: 1px 0 0;
-  font-size: 12.5px;
-  color: var(--ch-muted);
-}
-
-.ch-account .ch-mine-empty,
-.ch-account .ch-mine-note {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--ch-muted);
-}
-
-.ch-mine-note:empty {
-  display: none;
-}
-
-.ch-mine-more {
-  margin: 6px 0 0;
+/* "Your comments" in the Account panel: one quiet line under the profile, a link to the page of them (comments/). */
+.ch-account .ch-mine {
+  margin: 8px 0 0;
+  font-size: 13.5px;
 }
 
 @media (max-width: 640px) {
