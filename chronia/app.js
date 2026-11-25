@@ -5834,13 +5834,13 @@
       if (!b) return;
       b.classList.remove("is-off");
       b.setAttribute("aria-disabled", "false");
-      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day") : T("Back a day")) + rough);
+      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day (8)") : T("Back a day (3)")) + rough);
     });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
       b.classList.remove("is-off");
       b.setAttribute("aria-disabled", "false");
-      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")) + rough);
+      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (9)") : T("Back a month (2)")) + rough);
     });
   }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
@@ -6046,6 +6046,8 @@
     yearMark.style.width = yearInput.offsetWidth + "px";
     yearMark.classList.add("is-on");
   }
+  var DATE_KEYS = { Digit1: "year-down", Digit2: "month-down", Digit3: "day-down", Digit8: "day-up", Digit9: "month-up", Digit0: "year-up",
+    Numpad1: "year-down", Numpad2: "month-down", Numpad3: "day-down", Numpad8: "day-up", Numpad9: "month-up", Numpad0: "year-up" };
   [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
    ["month-up", function () { stepMonthKey(1); }, "month"], ["month-down", function () { stepMonthKey(-1); }, "month"],
    ["day-up", function () { stepDay(1); }, "day"], ["day-down", function () { stepDay(-1); }, "day"]].forEach(function (b) {
@@ -9819,6 +9821,9 @@
     else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "D" && e.shiftKey) openDev();
+    // The number keys move the date as the keys beside it do: 1, 2, 3 back a year, a month, a day; 8, 9, 0 forward a day,
+    // a month, a year (Noah, 25 November 2026). The top row's digits or the keypad's, without Shift.
+    else if (!e.shiftKey && DATE_KEYS[e.code]) { e.preventDefault(); $(DATE_KEYS[e.code]).click(); }
     else if (e.key === "p" || e.key === "P") togglePlay(false);
     else if (e.key === "o" || e.key === "O") togglePlay(true);
     else if (e.key === "," || e.key === "<") stepPlaySpeed(-1);
