@@ -8146,7 +8146,8 @@
     if ($("about-premium")) $("about-premium").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("No advertisements, no watermark on your videos, and more, for $10 once.");
+      : T("No advertisements, no watermark on your videos and images, and more, for $10 once.");
+    if (typeof syncImgOpts === "function") syncImgOpts();
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -8477,7 +8478,7 @@
     return { w: Math.max(2, Math.floor(w * s / 2) * 2), h: Math.max(2, Math.floor(h * s / 2) * 2) };
   }
   // The frame: the page's background, the map, the date in its frame where the page shows it, and the name.
-  function composeFrame(out, label, mark) {
+  function composeFrame(out, label, mark, noDate) {
     var c = out.getContext("2d"), k = out.width / W, cs = getComputedStyle(document.documentElement);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.save();
@@ -8493,7 +8494,7 @@
     var x = r.left - cr.left, y = r.top - cr.top, w = r.width, h = r.height;
     // On a phone the date is in the year bar, which the frame leaves out, so it goes at the top in the middle.
     if (box.parentNode !== $("top")) { x = (W - w) / 2; y = 8; h = Math.min(h, 54); }
-    if (w > 0 && h > 0) {
+    if (w > 0 && h > 0 && !noDate) {
       // The saved frame holds the date alone, without the buttons beside it, so it is cut to the date's width.
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       var fw = Math.min(w, Math.ceil(c.measureText(label).width) + 72);
@@ -8548,12 +8549,34 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
   }
   function fileDate(t) { return fmtNow(t).replace(/\s+/g, "-").toLowerCase(); }
+  var IMG_STORE = "chronia-image";
+  function imgOpts() {
+    var o = { date: true, mark: true };
+    try { var v = JSON.parse(localStorage.getItem(IMG_STORE) || "{}"); if (v.date === false) o.date = false; if (v.mark === false) o.mark = false; } catch (e) {}
+    return o;
+  }
+  function syncImgOpts() {
+    var paid = typeof premium === "object" && premium && premium.on, o = imgOpts();
+    $("img-date").disabled = $("img-mark").disabled = !paid;
+    $("img-date").checked = paid ? o.date : true;
+    $("img-mark").checked = paid ? o.mark : true;
+    $("img-opts-note").hidden = paid;
+  }
+  ["img-date", "img-mark"].forEach(function (id) {
+    $(id).addEventListener("change", function () {
+      try { localStorage.setItem(IMG_STORE, JSON.stringify({ date: $("img-date").checked, mark: $("img-mark").checked })); } catch (e) {}
+    });
+  });
+  syncImgOpts();
   $("save-image").addEventListener("click", function () {
     if (exporting || !ready || !current) return;
     draw();
     var out = document.createElement("canvas");
     out.width = canvas.width; out.height = canvas.height;
-    composeFrame(out, fmtNow(now));
+    // Without Premium a saved image has the date and the CHRONIA plate, as a video has (Noah, 25 November 2026); with it,
+    // either can be left out (imgOpts). Until then an image had the date and the small name in its corner.
+    var paid = premium && premium.on, o = imgOpts();
+    composeFrame(out, fmtNow(now), paid && !o.mark ? "none" : "plate", paid && !o.date);
     out.toBlob(function (blob) { if (blob) download(blob, "chronia-" + fileDate(now) + ".png"); }, "image/png");
   });
 

@@ -936,6 +936,26 @@ select.ch-save-input {
   opacity: 0.55;
 }
 
+/* What goes on a saved image: the date and the mark, both on and fixed without Premium. */
+.ch-img-opts {
+  margin: 6px 0 2px;
+}
+.ch-img-opts .ch-layer {
+  padding: 2px 0;
+  font-size: 14px;
+}
+.ch-img-opts input:disabled + span {
+  color: var(--ch-muted);
+}
+.ch-img-opts .ch-layer:has(input:disabled) {
+  cursor: default;
+}
+.ch-img-opts a {
+  color: var(--ink);
+  text-decoration-color: var(--ch-brass-deep);
+  text-underline-offset: 2px;
+}
+
 .ch-save-note {
   clear: both;
   min-height: 1.3em;

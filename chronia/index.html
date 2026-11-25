@@ -163,6 +163,11 @@
         <div class="ch-layers ch-save" id="save" role="group" aria-labelledby="save-title" hidden>
           <p class="ch-layers-title" id="save-title">Save</p>
           <button type="button" class="ch-save-btn" id="save-image">Image of this view</button>
+          <div class="ch-img-opts" id="img-opts">
+            <label class="ch-layer"><input type="checkbox" id="img-date" checked /> <span>The date on the image</span></label>
+            <label class="ch-layer"><input type="checkbox" id="img-mark" checked /> <span>The CHRONIA mark</span></label>
+            <p class="ch-save-note" id="img-opts-note"><a href="premium/">Leave them out with Premium</a></p>
+          </div>
           <fieldset class="ch-layer-set ch-save-set">
             <legend>Timelapse video</legend>
             <div class="ch-tl-lock" id="tl-lock" hidden>
@@ -227,7 +232,7 @@
             <button type="button" class="ch-account-alt" id="account-google" hidden>Sign in with Google</button>
             <p class="ch-account-note" id="account-note" role="status"></p>
             <div class="ch-premium" id="premium-out" hidden>
-              <p class="ch-account-text">No advertisements, no watermark on your videos, and more, for $10 once.</p>
+              <p class="ch-account-text">No advertisements, no watermark on your videos and images, and more, for $10 once.</p>
               <a class="ch-account-alt ch-premium-buy" href="premium/">See CHRONIA Premium</a>
             </div>
             <p class="ch-account-small"><a href="privacy/">How CHRONIA uses your account</a></p>
