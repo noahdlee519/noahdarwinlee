@@ -6,6 +6,8 @@
   var BASE = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/";
   var REPORT = BASE + "chronia-report", PREMIUM = BASE + "chronia-premium", AUTH = "chronia-auth", HAD = "chronia-premium";
   var go = document.getElementById("pm-go"), note = document.getElementById("pm-note");
+  // The page's language (page-lang.js); English where it has none.
+  var T = window.CH_PAGE_T || function (t, v) { return v ? t.replace(/\{(\w+)\}/g, function (m, k) { return v[k]; }) : t; };
   var session = null;
   try { session = JSON.parse(localStorage.getItem(AUTH) || "null"); } catch (e) {}
   if (!session || typeof session.a !== "string" || typeof session.r !== "string") session = null;
@@ -48,34 +50,34 @@
   function signedOut() {
     go.hidden = false;
     go.removeAttribute("aria-disabled");
-    go.textContent = "Sign in on the atlas to buy";
+    go.textContent = T("Sign in on the atlas to buy");
     go.setAttribute("href", "../?signin=premium");
-    note.textContent = "Premium belongs to the Google account you pay with, so sign in on the atlas first.";
+    note.textContent = T("Premium belongs to the Google account you pay with, so sign in on the atlas first.");
   }
   function have() {
     document.body.classList.add("pm-had");
     go.hidden = false;
     go.removeAttribute("aria-disabled");
-    go.textContent = "Back to the atlas";
+    go.textContent = T("Back to the atlas");
     go.setAttribute("href", "../");
-    note.textContent = "You have CHRONIA Premium" + (who() ? ", signed in as " + who() : "") + ". Thank you for your support.";
+    note.textContent = who() ? T("You have CHRONIA Premium, signed in as {name}. Thank you for your support.", { name: who() }) : T("You have CHRONIA Premium. Thank you for your support.");
   }
   function buyable() {
     go.hidden = false;
     go.removeAttribute("aria-disabled");
-    go.textContent = "Get Premium | $10, once";
+    go.textContent = T("Get Premium | $10, once");
     go.setAttribute("href", "#buy");
-    note.textContent = who() ? "Signed in as " + who() + "." : "";
+    note.textContent = who() ? T("Signed in as {name}.", { name: who() }) : "";
   }
   function closed() {
     go.hidden = true;
-    note.textContent = "Premium can't be bought just now. Please try again later.";
+    note.textContent = T("Premium can't be bought just now. Please try again later.");
   }
 
   function check() {
     if (!session) { signedOut(); return; }
     go.setAttribute("aria-disabled", "true");
-    go.textContent = "Checking your account…";
+    go.textContent = T("Checking your account…");
     note.textContent = "";
     ask({ action: "status" }).then(function (r) {
       if (r.status !== 200) { buyable(); return; }
@@ -92,13 +94,13 @@
     if (go.getAttribute("href") !== "#buy") return;
     e.preventDefault();
     go.setAttribute("aria-disabled", "true");
-    note.textContent = "Opening Stripe’s payment page…";
+    note.textContent = T("Opening Stripe’s payment page…");
     ask({ action: "checkout" }).then(function (r) {
       if (r.status === 200 && typeof r.body.url === "string" && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url)) { location.assign(r.body.url); return; }
       go.removeAttribute("aria-disabled");
       if (r.status === 409) { check(); return; }
-      if (r.status === 401) { signedOut(); note.textContent = "Sign in again on the atlas to buy Premium."; return; }
-      note.textContent = "The payment page could not be opened just now. Nothing was charged.";
+      if (r.status === 401) { signedOut(); note.textContent = T("Sign in again on the atlas to buy Premium."); return; }
+      note.textContent = T("The payment page could not be opened just now. Nothing was charged.");
     });
   });
 

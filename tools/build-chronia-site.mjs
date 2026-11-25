@@ -23,7 +23,7 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "dev.js", "comments.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "comments", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "dev.js", "comments.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "page-lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "comments", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
 // UCHRONIA moved here from noahdarwinlee.com/uchronia/ on 22 November 2026; its page there (go.js) sends visitors on.
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "uchronia/lang.js", "uchronia/lang", "fonts"]) copy(f);
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
