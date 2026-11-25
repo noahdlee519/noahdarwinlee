@@ -9654,8 +9654,16 @@
     if (isDated(t)) { var k = chunkIndexFor(t); return loadChunk(k).then(function () { return datedSnap(k, isMonthly(t) ? t : Math.round(t)); }); }
     return Promise.resolve(null);
   }
+  // The dated events, with their sentences in the reader's language where lang/events-<code>.json has them (since
+  // 25 November 2026; a sentence it lacks stays in English).
   function changesEventsLoad() {
-    if (!changesEvents) changesEvents = fetchJSON("data/events.json").catch(function () { return []; });
+    if (!changesEvents) changesEvents = Promise.all([
+      fetchJSON("data/events.json").catch(function () { return []; }),
+      LANG === "en" ? null : fetchJSON("lang/events-" + LANG + ".json").catch(function () { return null; })
+    ]).then(function (r) {
+      var tr = r[1];
+      return tr ? r[0].map(function (e) { return tr[e[1]] ? [e[0], tr[e[1]]].concat(e.slice(2)) : e; }) : r[0];
+    });
     return changesEvents;
   }
   function polityTotals(snap) {
@@ -9861,7 +9869,7 @@
   function renderChanges(p, lines, events, seam, still) {
     changesList.textContent = "";
     events.forEach(function (e) {
-      var parts = [e[1].replace(/\.?$/, ".")];
+      var parts = [e[1].replace(/[.。]?$/, LANG === "ja" || LANG === "zh" ? "。" : ".")];
       if (/^https:\/\//.test(e[2])) {
         var a = document.createElement("a");
         a.className = "ch-changes-src";
