@@ -503,15 +503,65 @@ export function buildWorldFiles(world) {
   // (Never the exclave's own border, which is settled: the exclave is drawn whole.)
   const E = world.exclave, near = (l) => E && l.some(([x, y]) => Math.hypot(x / 10 - E.x, y / 10 - E.y) < 22);
   const eligible = arcs.map((a, k) => k).filter((k) => isBorder(arcs[k]) && !arcs[k].closed && lenOf(lines[k]) > 14 && lenOf(lines[k]) < 70 && !near(lines[k]));
-  const disputedSet = new Set();
+  // Each disputed stretch has a second line, as on a real map (Noah, 24 November 2026): one country claims a strip
+  // of its neighbour's land, bounded by the border as held and, beyond it, the line it claims. The claim line leaves
+  // and rejoins the border at the stretch's ends and bows into the neighbour's land, kept on that land; it is drawn
+  // dashed like the stretch, and in red dots with either country when it is picked. Stretches are tried in an order
+  // set by the world's name, and kept where a claim of some depth fits, either way.
+  const ownerAt = (x, y) => { const qx = Math.floor(x / 10), qy = Math.floor(y / 10); return qx < 0 || qy < 0 || qx >= W || qy >= H ? -2 : owner[qy * W + qx]; };
+  const tryClaim = (k, hh) => {
+    const a = arcs[k], L = lines[k], A0 = L[0], B0 = L[L.length - 1];
+    const cx = B0[0] - A0[0], cy = B0[1] - A0[1], chord = Math.hypot(cx, cy);
+    if (chord < 120) return null;
+    const nx = -cy / chord, ny = cx / chord;
+    // Which side of the stretch is whose: steps off it either way, all along it, by vote.
+    const owners = [ownerOf(a.left), ownerOf(a.right)], votes = [0, 0];
+    for (let q = 1; q < L.length - 1; q++) for (const st of [15, 25, 40]) {
+      const o1 = ownerAt(L[q][0] + nx * st, L[q][1] + ny * st), o2 = ownerAt(L[q][0] - nx * st, L[q][1] - ny * st);
+      if (o1 === owners[0] && o2 === owners[1]) votes[0]++;
+      if (o1 === owners[1] && o2 === owners[0]) votes[1]++;
+    }
+    if (!votes[0] && !votes[1]) return null;
+    const pos = votes[0] >= votes[1] ? owners[0] : owners[1], neg = pos === owners[0] ? owners[1] : owners[0];
+    const cum = [0];
+    for (let q = 1; q < L.length; q++) cum.push(cum[q - 1] + Math.hypot(L[q][0] - L[q - 1][0], L[q][1] - L[q - 1][1]));
+    const total = cum[cum.length - 1];
+    let best = null;
+    // Either way round; the deeper claim that fits wins, the world's name breaking a tie.
+    for (const [dir, into, by] of hh & 1 ? [[1, pos, neg], [-1, neg, pos]] : [[-1, neg, pos], [1, pos, neg]]) {
+      let amp = Math.min(chord * (0.24 + ((hh >>> 3) % 10) / 100), 180);
+      for (let tries = 0; tries < 7; tries++, amp *= 0.78) {
+        const pts = L.map((p, q) => { const t = cum[q] / total, off = amp * Math.pow(Math.sin(Math.PI * t), 0.85) * dir; return [Math.round((p[0] + nx * off) / 2) * 2, Math.round((p[1] + ny * off) / 2) * 2]; });
+        // (Kept on the neighbour's land, bar points by the ends, still within a unit of the line.)
+        const off = pts.filter((p, q) => ownerAt(p[0], p[1]) !== into && Math.hypot(p[0] - L[q][0], p[1] - L[q][1]) > 10).length;
+        if (off === 0) { if (!best || amp > best.amp) best = { amp, pts, into, by }; break; }
+      }
+    }
+    return best && best.amp >= 45 ? best : null;
+  };
+  const disputedSet = new Set(), claims = [], claimLines = [];
   if (eligible.length) {
     let h = 0;
     for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    disputedSet.add(eligible[h % eligible.length]);
-    if (eligible.length > 6 && h % 3) disputedSet.add(eligible[(h >>> 5) % eligible.length]);
+    const want = eligible.length > 6 && h % 3 ? 2 : 1;
+    for (let i = 0; i < eligible.length && disputedSet.size < want; i++) {
+      const k = eligible[(h + i * 7) % eligible.length];
+      if (disputedSet.has(k)) continue;
+      const c = tryClaim(k, (h >>> 3) + i);
+      if (!c) continue;
+      disputedSet.add(k);
+      const shaped = shapeBorderLines(c.pts, false, null), path = new PathText();
+      path.move(shaped[0]);
+      drawOpen(path, shaped);
+      const d = path.toString();
+      claimLines.push(d);
+      if (projects[c.by] && projects[c.into]) claims.push({ by: projects[c.by].id, from: projects[c.into].id, d });
+    }
+    // (A world where no claim fits still has its disputed stretch, as before, without the second line.)
+    if (!disputedSet.size) disputedSet.add(eligible[h % eligible.length]);
   }
   const borders = linesPath(arcs, lines, (a) => isBorder(a) && !disputedSet.has(arcs.indexOf(a)));
-  const disputed = linesPath(arcs, lines, (a) => disputedSet.has(arcs.indexOf(a)));
+  const disputed = linesPath(arcs, lines, (a) => disputedSet.has(arcs.indexOf(a))) + claimLines.join('');
   const provinceBorders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) === ownerOf(a.right) && a.left !== a.right);
 
   const lakeArcs = traceArcs(lakes, W, H, 0);
@@ -655,6 +705,7 @@ export function buildWorldFiles(world) {
     rivers,
     borders,
     disputed: disputed || undefined,
+    claims: claims.length ? claims : undefined,
     exclave: world.exclave || undefined,
     provinceBorders,
     projects: projects.map((project, index) => {

@@ -75,9 +75,10 @@ export function worldParams(name, projects) {
   const style = worldStyle(name);
   const landShare = clamp(0.3 + 0.0045 * (projects.length - 10) + (style.land ?? 0), 0.25, 0.46);
   // Invented distances, set by what is drawn: towns lie a median of about 12 map units apart in every world, so at
-  // about 1.5 km a unit they are some 15 to 20 km apart, a city's built-up ground a few km to 15 km across, and the
-  // whole map some 2,000 to 2,600 km wide. Worlds that span more latitude run a little larger.
-  const kmPerUnit = 1.35 + Math.max(0, style.latTop - style.latBottom - 40) * 0.004;
+  // about 1.1 km a unit they are some 11 to 15 km apart, a city's built-up ground a few km to 11 km across, and the
+  // whole map some 1,500 to 2,000 km wide (Noah, 24 November 2026: a quarter smaller than the 1.5 km before). Worlds
+  // that span more latitude run a little larger.
+  const kmPerUnit = (1.35 + Math.max(0, style.latTop - style.latBottom - 40) * 0.004) * 0.76;
   return { style, landShare, masses: style.masses, kmPerUnit: Math.round(kmPerUnit * 100) / 100 };
 }
 

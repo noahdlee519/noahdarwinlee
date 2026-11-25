@@ -266,6 +266,7 @@
     }
     // The land-cover picture, under a quiet stand-in of the land until it arrives; finer tiles go over it.
     var Limg = layer("map-ground", true);
+    Limg.spare = 5; // (copies of the picture made and loaded ahead, for the widest view zoomed all the way out)
     svg("path", { class: "map-land", d: world.coast }, Limg.tpl);
     // (Decoded with the frame that draws it: as the map is zoomed the browser draws the picture afresh at the new
     // scale, and with the default, decoding on the side, it skipped the land for a frame or two, a flash of bare sea.
@@ -385,12 +386,18 @@
     this._place(L);
   };
   // Each layer gets one copy of its template for every world-width the drawing spans.
+  // Copies no longer needed are hidden, not removed, and a layer always keeps a few spare: a new copy of the land's
+  // picture paints blank until its image loads, so a zoom that called for one more copy flashed bare sea, or plain
+  // land, for a frame or two (Noah, 24 November 2026).
   MapView.prototype._place = function (L) {
-    var ks = this.copies || [0], W = this.world.width;
-    while (L.clones.length < ks.length) { var c = L.tpl.cloneNode(true); L.host.appendChild(c); L.clones.push(c); L.ks.push(null); }
-    while (L.clones.length > ks.length) { L.clones.pop().remove(); L.ks.pop(); }
-    for (var i = 0; i < ks.length; i++) {
-      if (L.ks[i] !== ks[i]) { L.ks[i] = ks[i]; L.clones[i].setAttribute("transform", "translate(" + ks[i] * W + " 0)"); }
+    var ks = this.copies || [0], W = this.world.width, want = Math.max(ks.length, L.spare || 0);
+    while (L.clones.length < want) { var c = L.tpl.cloneNode(true); c.setAttribute("display", "none"); L.host.appendChild(c); L.clones.push(c); L.ks.push(null); }
+    for (var i = 0; i < L.clones.length; i++) {
+      var c2 = L.clones[i];
+      if (i < ks.length) {
+        if (L.ks[i] !== ks[i]) { L.ks[i] = ks[i]; c2.setAttribute("transform", "translate(" + ks[i] * W + " 0)"); }
+        if (c2.getAttribute("display")) c2.removeAttribute("display");
+      } else if (!c2.getAttribute("display")) c2.setAttribute("display", "none");
     }
   };
 
@@ -417,6 +424,12 @@
       if (pv) svg("path", { class: "map-sel is-province", d: pv.path }, T);
       svg("path", { class: "map-outline-under", d: d }, O);
       svg("path", { class: "map-outline-line", d: d }, O);
+      // A disputed strip the country claims, or that is claimed from it: the other line, in the same red dots.
+      (this.world.claims || []).forEach(function (c) {
+        if (c.by !== id && c.from !== id) return;
+        svg("path", { class: "map-outline-under", d: c.d }, O);
+        svg("path", { class: "map-outline-line is-claim", d: c.d }, O);
+      });
       if (pv) svg("path", { class: "map-outline-prov", d: pv.path }, O);
     }
     this._refresh(this.dimLayer);
