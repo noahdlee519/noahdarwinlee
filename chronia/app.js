@@ -7211,11 +7211,11 @@
     var first = srcInfo.sources[B.ids[0]], owner = LANG !== "en" ? "The source’s" : first ? first.label + (/s$/.test(first.label) ? "’" : "’s") : "The source’s";
     var own = function (t) { return t.replace(/^The source’s/, owner); };
     var borders = srcLine(p.people ? "Extent" : "Borders");
-    srcPhrase(borders, B.text, B.ids);
+    srcPhrase(borders, T(B.text), B.ids);
     var dates = srcLine("Dates");
-    srcPhrase(dates, own(D.text), B.ids.concat(D.ids));
+    srcPhrase(dates, own(T(D.text)), B.ids.concat(D.ids));
     var nm = srcLine("Name");
-    srcPhrase(nm, own(N.text), k[1] === "source" ? B.ids : N.ids);
+    srcPhrase(nm, own(T(N.text)), k[1] === "source" ? B.ids : N.ids);
     // Filled in by srcText once Wikipedia has answered with an article of the same name: never from the guess at its title.
     var same = document.createElement("span");
     if (k[1] === "editors") nm.appendChild(same);
@@ -9512,14 +9512,15 @@
       row.className = "ch-wars-row"; name.className = "ch-wars-name"; sides.className = "ch-wars-sides";
       name.textContent = r.name;
       r.groups.forEach(function (g, gi) {
-        if (gi) { var vs = document.createElement("span"); vs.className = "ch-wars-vs"; vs.textContent = "vs"; sides.appendChild(vs); }
+        if (gi) { var vs = document.createElement("span"); vs.className = "ch-wars-vs"; vs.textContent = T("vs"); sides.appendChild(vs); }
         var grp = document.createElement("span");
         grp.className = "ch-wars-side";
         g.forEach(function (p) {
           var b = document.createElement("button");
           b.type = "button";
           b.className = "ch-wars-flag";
-          b.setAttribute("aria-label", p.ll ? p.name + ", go to its capital" : p.name);
+          var pn = (PL.pol && PL.pol[p.name]) || p.name;
+          b.setAttribute("aria-label", p.ll ? T("{name}, go to its capital", { name: pn }) : pn);
           if (!p.flag && !p.side && !(p.sprite >= 0)) b.classList.add("is-chip");
           if (!p.ll) b.classList.add("is-nowhere");
           b.innerHTML = p.sprite >= 0
@@ -9529,16 +9530,16 @@
             : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + (r.w ? sideColour(r.w, p.side) : p.colour || pal.paper) + '"/></svg>';
           if (p.sprite >= 0) { b.firstChild.style.setProperty("--fx", p.sprite % 20); b.firstChild.style.setProperty("--fy", Math.floor(p.sprite / 20)); }
           if (canHover) {
-            b.addEventListener("mouseenter", function () { warsTip(b, p.name); });
+            b.addEventListener("mouseenter", function () { warsTip(b, pn); });
             b.addEventListener("mouseleave", function () { hoverTip.classList.remove("is-on"); });
           }
-          b.addEventListener("focus", function () { warsTip(b, p.name); });
+          b.addEventListener("focus", function () { warsTip(b, pn); });
           b.addEventListener("blur", function () { hoverTip.classList.remove("is-on"); });
           // Without hover, a tap names the party for a few seconds as well as flying to it.
           b.addEventListener("click", function () {
             clearTimeout(warsTipTimer);
             if (canHover) hoverTip.classList.remove("is-on");
-            else { warsTip(b, p.name); warsTipTimer = setTimeout(function () { hoverTip.classList.remove("is-on"); }, 2600); }
+            else { warsTip(b, pn); warsTipTimer = setTimeout(function () { hoverTip.classList.remove("is-on"); }, 2600); }
             if (p.ll) flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800));
           });
           grp.appendChild(b);
