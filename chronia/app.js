@@ -6007,7 +6007,9 @@
       preWarned = false; preWarn();
       return;
     }
-    if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
+    // A typed day is shown as a day, the 15th too (which otherwise stands for the whole month).
+    if (p && p[2]) { keepDayMode = true; dayMode = true; }
+    try { if (Math.abs(t - now) > 1e-9) setTime(t); else { syncTime(); yearInput.value = fitDate(fmtNow(now)); } } finally { keepDayMode = false; }
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -9822,7 +9824,7 @@
   function hashTime() {
     if (!isMonthly(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
     var d = dateOfDay(dayOfTime(now));
-    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY && !dayMode ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
   }
   function readHash() {
     var out = {};
@@ -10330,6 +10332,9 @@
       if (fine && +fine[1] < monthlyFrom() && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
       var t0 = h.y ? parseTime(h.y) : null;
       now = Math.max(KNOTS[0][0], t0 !== null ? t0 : parseTime(String(START_YEAR)));
+      // Opened without a date, the atlas starts on a day, July 15, 1815, not on the month (Noah, 25 November 2026); a link
+      // with the 15th written out opens on that day too.
+      if ((t0 === null || /-15$/.test(h.y)) && isMonthly(now)) dayMode = true;
       land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
       buildCoastGrid(land.lo);
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
@@ -10342,7 +10347,8 @@
       return Promise.all([first, geogLoad]).then(function (r) {
         var snap = r[0];
         current = snap;
-        setTime(now);
+        if (dayMode) keepDayMode = true;
+        try { setTime(now); } finally { keepDayMode = false; }
         reveal();
         afterIntro(function () { if (gridBase === "lo") upgradeGrid("hi", function (ms) { hiGridMs = ms; scheduleRender(); }); });
         var seaData = fetchJSON(UC + "data/sea.json");
