@@ -5015,8 +5015,9 @@
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
       if (devMode && devMode !== "label" && devClick(e.clientX, e.clientY)) { drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
-      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
+      if ((playTimer || lapse) && (town || p)) { pauseNote(e.clientX, e.clientY); drag = null; downAt = null; return; }
+      divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       if (town) openCity(town); else select(p ? p.id : -1);
     } else if (drag && drag.spin === null && drag.samples.length >= 2 && !reduceMotion) {
       var s = drag.samples, a = s[0], b = s[s.length - 1];
@@ -5189,6 +5190,25 @@
     tip.style.top = y + "px";
   }
   function hideTip() { tip.hidden = true; }
+  // While the map plays or follows a country, a click on a state or a city opens nothing: a note on the atlas's paper,
+  // where the click was, says to pause first, and fades after two and a half seconds (since 25 November 2026).
+  var pauseNoteEl = $("pause-note"), pauseNoteTimer = 0;
+  function pauseNote(x, y) {
+    if (!pauseNoteEl) return;
+    hideTip();
+    pauseNoteEl.textContent = T("Pause the map first, then click a country.");
+    pauseNoteEl.hidden = false;
+    var w = pauseNoteEl.offsetWidth, h = pauseNoteEl.offsetHeight;
+    pauseNoteEl.style.left = Math.round(Math.max(8 + w / 2, Math.min(window.innerWidth - 8 - w / 2, x))) + "px";
+    pauseNoteEl.style.top = Math.round(Math.max(8 + h + 14, y)) + "px";
+    void pauseNoteEl.offsetWidth;
+    pauseNoteEl.classList.add("is-on");
+    clearTimeout(pauseNoteTimer);
+    pauseNoteTimer = setTimeout(function () {
+      pauseNoteEl.classList.remove("is-on");
+      pauseNoteTimer = setTimeout(function () { pauseNoteEl.hidden = true; }, 250);
+    }, 2500);
+  }
   // With Shift held, the coordinates under the cursor, beside it (Noah's request, 15 November 2026).
   var coords = $("coords"), mouseAt = null;
   function syncCoords(shift) {
