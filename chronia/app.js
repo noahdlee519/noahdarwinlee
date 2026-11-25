@@ -6068,7 +6068,7 @@
   // same kind takes the same time, divided by the speed slider's.
   // Before 1200 it goes year by year as well, at `early` a year (about four and a half minutes from 3400 BC); before
   // 10 November 2026 it jumped from one change to the next there, 0.8 seconds each, however many years lay between.
-  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, day: 40, load: 100 };
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return lapse ? lapse.endT : dataEnd(); }
@@ -6076,7 +6076,7 @@
   function playNext(t) {
     if (lapse) return lapseNext(t);
     if (isMonthly(t)) {
-      if (playDaily()) return timeOfDay(dayOfTime(t) + 1);
+      if (playDaily()) return timeOfDay(dayOfTime(t) + playDays());
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
       return sameDay(y, m, d[2]);
@@ -6097,7 +6097,7 @@
   function playPrev(t) {
     if (isMonthly(t)) {
       var mf = monthlyFrom();
-      if (playDaily()) { var pd = dayOfTime(t) - 1; return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
+      if (playDaily()) { var pd = dayOfTime(t) - playDays(); return dateOfDay(pd)[0] < mf ? mf - 1 : timeOfDay(pd); }
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
       if (m < 1) { m = 12; y--; }
       return y < mf ? mf - 1 : sameDay(y, m, d[2]);
@@ -6115,7 +6115,7 @@
   }
   function playWait(from, to) {
     if (lapse) return lapseWait();
-    if (isMonthly(to)) return playDaily() ? PLAY.day : PLAY.month;
+    if (isMonthly(to)) return PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return PLAY.year;
   }
@@ -6223,6 +6223,11 @@
   function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
   function speedX(v) { return Math.round(Math.pow(2, v) * 100) / 100; }
   function playDaily() { return speedX(playSpeed) <= 0.5; }
+  // At 0.5x and slower play steps by days, as many in a step as keep its pace even with the month's steps above it (a month
+  // a step at 0.5x, about a week at 0.25x, a day at 0.1x and slower), each step taking the month step's time (PLAY.month).
+  // Until 25 November 2026 it went a day a step from 0.5x down, which made 0.51x thirty times faster than 0.5x.
+  function playDays() { return Math.max(1, Math.round(30.44 * Math.pow(speedX(playSpeed) / 0.5, DAY_CURVE))); }
+  var DAY_CURVE = Math.log(30.44) / Math.log(5);
   // "0.25x", with a plain x in the figures' own type, where a × came out thinner than the figures (Noah, 25 November 2026).
   function speedText(v) { return String(speedX(v)) + "x"; }
   function setPlaySpeed(v, keep) {
