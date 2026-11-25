@@ -367,13 +367,26 @@ body.ch-page {
 .ch-head-text:has(.ch-site) .ch-title {
   top: -0.06em;
 }
+/* The name and the address as one block, centred on the plate, with the address set from the name's left edge (the C,
+   inside the name's own padding). */
+.ch-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: center;
+}
+/* Both start at the block's left edge: the name's left padding (which balanced its last letter's spacing when it was
+   centred alone) goes, and the block keeps it instead, so the C and the c line up. */
+.ch-brand .ch-title {
+  padding-left: 0 !important;
+}
 .ch-site {
+  text-align: left;
   margin: 1px 0 0;
   font-family: var(--ch-num);
   font-size: 9.5px;
   letter-spacing: 0.14em;
   line-height: 1;
-  padding-left: 0.14em;
   color: var(--ch-brass-lt);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
   white-space: nowrap;
@@ -388,7 +401,6 @@ body.ch-page {
     margin-top: 1px;
     font-size: 6.5px;
     letter-spacing: 0.02em;
-    padding-left: 0.02em;
   }
 }
 @media (max-width: 369px) {
@@ -398,7 +410,6 @@ body.ch-page {
   .ch-site {
     font-size: 6px;
     letter-spacing: 0;
-    padding-left: 0;
   }
 }
 
