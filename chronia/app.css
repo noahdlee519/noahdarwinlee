@@ -367,6 +367,13 @@ body.ch-page {
 .ch-head-text:has(.ch-site) .ch-title {
   top: -0.06em;
 }
+/* On a desktop the name a size smaller and a few pixels lower, nearer the address (Noah, 25 November 2026). */
+@media (min-width: 881px) {
+  .ch-head-text:has(.ch-site) .ch-title {
+    font-size: 23px;
+    top: 0.08em;
+  }
+}
 /* The name and the address as one block, centred on the plate, with the address set from the name's left edge (the C,
    inside the name's own padding). */
 .ch-brand {
@@ -382,7 +389,7 @@ body.ch-page {
 }
 .ch-site {
   text-align: left;
-  margin: 1px 0 0;
+  margin: 1px 0 0 1.5px;
   font-family: var(--ch-num);
   font-size: 9.5px;
   letter-spacing: 0.14em;
