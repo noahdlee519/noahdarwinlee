@@ -9464,12 +9464,15 @@
       }
       var d = s.km2 - p.km2, ad = Math.abs(d);
       if (gained.has(id)) return;
+      if (ad >= 1) s.sd = d;
       if ((ad >= 1500 && ad >= 0.02 * p.km2) || (ad >= 10 && ad >= 0.2 * p.km2)) moved.push({ s: s, d: ad });
       else if (!said && !told.has(id) && ad >= 1) slight.push({ s: s, d: ad });
     });
+    moved = takings(before, after, moved, out);
     moved.sort(function (x, y) { return y.d - x.d; });
     if (moved.length) out.push({ kind: "moved", list: moved.map(function (m) { return m.s; }) });
     if (out.length) return out;
+    slight = takings(before, after, slight, out);
     if (sameFile) {
       var RA = pieceRows(before, "state"), RB = pieceRows(after, "state"), inSlight = new Set(slight.map(function (m) { return m.s.id; }));
       RB.forEach(function (s, id) {
@@ -9483,7 +9486,7 @@
       var CA = new Set(), disputed = new Map(), PA = pieceRows(before, "people"), PB = pieceRows(after, "people"), lands = [];
       before.polys.forEach(function (p) { if (p && p.claims) CA.add(p.row); });
       after.polys.forEach(function (p) {
-        if (p && p.claims && !CA.has(p.row)) p.claims.forEach(function (c) { if (!disputed.has(c)) disputed.set(c, B.get(c) || A.get(c) || { id: c, ll: null, km2: 0 }); });
+        if (p && p.claims && !CA.has(p.row)) p.claims.forEach(function (c) { if (!disputed.has(c)) { var w = B.get(c) || A.get(c); disputed.set(c, { id: c, ll: w ? w.ll : null, km2: w ? w.km2 : 0 }); } });
       });
       if (disputed.size) out.push({ kind: "disputed", list: Array.from(disputed.values()) });
       PB.forEach(function (s, id) { var p = PA.get(id); if (p && !sameRows(p.rows, s.rows)) lands.push(s); });
@@ -9492,6 +9495,38 @@
     }
     return out;
   }
+  // Pairs a state that gained land with a neighbour (on either map) that lost about as much (from half to twice of what it
+  // has not yet given to a larger gainer), and says the one took it from the other; returns the rest (since 25 November 2026).
+  function takings(before, after, list, out) {
+    var gain = list.filter(function (m) { return m.s.sd > 0; }).sort(function (x, y) { return y.d - x.d; });
+    var lose = list.filter(function (m) { return m.s.sd < 0; }), used = new Set(), left = new Map();
+    lose.forEach(function (l) { left.set(l.s.id, l.d); });
+    gain.forEach(function (g) {
+      var best = null, fit = 0;
+      lose.forEach(function (l) {
+        var rest = left.get(l.s.id), f = Math.min(g.d, rest) / Math.max(g.d, rest);
+        if (f >= 0.5 && f > fit && (bordering(after, g.s.id, l.s.id) || bordering(before, g.s.id, l.s.id))) { best = l; fit = f; }
+      });
+      if (!best) return;
+      used.add(g.s.id); used.add(best.s.id);
+      left.set(best.s.id, Math.max(0, left.get(best.s.id) - g.d));
+      out.push({ kind: "took", a: g.s, b: best.s, km: g.d });
+    });
+    return list.filter(function (m) { return !used.has(m.s.id); });
+  }
+  function bordering(snap, a, b) {
+    if (!snap.geoms || !snap.geoms.lo) return false;
+    if (!snap.nb) snap.nb = topojson.neighbors(snap.geoms.lo);
+    for (var i = 0; i < snap.polys.length; i++) {
+      var p = snap.polys[i];
+      if (!p || p.id !== a || p.people) continue;
+      var n = snap.nb[i];
+      for (var j = 0; j < n.length; j++) { var q = snap.polys[n[j]]; if (q && q.id === b) return true; }
+    }
+    return false;
+  }
+  function fmtKm(n) { return Number(n >= 100 ? n.toPrecision(2) : Math.round(n)).toLocaleString(LANG); }
+  function withKm(parts, x) { return typeof x.sd === "number" ? parts.concat(" (" + (x.sd > 0 ? "+" : "\u2212") + fmtKm(Math.abs(x.sd)) + " km\u00b2)") : parts; }
   function changeName(s, here) {
     var b = document.createElement("button");
     b.type = "button";
@@ -9552,9 +9587,9 @@
     lines.forEach(function (l) {
       if (shown >= CHANGES_MAX) return;
       shown++;
-      var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return named(x, here, false); }); };
+      var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return withKm(named(x, here, false), x); }); };
       if (LANG !== "en") {
-        var nm = function (x, here) { return [changeName(x, here)]; }, lst = function (list, here) { return listOf(list.slice(0, 6).map(function (x) { return nm(x, here); }), Math.max(0, list.length - 6)); };
+        var nm = function (x, here) { return [changeName(x, here)]; }, lst = function (list, here) { return listOf(list.slice(0, 6).map(function (x) { return withKm(nm(x, here), x); }), Math.max(0, list.length - 6)); };
         row = l.kind === "new" ? tplParts(T("{a} appears on the map."), { a: nm(l.a, true) })
           : l.kind === "renamed" ? tplParts(T("{a} becomes {b}."), { a: nm(l.g, false), b: nm(l.a, true) })
           : l.kind === "formed" ? tplParts(T("{a} is formed from {list}."), { a: nm(l.a, true), list: lst(l.from, false) })
@@ -9567,6 +9602,7 @@
           : l.kind === "slight" ? tplParts(T("The borders of {list} shift slightly."), { list: lst(l.list, true) })
           : l.kind === "lands" ? tplParts(T("The lands of {list} change."), { list: lst(l.list, true) })
           : l.kind === "disputed" ? tplParts(T("Land becomes disputed between {list}."), { list: lst(l.list, true) })
+          : l.kind === "took" ? tplParts(T("{a} takes about {n} km² from {b}."), { a: nm(l.a, true), n: [fmtKm(l.km)], b: nm(l.b, true) })
           : tplParts(T(lines.length > 1 ? "Borders also move for {list}." : "Borders move for {list}."), { list: lst(l.list, true) });
       }
       else if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
@@ -9582,6 +9618,7 @@
       else if (l.kind === "slight") row = ["The borders of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " shift slightly.");
       else if (l.kind === "lands") row = ["The lands of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " change.");
       else if (l.kind === "disputed") row = ["Land becomes disputed between "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      else if (l.kind === "took") row = named(l.a, true, true).concat(verb(l.a, " takes", " take") + " about " + fmtKm(l.km) + " km\u00b2 from ", named(l.b, true, false), ".");
       changesList.appendChild(changeLine(row));
     });
     if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine([T(lines.length - CHANGES_MAX === 1 ? "And {n} more change." : "And {n} more changes.", { n: lines.length - CHANGES_MAX })], "ch-changes-none"));
