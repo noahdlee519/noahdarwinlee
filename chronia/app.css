@@ -359,6 +359,31 @@ body.ch-page {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
+/* The site's address in small letters under the name (Noah, 25 November 2026), with the name raised a little to make room
+   for it; on phones, where the plate is small, the name stands alone as before. */
+.ch-head-text:has(.ch-site) .ch-title {
+  top: -0.06em;
+}
+.ch-site {
+  margin: 1px 0 0;
+  font-family: var(--ch-num);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding-left: 0.14em;
+  color: var(--ch-brass-lt);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .ch-site {
+    display: none;
+  }
+  .ch-head-text:has(.ch-site) .ch-title {
+    top: 1px;
+  }
+}
+
 .ch-about {
   position: static;
   display: flex;
