@@ -103,19 +103,13 @@
     pickDirty = true;
   }
 
-  var pal = {}, hatch = null;
+  var pal = {};
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow", "country-label", "country-halo"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow", "country-label", "country-halo", "avoided-fill"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
-    var c = document.createElement("canvas");
-    c.width = c.height = 8;
-    var hc = c.getContext("2d");
-    hc.strokeStyle = pal.hatch; hc.lineWidth = 1.4; hc.lineCap = "square";
-    hc.beginPath(); hc.moveTo(-2, 10); hc.lineTo(10, -2); hc.moveTo(-2, 2); hc.lineTo(2, -2); hc.moveTo(6, 10); hc.lineTo(10, 6); hc.stroke();
-    hatch = ctx.createPattern(c, "repeat");
   }
 
   var renderQueued = false, interacting = 0, settleTimer = null;
@@ -446,7 +440,8 @@
       var fi = f.index;
       ctx.beginPath(); traceFeature(ctx, feats[fi]);
       ctx.fillStyle = fi === state.hover ? pal["land-hover"] : pal.land; ctx.fill();
-      ctx.fillStyle = hatch; ctx.fill();
+      ctx.fillStyle = pal["avoided-fill"]; ctx.fill();
+      ctx.strokeStyle = pal.hatch; ctx.lineWidth = 1.3; ctx.lineJoin = "round"; ctx.stroke();
     });
 
     mark("avoid");
@@ -477,7 +472,9 @@
 
     collectUi();
     collectCities();
+    mark("prep");
     drawCountryLabels(feats);
+    mark("labels");
     updateScale();
     if (flat) { ctx.restore(); ctx.beginPath(); path({ type: "Sphere" }); }
     else { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); }
@@ -987,10 +984,9 @@
     if (!c0 || !isFinite(c0[0])) return [];
     var cellPx = Math.min(W, H) * 0.55, cell = Math.max(0.05, cellPx * degPerPx());
     var cosC = Math.max(0.2, Math.cos(c0[1] * RAD)), cellLon = Math.min(90, cell / cosC);
-    var baseLat = Math.round(c0[1] / cell), baseLon = Math.round(c0[0] / cellLon), out = [], geo = { type: "MultiPolygon", coordinates: L.polys };
+    var baseLat = Math.round(c0[1] / cell), baseLon = Math.round(c0[0] / cellLon), out = [];
     for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
       var lat = Math.max(-85, Math.min(85, (baseLat + dy) * cell)), lon = ((baseLon + dx) * cellLon + 540) % 360 - 180;
-      if (!d3.geoContains(geo, [lon, lat])) continue;
       var v = G.toVec(lon, lat);
       if (!screenOf(lon, lat, v[0], v[1], v[2]) || FX < 40 || FY < 40 || FX > W - 40 || FY > H - 40) continue;
       var sp = spanAt(L.polys, lon, lat);
@@ -2639,8 +2635,7 @@
     state.regions.forEach(function (r) {
       var poly = regionPolygon(r);
       ctx.beginPath(); path(poly);
-      ctx.fillStyle = pal["region-fill"]; ctx.fill();
-      ctx.fillStyle = hatch; ctx.fill();
+      ctx.fillStyle = pal["avoided-fill"]; ctx.fill();
       ctx.strokeStyle = pal.route; ctx.lineWidth = r === selected ? 2 : 1.2; ctx.stroke();
     });
     if (selected) {

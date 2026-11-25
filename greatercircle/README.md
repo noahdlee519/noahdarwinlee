@@ -144,6 +144,10 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   over the name and back link, which fade out as it does. The zoom buttons ease to
   the new zoom, and the drawing tools slide out one after another.
 
+  Avoided countries and drawn regions are a flat tint with a solid edge, not
+  a striped pattern: a pattern filled across a large country on a sharp
+  screen cost more than the rest of the map.
+
   A scale bar in the corner gives the distance across the middle of the view,
   rounded to 1, 2, or 5 of a power of ten in the chosen units. The glow round
   the globe is drawn outside it only, and fades as the globe fills the screen.
