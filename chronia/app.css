@@ -643,7 +643,7 @@ body.ch-page {
   text-align: center;
 }
 
-.ch-about:hover .ch-about-tip,
+.ch-about.is-hover .ch-about-tip,
 .ch-about:focus-within .ch-about-tip,
 .ch-about.is-open .ch-about-tip {
   display: block;
@@ -4654,6 +4654,10 @@ select.ch-save-input {
   outline-offset: 2px;
 }
 
+.ch-turn[hidden],
+.ch-turn-how[hidden] {
+  display: none;
+}
 .ch-turn-how {
   margin: 4px 0 2px;
   font-size: 13px;

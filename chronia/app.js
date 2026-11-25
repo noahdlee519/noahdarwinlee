@@ -5083,7 +5083,7 @@
     var turned = !flat && Math.abs(view.roll) >= 0.05;
     $("compass").hidden = !turned;
     if (turned) $("compass-needle").setAttribute("transform", "rotate(" + view.roll.toFixed(2) + " 16 16)");
-    ["turn-left", "turn-right"].forEach(function (id) { $(id).disabled = flat; });
+    $("turn").hidden = $("turn-how").hidden = flat;
     $("turn-north").disabled = !turned;
   }
   $("turn-left").addEventListener("click", function () { turnTo(Math.round((view.roll - TURN_STEP) / TURN_STEP) * TURN_STEP); });
@@ -7448,7 +7448,30 @@
     aboutBtn.setAttribute("aria-expanded", open ? "true" : "false");
   }
   aboutBtn.addEventListener("click", function () { setAbout(!about.classList.contains("is-open")); });
-  about.addEventListener("mouseleave", function () { if (!about.contains(document.activeElement)) about.classList.remove("is-shut"); });
+  var aboutTip = $("about-tip"), aboutHead = $("head"), aboutOff = 0;
+  function aboutNear(x, y) {
+    return [aboutHead, aboutTip].some(function (el) {
+      var r = el.getBoundingClientRect();
+      return r.width > 0 && x >= r.left - 24 && x <= r.right + 24 && y >= r.top - 24 && y <= r.bottom + 24;
+    });
+  }
+  function aboutUnhover() {
+    clearTimeout(aboutOff);
+    about.classList.remove("is-hover");
+    if (!about.contains(document.activeElement)) about.classList.remove("is-shut");
+  }
+  aboutBtn.addEventListener("mouseenter", function () {
+    if (!canHover) return;
+    clearTimeout(aboutOff);
+    if (!about.classList.contains("is-hover") && !about.contains(document.activeElement)) about.classList.remove("is-shut");
+    about.classList.add("is-hover");
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "mouse" || !about.classList.contains("is-hover")) return;
+    clearTimeout(aboutOff);
+    if (!aboutNear(e.clientX, e.clientY)) aboutOff = setTimeout(aboutUnhover, 200);
+  });
+  document.documentElement.addEventListener("mouseleave", aboutUnhover);
   about.addEventListener("focusout", function (e) { if (!about.contains(e.relatedTarget)) about.classList.remove("is-shut"); });
   document.addEventListener("pointerdown", function (e) {
     if (about.classList.contains("is-open") && !about.contains(e.target)) {
