@@ -4615,6 +4615,8 @@
     ctx.globalAlpha = 1;
     return mkBox(o.x + o.nx * d, o.y + o.ny * d, 7 * s, 12.5 * s, Math.atan2(o.ty, o.tx));
   }
+  // A side's name in the reader's language: the place names' table for a state, the atlas's own strings for the rest.
+  function sideNameL(n) { return (PL.pol && PL.pol[n]) || T(n); }
   // The war and its file at a point, for the hover's "held by" and the card's Sources.
   function controlAt(ll) {
     var c = controlInfoAt(ll);
@@ -4629,7 +4631,7 @@
       var w = wars[k], D = w.data, st = ctlState(w, day);
       for (var i = 0; i < st.rows.length; i++) {
         var r = D.rows[st.rows[i]];
-        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return { key: w.key, name: w.name, source: D.source || "", text: (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1] + (D.credit ? ", per " + D.credit : "") };
+        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return { key: w.key, name: w.name, source: D.source || "", text: T(D.kind === "presence" ? "presence of {name}" : "held by {name}", { name: sideNameL(D.sides[r[0]][1]) }) + (D.credit ? T(", per {credit}", { credit: T(D.credit) }) : "") };
       }
     }
     return null;
@@ -7088,6 +7090,29 @@
       return r.json();
     }).then(function (d) { return d && d.type !== "disambiguation" && d.extract ? d : null; });
   }
+  // The same article in the reader's own Wikipedia, through English Wikipedia's language links (since 25 November 2026;
+  // until then a card in another language showed the English article's opening). Null where that Wikipedia has none, and
+  // the card keeps the English one. Chinese asks for simplified characters, as the atlas writes them.
+  var wikiLocalCache = new Map();
+  function wikiLocal(title) {
+    if (LANG === "en" || !title) return Promise.resolve(null);
+    if (wikiLocalCache.has(title)) return wikiLocalCache.get(title);
+    var job = fetch("https://en.wikipedia.org/w/api.php?action=query&prop=langlinks&redirects=1&format=json&origin=*&lllang=" + LANG + "&titles=" + encodeURIComponent(title)).then(function (r) {
+      if (!r.ok) throw new Error("wikipedia links " + r.status);
+      return r.json();
+    }).then(function (d) {
+      var pages = d && d.query && d.query.pages, t = null;
+      if (pages) Object.keys(pages).forEach(function (k) { var l = pages[k].langlinks; if (l && l[0] && l[0]["*"]) t = l[0]["*"]; });
+      if (!t) return null;
+      var opts = LANG === "zh" ? { headers: { "Accept-Language": "zh-Hans" } } : undefined;
+      return fetch("https://" + LANG + ".wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t.replace(/ /g, "_")) + "?redirect=true", opts).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (x) { return x && x.type !== "disambiguation" && x.extract ? x : null; });
+    }).catch(function () { wikiLocalCache.delete(title); return null; });
+    wikiLocalCache.set(title, job);
+    return job;
+  }
+  var WIKI_LINK = /^https:\/\/[a-z-]+\.wikipedia\.org\//;
   function wikiSearch(q) {
     var url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srnamespace=0&srlimit=1&format=json&origin=*&srsearch=" + encodeURIComponent(q);
     return fetch(url).then(function (r) {
@@ -7230,7 +7255,7 @@
     var zone = null, held = divClick && insidePolity(divClick, p.id) ? controlInfoAt(divClick) : null;
     if (held) {
       zone = srcLine("Zone of control");
-      zone.appendChild(document.createTextNode(held.name + ": "));
+      zone.appendChild(document.createTextNode(T(held.name) + ": "));
       srcPlain(zone, held.source.replace(/\.?$/, "."));
       if (SRC_WAR[held.key]) { zone.appendChild(document.createTextNode(T(" See "))); srcRich(zone, srcList(SRC_WAR[held.key])); zone.appendChild(document.createTextNode(".")); }
     }
@@ -7305,17 +7330,18 @@
     box.open = srcOpen;
   }
   // The Text line, set when the card's text is: Wikipedia's extract, or a note a language model wrote.
-  function srcText(mode, wiki) {
+  function srcText(mode, wiki, loc) {
     if (!srcCtx) return;
     var el = srcCtx.text, label = el.firstChild;
     srcCtx.same.textContent = wiki && wiki.title === srcCtx.name ? T(", matching Wikipedia’s article title") : "";
+    if (loc) wiki = loc;
     el.textContent = ""; el.appendChild(label);
     if (mode === "done") el.appendChild(document.createTextNode(T("A note written by a language model from the card’s facts and the date; it can be wrong.")));
     else if (mode !== "ai" && wiki && wiki.extract) {
       var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
       el.appendChild(document.createTextNode(T("Wikipedia, “")));
 
-      if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) el.appendChild(srcLink(href, wiki.title || srcCtx.name)); else el.appendChild(document.createTextNode(wiki.title || srcCtx.name));
+      if (href && WIKI_LINK.test(href)) el.appendChild(srcLink(href, wiki.title || srcCtx.name)); else el.appendChild(document.createTextNode(wiki.title || srcCtx.name));
       el.appendChild(document.createTextNode("”"));
     } else { el.hidden = true; return; }
     el.hidden = false;
@@ -7344,20 +7370,21 @@
   $("src").addEventListener("toggle", function () { srcOpen = $("src").open; if (srcOpen) fillNotes(); });
   function loadWiki(name, title, blurb, at) {
     var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), zoom = $("wiki-zoom"), more = $("wiki-more"), by = $("wiki-by");
-    var wiki = null, wikiState = 0, mode = blurb ? "ai" : "wiki";
-    var quiet = function (t) { text.className = "ch-wiki-text is-quiet"; text.textContent = t; };
+    var wiki = null, wikiLoc = null, wikiState = 0, mode = blurb ? "ai" : "wiki", shownName = $("card-name").textContent;
+    var quiet = function (t) { text.className = "ch-wiki-text is-quiet"; text.removeAttribute("lang"); text.textContent = t; };
     var paint = function () {
       if (ask !== wikiAsk) return;
-      srcText(mode, wiki);
+      srcText(mode, wiki, wikiLoc);
+      var W = wikiLoc || wiki;
       if (wiki) {
         if (wiki.thumbnail && wiki.thumbnail.source && WM_IMG.test(wiki.thumbnail.source)) {
           img.src = wiki.thumbnail.source; zoom.hidden = false;
           picture = { thumb: wiki.thumbnail.source, original: wiki.originalimage, title: wiki.title || name };
         } else { zoom.hidden = true; picture = null; }
-        var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
-        if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) {
+        var href = W.content_urls && W.content_urls.desktop && W.content_urls.desktop.page;
+        if (href && WIKI_LINK.test(href)) {
           $("wiki-link").href = href;
-          $("wiki-link").textContent = wiki.title && wiki.title !== name ? T("Read “{title}” on Wikipedia", { title: wiki.title }) : T("Read more on Wikipedia");
+          $("wiki-link").textContent = W.title && W.title !== name && W.title !== shownName ? T("Read “{title}” on Wikipedia", { title: W.title }) : T("Read more on Wikipedia");
           more.hidden = false;
         } else more.hidden = true;
       } else { zoom.hidden = true; more.hidden = true; picture = null; }
@@ -7374,7 +7401,7 @@
       }
       else if (!wiki) quiet(T(at ? "Wikipedia has no article on this place." : "Wikipedia has no article under this name."));
 
-      else { text.className = "ch-wiki-text"; text.textContent = wiki.extract; }
+      else { text.className = "ch-wiki-text"; text.textContent = W.extract; text.lang = wikiLoc ? (LANG === "zh" ? "zh-Hans" : LANG) : "en"; }
     };
     var writing = function (job) {
       mode = "ai";
@@ -7419,7 +7446,10 @@
       wikiCache.set(key, job);
       job.catch(function () { wikiCache.delete(key); });
     }
-    job.then(function (d) { wiki = d; wikiState = 1; paint(); }, function () { wikiState = 2; paint(); });
+    job.then(function (d) {
+      if (!d || LANG === "en") return d;
+      return wikiLocal(d.title).then(function (l) { wikiLoc = l; return d; });
+    }).then(function (d) { wiki = d; wikiState = 1; paint(); }, function () { wikiState = 2; paint(); });
     if (blurb) {
       var have = blurbCache.get(JSON.stringify(blurb.ask));
       if (blurb.click || have) writing(have || blurbFetch(blurb.ask));
@@ -9483,6 +9513,31 @@
     var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
     hoverTip.style.transform = "translate(" + Math.round(Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2))) + "px," + Math.round(r.top - h - 8) + "px)";
   }
+  // The wars' names in the reader's language (since 25 November 2026): a war's name is its English Wikipedia article's
+  // title, so English Wikipedia's language links give the title of the same article in the reader's Wikipedia, asked for
+  // 50 at a time as the panel shows them. A war with no article there keeps its English name.
+  var warNames = new Map();
+  function warNameL(n) { return warNames.get(n) || n; }
+  function warNamesFetch(names) {
+    if (LANG === "en") return;
+    var need = names.filter(function (n) { return !warNames.has(n); }).slice(0, 50);
+    if (!need.length) return;
+    need.forEach(function (n) { warNames.set(n, ""); });
+    fetch("https://en.wikipedia.org/w/api.php?action=query&prop=langlinks&redirects=1&lllimit=max&format=json&origin=*&lllang=" + LANG + "&titles=" + encodeURIComponent(need.join("|"))).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
+      var q = d && d.query, back = {};
+      if (!q || !q.pages) return;
+      (q.normalized || []).forEach(function (x) { back[x.to] = x.from; });
+      (q.redirects || []).forEach(function (x) { back[x.to] = back[x.from] || x.from; });
+      Object.keys(q.pages).forEach(function (k) {
+        var pg = q.pages[k], l = pg.langlinks && pg.langlinks[0];
+        if (l && l["*"]) warNames.set(back[pg.title] || pg.title, l["*"]);
+      });
+      warsState = null;
+      syncWars();
+    }, function () {});
+  }
   function syncWars() {
     if (!warsBox) return;
     var on = !!layers.control;
@@ -9497,6 +9552,7 @@
       if (groups.length) rows.push({ w: w, name: w.name, groups: groups });
     });
     warsAtDate().forEach(function (r) { rows.push(r); });
+    warNamesFetch(rows.filter(function (r) { return !r.w; }).map(function (r) { return r.name; }));
     var state = rows.map(function (r) { return r.name + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll + (p.colour || "") + (p.sprite >= 0 ? p.sprite : ""); }).join(","); }).join("|"); }).join(";");
     if (state === warsState) return;
     warsState = state;
@@ -9510,7 +9566,7 @@
     rows.forEach(function (r) {
       var row = document.createElement("div"), name = document.createElement("p"), sides = document.createElement("div");
       row.className = "ch-wars-row"; name.className = "ch-wars-name"; sides.className = "ch-wars-sides";
-      name.textContent = r.name;
+      name.textContent = r.w ? T(r.name) : warNameL(r.name);
       r.groups.forEach(function (g, gi) {
         if (gi) { var vs = document.createElement("span"); vs.className = "ch-wars-vs"; vs.textContent = T("vs"); sides.appendChild(vs); }
         var grp = document.createElement("span");
@@ -9519,7 +9575,7 @@
           var b = document.createElement("button");
           b.type = "button";
           b.className = "ch-wars-flag";
-          var pn = (PL.pol && PL.pol[p.name]) || p.name;
+          var pn = sideNameL(p.name);
           b.setAttribute("aria-label", p.ll ? T("{name}, go to its capital", { name: pn }) : pn);
           if (!p.flag && !p.side && !(p.sprite >= 0)) b.classList.add("is-chip");
           if (!p.ll) b.classList.add("is-nowhere");
