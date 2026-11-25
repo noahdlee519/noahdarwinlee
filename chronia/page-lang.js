@@ -32,12 +32,24 @@
     return out;
   };
   if (lang === "en") return;
-  document.documentElement.lang = lang === "zh" ? "zh-Hans" : lang;
+  var tag = lang === "zh" ? "zh-Hans" : lang;
+  // A page kept in English (data-english-only on its body: "binding" for the privacy policy and the terms, "reference"
+  // for Sources and method) keeps lang="en" for its text, marks what is translated with the reader's language, and says
+  // under its heading, in that language, that the rest is in English.
+  var englishOnly = function () { return document.body && document.body.getAttribute("data-english-only"); };
   var here = (document.currentScript && document.currentScript.getAttribute("src") || "").replace(/[^\/]*$/, "");
   document.write('<script src="' + here + "lang/pages-" + lang + '.js"><\/script>');
   var apply = function () {
     var D = window.CH_PAGE;
-    window.CH_PAGE_UNITS(document.body).forEach(function (el) { var t = D[norm(el.innerHTML)]; if (t) el.innerHTML = t; });
+    var only = englishOnly();
+    if (!only) document.documentElement.lang = tag;
+    window.CH_PAGE_UNITS(document.body).forEach(function (el) { var t = D[norm(el.innerHTML)]; if (t) { el.innerHTML = t; if (only) el.lang = tag; } });
+    var h1 = document.querySelector("main h1"), note = only && D["(note) " + only];
+    if (h1 && note) {
+      var p = document.createElement("p");
+      p.className = "cp-lang-note"; p.lang = tag; p.textContent = note;
+      h1.parentNode.insertBefore(p, h1.nextSibling);
+    }
     document.querySelectorAll("[aria-label], img[alt]").forEach(function (el) {
       ["aria-label", "alt"].forEach(function (k) { var v = el.getAttribute(k), t = v && D[norm(v)]; if (t) el.setAttribute(k, t); });
     });
