@@ -8043,9 +8043,10 @@
     // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
     var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
     if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
-    // While AdSense is off, the atlas's own banners for Premium go only in the gaps beside the date, one each side, and only
-    // where both fit; on narrower screens there are none (Noah, 25 November 2026). They are the atlas's own, so they are
-    // placed afresh at every layout, at the size the gaps allow.
+    // While AdSense is off, the atlas's own banners for Premium go in the gaps beside the date, one each side, where both
+    // fit; where they don't, one goes at the top as Google's would: on a phone between the title and the menu, elsewhere
+    // under the top row (Noah, 25 November 2026; that morning narrower screens had none). They are the atlas's own, so
+    // they are placed afresh at every layout, at the size the room allows.
     var houseOnly = !ADS_ON && !adsDemo;
     if (houseOnly) {
       adsMode = "";
@@ -8110,7 +8111,7 @@
     }
     L.hidden = R.hidden = true;
     wide(false);
-    if (houseOnly) { B.hidden = true; return 0; }
+    if (houseOnly) delete B.dataset.unfilled;
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
     // On a phone the banner runs from the left of the title to the right of the buttons, so it is as wide as the top row on
     // every phone; elsewhere it is 320 wide, centred. It goes wherever Google leaves it unfilled (Noah, 19 November 2026). The room for it is kept from the first layout, and the banner itself shows only once the page has
