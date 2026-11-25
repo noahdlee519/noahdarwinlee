@@ -4892,6 +4892,24 @@
     applyView();
     nudge();
   }
+  // An arrow key moves the map a tenth of the screen's shorter side that way, eased over a fifth of a second (at once
+  // with reduced motion); held down, the key's repeats carry it on.
+  var panRaf = 0;
+  function panKey(key) {
+    var px = Math.min(W, H) / 10, dx = key === "ArrowLeft" ? px : key === "ArrowRight" ? -px : 0, dy = key === "ArrowUp" ? px : key === "ArrowDown" ? -px : 0;
+    stopInertia();
+    cancelAnimationFrame(flyRaf);
+    cancelAnimationFrame(panRaf);
+    if (reduceMotion) { panBy(dx, dy); return; }
+    var t0 = performance.now(), done = 0, DUR = 180;
+    var step = function (t) {
+      var k = Math.min(1, (t - t0) / DUR), e = 1 - Math.pow(1 - k, 3);
+      panBy(dx * (e - done), dy * (e - done));
+      done = e;
+      if (k < 1) panRaf = requestAnimationFrame(step);
+    };
+    panRaf = requestAnimationFrame(step);
+  }
   // Turns the globe by `deg` degrees clockwise about the centre of the screen.
   function rollBy(deg) {
     if (flat || !deg) return;
@@ -5993,12 +6011,11 @@
   $("track").addEventListener("pointercancel", endSwipe);
   range.addEventListener("keydown", function (e) {
     if (e.altKey || e.metaKey || e.ctrlKey) return;
+    // The arrow keys move the map here too, as everywhere on the page (since 25 November 2026; before, they moved the date,
+    // and the slider keeps the focus after a drag). The number keys move the date.
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
-      stopPlay();
-      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1, vertical = e.key === "ArrowUp" || e.key === "ArrowDown";
-      // Up and down go by the year here too, as everywhere else on the page: with the slider focused (after a drag) they went by the month from 1648.
-      if (vertical) { if (!e.shiftKey) stepYear(dir); } else if (e.shiftKey) stepMap(dir); else stepUnit(dir);
+      panKey(e.key);
     } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
@@ -9900,10 +9917,11 @@
       return;
     }
     if (typing || exporting || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
-    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(-1); else stepUnit(-1); }
-    else if (e.key === "ArrowUp" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(1); }
-    else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
+    // The arrow keys move the map a little that way (Noah, 25 November 2026); until then they moved the date, which the
+    // number keys do now. 4 and 7 go to the change before and the next (before, Shift ← and →).
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); panKey(e.key); }
+    else if (!e.shiftKey && (e.code === "Digit4" || e.code === "Numpad4")) { e.preventDefault(); stopPlay(); stepMap(-1); }
+    else if (!e.shiftKey && (e.code === "Digit7" || e.code === "Numpad7")) { e.preventDefault(); stopPlay(); stepMap(1); }
     else if (e.key === "D" && e.shiftKey) openDev();
     // The number keys move the date as the keys beside it do: 1, 2, 3 back a year, a month, a day; 8, 9, 0 forward a day,
     // a month, a year (Noah, 25 November 2026). The top row's digits or the keypad's, without Shift.
