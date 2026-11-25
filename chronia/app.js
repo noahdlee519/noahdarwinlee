@@ -4778,14 +4778,15 @@
     divCardKey = key;
     var name = !card.hidden && layers.subdivisions ? divisionAt(divClick, selected) : null;
     var country = ($("card-name") || {}).textContent || "";
-    var text = name ? (country && country !== name ? T("You clicked on {name} within {country}.", { name: name, country: country }) : T("You clicked on {name}.", { name: name })) : "";
+    var nameL = name ? divNameL(divAtReg, name) : "";
+    var text = name ? (country && country !== nameL ? T("You clicked on {name} within {country}.", { name: nameL, country: country }) : T("You clicked on {name}.", { name: nameL })) : "";
     var shown = text + "|" + (name ? askYear() + "|" + selected : "");
     if (shown === divShown) return;
     divShown = shown;
     el.textContent = text;
     el.hidden = !text;
     srcDivision(name ? divAtReg : null);
-    divNote(name);
+    divNote(name, nameL);
   }
   function loadingDots(el, live) {
     var dots = 3;
@@ -4799,7 +4800,7 @@
     return tick;
   }
   var divNoteAsk = 0, divNoteTimer = 0;
-  function divNote(name) {
+  function divNote(name, nameL) {
     var box = $("card-divnote"), out = $("divnote-text"), by = $("divnote-by"), ask = ++divNoteAsk;
     clearTimeout(divNoteTimer);
     by.textContent = "";
@@ -4829,7 +4830,7 @@
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-wiki-ask";
-    b.textContent = T("Write about {name} in {year}", { name: name, year: fmtYear(y) });
+    b.textContent = T("Write about {name} in {year}", { name: nameL || name, year: fmtYear(y) });
     b.addEventListener("click", function () { if (ask === divNoteAsk) show(blurbFetch(q)); });
     by.appendChild(b);
     by.hidden = false;
@@ -6722,7 +6723,7 @@
     renderCitySources(c, f, y, f.name);
     loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
-      label: f.name, when: fmtYear(y), click: click
+      label: placeNameL(f.name, f.name === c.modern ? c.qid : null), when: fmtYear(y), click: click
     }, [c.lon, c.lat]);
   }
   function renderCard() {
@@ -6739,7 +6740,9 @@
     var when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDay(dayOfTime(now)) : datedNow ? fmtYear(Math.round(now)) : current ? T("the map of {year}", { year: fmtYear(current.year) }) : fmtNow(now);
     var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : datedNow ? yearOf(now) : current ? current.year : Math.round(now);
     $("card-kind").textContent = T(e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State");
-    $("card-name").textContent = e[0];
+    // In the reader's language, as the map labels it (Noah, 25 November 2026: the card said "Papal States" in Italian).
+    var nameL = (PL.pol && PL.pol[e[0]]) || e[0];
+    $("card-name").textContent = nameL;
     var facts = $("card-facts"), factsAt = ++factsAsk;
     facts.textContent = "";
     // One fact a line, as "Label: value".
@@ -6807,7 +6810,7 @@
         neighbours: neighbourNames(selected),
         year: y
       },
-      label: e[0], when: fmtYear(y), click: click
+      label: nameL, when: fmtYear(y), click: click
     });
     if (flagLine) {
       var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : byDay ? dayYear(dayOfTime(now)) : whenYear + 0.5, job = wikiCache.get(title);
@@ -6816,7 +6819,7 @@
         if (!f || factsAt !== factsAsk) return;
         if (f.flag) {
           var im = document.createElement("img");
-          im.className = "ch-flag"; im.alt = T("Flag of {name}", { name: e[0] }); im.src = f.flag;
+          im.className = "ch-flag"; im.alt = T("Flag of {name}", { name: nameL }); im.src = f.flag;
           flagLine.appendChild(im); flagLine.hidden = false;
         }
         if (f.langs.length) {
