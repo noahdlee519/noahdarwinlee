@@ -1580,7 +1580,7 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_EDGE_PX = 7, ISLAND_EDGE = 0.3, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
   var canOff = typeof OffscreenCanvas === "function";
   var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
   var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
@@ -1615,22 +1615,12 @@
     c.lineJoin = "round"; c.lineCap = "round";
     return c;
   }
-  // An island too small for the full band but big enough to show an edge (Corsica or Mallorca seen across the
-  // Mediterranean) gets a band of its own, narrower in step with its size, so it keeps a coloured border and a lighter
-  // inside like the mainland; until 24 November 2026 every island under BAND_ISLAND bands was tinted all over. Only the
-  // smallest, under ISLAND_EDGE_PX, are still tinted all over.
+  // Every island gets the mainland's band, at the mainland's width (24 November 2026): until then an island under
+  // BAND_ISLAND bands across was tinted all over instead, so Corsica or Crete, seen across the Mediterranean, read as solid
+  // colour with no border, and for a few hours that day such islands got a narrower band of their own.
   function paintCoastMask(list, landPath, n, m, line, res) {
-    var k = resetLayer(maskCanvas, res), kp = kmPx(), i;
-    k.beginPath(); traceCoast(k, list, n); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
-    for (i = n; i < m; i++) {
-      var p = list[i], px = p.km * kp;
-      if (px < ISLAND_EDGE_PX) break;
-      if (!inView(p)) continue;
-      k.beginPath(); traceArcs(k, p.coast); k.lineWidth = Math.min(line, Math.max(1.5, px * ISLAND_EDGE)); k.stroke();
-    }
-    k.beginPath();
-    for (; i < m; i++) traceFeature(k, list[i]);
-    k.fillStyle = "rgba(0,0,0," + ISLAND_TINT + ")"; k.fill();
+    var k = resetLayer(maskCanvas, res);
+    k.beginPath(); traceCoast(k, list, m); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
     k.globalCompositeOperation = "destination-in"; k.fillStyle = "#000"; k.fill(landPath);
     k.globalCompositeOperation = "source-over";
   }
@@ -9346,11 +9336,31 @@
     snap.polys.forEach(function (p, i) {
       if (!p || p.people || p.claims || !p.label) return;
       var s = m.get(p.id);
-      if (!s) { s = { id: p.id, km2: 0, big: -1, ll: null, ruler: -1 }; m.set(p.id, s); }
+      if (!s) { s = { id: p.id, km2: 0, big: -1, ll: null, ruler: -1, status: 0, cap: null, rows: [] }; m.set(p.id, s); }
       s.km2 += p.label[5];
-      if (p.label[5] > s.big) { s.big = p.label[5]; s.ll = [p.label[0], p.label[1]]; s.ruler = p.ruler >= 0 && p.ruler !== p.id ? p.ruler : -1; }
+      s.rows.push(p.row);
+      if (p.label[5] > s.big) { s.big = p.label[5]; s.ll = [p.label[0], p.label[1]]; s.ruler = p.ruler >= 0 && p.ruler !== p.id ? p.ruler : -1; s.status = p.status || 0; s.cap = p.cap || null; }
     });
     return m;
+  }
+  // The rows each state's land (every piece, the ones too small for a name too), each people's land, or each piece of
+  // disputed land is drawn from, to tell whether it changed.
+  function pieceRows(snap, kind) {
+    var m = new Map();
+    snap.polys.forEach(function (p) {
+      if (!p || p.row == null || (kind === "people" ? !p.people : kind === "claims" ? !p.claims : p.people || p.claims)) return;
+      var s = m.get(p.id);
+      if (!s) { s = { id: p.id, km2: 0, ll: p.label ? [p.label[0], p.label[1]] : null, rows: [] }; m.set(p.id, s); }
+      s.rows.push(p.row);
+      if (p.label) s.km2 += p.label[5];
+    });
+    return m;
+  }
+  function sameRows(a, b) {
+    if (a.length !== b.length) return false;
+    var x = a.slice().sort(), y = b.slice().sort();
+    for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+    return true;
   }
   function holderAt(snap, ll) {
     for (var i = 0; i < snap.polys.length; i++) {
@@ -9364,8 +9374,14 @@
     }
     return -1;
   }
-  function changeLines(before, after) {
-    var A = polityTotals(before), B = polityTotals(after), out = [], used = new Set(), gained = new Set(), gone = [], added = [];
+  // What changed from one map to the next, as lines for the Changes panel. Since 24 November 2026 it also names the
+  // smaller changes that used to leave only "The borders shift a little on this date": a colony becoming a protectorate
+  // and the like, a capital that moves, a small territory that grows or shrinks by a fifth or more (Hong Kong in 1898),
+  // and, when nothing larger changes, the states whose borders move by less than the threshold or are redrawn with no
+  // change of area, and the peoples whose land changes. Rows are compared only when both maps come from the same file,
+  // since rows are numbered per file.
+  function changeLines(before, after, tb, ta) {
+    var A = polityTotals(before), B = polityTotals(after), out = [], used = new Set(), gained = new Set(), gone = [], added = [], told = new Set();
     var big = function (x, y) { return y.km2 - x.km2; };
     A.forEach(function (s, id) { if (!B.has(id)) gone.push(s); });
     B.forEach(function (s, id) { if (!A.has(id)) added.push(s); });
@@ -9383,17 +9399,47 @@
       if (g.to >= 0 && B.has(g.to)) { out.push({ kind: "joined", g: g, a: B.get(g.to) }); gained.add(g.to); }
       else out.push({ kind: "ended", g: g });
     });
-    var moved = [];
+    var moved = [], slight = [], sameFile = before.topo && after.topo && before.topo.lo === after.topo.lo;
+    var dayA = tb == null ? null : dayOfTime(tb), dayB = ta == null ? null : dayOfTime(ta);
+    out.forEach(function (l) { [l.a, l.g].forEach(function (x) { if (x) told.add(x.id); }); });
     B.forEach(function (s, id) {
       var p = A.get(id);
       if (!p) return;
-      var who = function (r) { return B.get(r) || A.get(r) || { id: r, ll: null, km2: 0 }; };
-      if (p.ruler !== s.ruler) out.push(s.ruler >= 0 ? { kind: "under", a: s, r: who(s.ruler) } : { kind: "free", a: s, r: who(p.ruler) });
-      var d = s.km2 - p.km2;
-      if (!gained.has(id) && Math.abs(d) >= Math.max(1500, 0.02 * p.km2)) moved.push({ s: s, d: Math.abs(d) });
+      var who = function (r) { return B.get(r) || A.get(r) || { id: r, ll: null, km2: 0 }; }, said = false;
+      if (p.ruler !== s.ruler) { out.push(s.ruler >= 0 ? { kind: "under", a: s, r: who(s.ruler) } : { kind: "free", a: s, r: who(p.ruler) }); said = true; }
+      else if (s.ruler >= 0 && s.status !== p.status && s.status > 0 && s.status < DISPUTED) { out.push({ kind: "status", a: s, r: who(s.ruler), st: s.status }); said = true; }
+      if (p.cap && s.cap && dayA != null && dayB != null) {
+        var ca = capitalAt(p.cap, dayA), cb = capitalAt(s.cap, dayB);
+        if (ca[0] && cb[0] && ca[0] !== cb[0] && Math.hypot(ca[1] - cb[1], ca[2] - cb[2]) > 0.1) { out.push({ kind: "capital", a: s, x: ca, y: cb }); said = true; }
+      }
+      var d = s.km2 - p.km2, ad = Math.abs(d);
+      if (gained.has(id)) return;
+      if ((ad >= 1500 && ad >= 0.02 * p.km2) || (ad >= 10 && ad >= 0.2 * p.km2)) moved.push({ s: s, d: ad });
+      else if (!said && !told.has(id) && ad >= 1) slight.push({ s: s, d: ad });
     });
     moved.sort(function (x, y) { return y.d - x.d; });
     if (moved.length) out.push({ kind: "moved", list: moved.map(function (m) { return m.s; }) });
+    if (out.length) return out;
+    if (sameFile) {
+      var RA = pieceRows(before, "state"), RB = pieceRows(after, "state"), inSlight = new Set(slight.map(function (m) { return m.s.id; }));
+      RB.forEach(function (s, id) {
+        var p = RA.get(id);
+        if (p && !inSlight.has(id) && !told.has(id) && !sameRows(p.rows, s.rows)) slight.push({ s: B.get(id) || s, d: 0 });
+      });
+    }
+    slight.sort(function (x, y) { return y.d - x.d || y.s.km2 - x.s.km2; });
+    if (slight.length) out.push({ kind: "slight", list: slight.map(function (m) { return m.s; }) });
+    if (sameFile) {
+      var CA = new Set(), disputed = new Map(), PA = pieceRows(before, "people"), PB = pieceRows(after, "people"), lands = [];
+      before.polys.forEach(function (p) { if (p && p.claims) CA.add(p.row); });
+      after.polys.forEach(function (p) {
+        if (p && p.claims && !CA.has(p.row)) p.claims.forEach(function (c) { if (!disputed.has(c)) disputed.set(c, B.get(c) || A.get(c) || { id: c, ll: null, km2: 0 }); });
+      });
+      if (disputed.size) out.push({ kind: "disputed", list: Array.from(disputed.values()) });
+      PB.forEach(function (s, id) { var p = PA.get(id); if (p && !sameRows(p.rows, s.rows)) lands.push(s); });
+      lands.sort(function (x, y) { return y.km2 - x.km2; });
+      if (lands.length) out.push({ kind: "lands", list: lands });
+    }
     return out;
   }
   function changeName(s, here) {
@@ -9416,6 +9462,8 @@
     var n = polityName(s.id) || "";
     return THE_FIRST.test(n) || THE_LAST.test(n) ? [first ? "The " : "the ", changeName(s, here)] : [changeName(s, here)];
   }
+  var STATUS_A = ["", "a colony", "a protectorate", "a mandate", "an occupied territory", "a dependency"];
+  var STATUS_BECOMES = ["", "{a} becomes a colony of {b}.", "{a} becomes a protectorate of {b}.", "{a} becomes a mandate of {b}.", "{a} becomes an occupied territory of {b}.", "{a} becomes a dependency of {b}."];
   function changeLine(parts, cls) {
     var p = document.createElement("p");
     p.className = "ch-changes-line" + (cls ? " " + cls : "");
@@ -9436,7 +9484,7 @@
     tpl.split(/(\{\w+\})/).forEach(function (part) { var m = /^\{(\w+)\}$/.exec(part); if (!m) { if (part) out.push(part); } else out = out.concat(vals[m[1]]); });
     return out;
   }
-  function renderChanges(p, lines, events, seam) {
+  function renderChanges(p, lines, events, seam, still) {
     changesList.textContent = "";
     events.forEach(function (e) {
       var parts = [e[1].replace(/\.?$/, ".")];
@@ -9464,6 +9512,11 @@
           : l.kind === "ended" ? tplParts(T("{a} leaves the map."), { a: nm(l.g, false) })
           : l.kind === "under" ? tplParts(T("{a} comes under {b}."), { a: nm(l.a, true), b: nm(l.r, true) })
           : l.kind === "free" ? tplParts(T("{a} is no longer under {b}."), { a: nm(l.a, true), b: nm(l.r, false) })
+          : l.kind === "status" ? tplParts(T(STATUS_BECOMES[l.st]), { a: nm(l.a, true), b: nm(l.r, true) })
+          : l.kind === "capital" ? tplParts(T("The capital of {a} moves from {x} to {y}."), { a: nm(l.a, true), x: [capitalNameL(l.x)], y: [capitalNameL(l.y)] })
+          : l.kind === "slight" ? tplParts(T("The borders of {list} shift slightly."), { list: lst(l.list, true) })
+          : l.kind === "lands" ? tplParts(T("The lands of {list} change."), { list: lst(l.list, true) })
+          : l.kind === "disputed" ? tplParts(T("Land becomes disputed between {list}."), { list: lst(l.list, true) })
           : tplParts(T(lines.length > 1 ? "Borders also move for {list}." : "Borders move for {list}."), { list: lst(l.list, true) });
       }
       else if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
@@ -9474,10 +9527,15 @@
       else if (l.kind === "under") row = named(l.a, true, true).concat(verb(l.a, " comes", " come") + " under ", named(l.r, true, false), ".");
       else if (l.kind === "free") row = named(l.a, true, true).concat(verb(l.a, " is", " are") + " no longer under ", named(l.r, false, false), ".");
       else if (l.kind === "moved") row = [lines.length > 1 ? "Borders also move for " : "Borders move for "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      else if (l.kind === "status") row = named(l.a, true, true).concat(verb(l.a, " becomes ", " become ") + STATUS_A[l.st] + " of ", named(l.r, true, false), ".");
+      else if (l.kind === "capital") row = ["The capital of "].concat(named(l.a, true, false), " moves from " + capitalNameL(l.x) + " to " + capitalNameL(l.y) + ".");
+      else if (l.kind === "slight") row = ["The borders of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " shift slightly.");
+      else if (l.kind === "lands") row = ["The lands of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " change.");
+      else if (l.kind === "disputed") row = ["Land becomes disputed between "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
       changesList.appendChild(changeLine(row));
     });
     if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine([T(lines.length - CHANGES_MAX === 1 ? "And {n} more change." : "And {n} more changes.", { n: lines.length - CHANGES_MAX })], "ch-changes-none"));
-    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine([T("The borders shift a little on this date, with no state gained or lost.")], "ch-changes-none"));
+    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine([T(still ? "Nothing on the map changes on this date." : "The borders shift a little on this date, with no state gained or lost.")], "ch-changes-none"));
     scheduleRender();
   }
   function showChanges(k, key) {
@@ -9493,7 +9551,7 @@
     Promise.all([seam ? null : snapFor(tb), seam ? null : snapFor(p), changesEventsLoad()]).then(function (r) {
       if (changesKey !== key) return;
       var events = day ? r[2].filter(function (e) { return e[0] === day; }) : [];
-      renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1]) : [], events, seam);
+      renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1], tb, p) : [], events, seam, !!(r[0] && r[1] && r[0].key === r[1].key));
     }).catch(function (e) {
       console.warn("changes", e);
       if (changesKey !== key) return;
