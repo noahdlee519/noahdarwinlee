@@ -8047,9 +8047,9 @@
   // The first call that finds advertisements wanted settles where they go, by the room at that moment: a banner
   // AdSense has filled can't be made another size, so a later, narrower window only hides the ones that no longer fit.
   function adsRowSlot(top, head, ctls) {
-    // A little more room on the menu's side than the title's, so the banner never reads as touching the menu (Noah,
-    // 20 November 2026).
-    var x0 = top.offsetLeft + head.offsetLeft + head.offsetWidth + 5, x1 = top.offsetLeft + ctls.offsetLeft - 10;
+    // The same 8 px from the title's plate and the menu's, the margin the plates keep from the screen's edges (Noah,
+    // 25 November 2026: 5 and 10 px read as uneven).
+    var x0 = top.offsetLeft + head.offsetLeft + head.offsetWidth + 8, x1 = top.offsetLeft + ctls.offsetLeft - 8;
     return [x0, top.offsetTop + head.offsetTop + Math.round((head.offsetHeight - AD_H - 2) / 2), Math.max(0, Math.round(x1 - x0) - 2)];
   }
   function adsPlace() {

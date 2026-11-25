@@ -3547,14 +3547,14 @@ select.ch-save-input {
     margin-top: 0;
   }
 
+  /* The date spans the bar, from the timeline's left end to the speed keys' right end (Noah, 25 November 2026). */
   .ch-time > .ch-year-box {
     grid-area: date;
     display: flex;
     align-items: center;
-    justify-self: center;
+    justify-self: stretch;
     box-sizing: border-box;
     width: 100%;
-    max-width: 340px;
     min-width: 0;
     height: 44px;
     padding: 0;
