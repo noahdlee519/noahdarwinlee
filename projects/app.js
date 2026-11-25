@@ -784,8 +784,11 @@
     var m = state.map;
     if (!m || !m.world) return;
     if (isPhone()) {
-      var sheetTop = window.innerHeight - $(".rail").getBoundingClientRect().height - (parseFloat(els.panel.style.getPropertyValue("--sheet-h")) || 0) + sheetY[state.sheet];
-      m.insets = { left: 0, top: 64, right: 0, bottom: Math.max(0, window.innerHeight - sheetTop) };
+      // (Measured against the map's own height, the page's, not the window's: on an iPhone the two differ as the
+      // browser's bars come and go.)
+      var H = m.size().h;
+      var sheetTop = H - $(".rail").getBoundingClientRect().height - (parseFloat(els.panel.style.getPropertyValue("--sheet-h")) || 0) + sheetY[state.sheet];
+      m.insets = { left: 0, top: 64, right: 0, bottom: clamp(H - sheetTop, 0, Math.max(0, H - 64)) };
     } else {
       m.insets = { left: RAIL + (state.panelOpen ? PANEL : 0), top: 0, right: 0, bottom: STRIP };
     }
@@ -1224,6 +1227,10 @@
       resizeRaf = requestAnimationFrame(function () { state.map.resized(); layout(); });
     });
     phoneQuery.addEventListener("change", layout);
+    // Back from the background, or from the browser's back and forward cache: measure the screen again.
+    var wake = function () { if (document.visibilityState === "visible") requestAnimationFrame(function () { state.map.resized(); layout(); }); };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("pageshow", wake);
     return loadWorld(pickWorld(state.worlds));
   }).then(function () {
     var askedProject = params.get("project"), askedProvince = params.get("province");

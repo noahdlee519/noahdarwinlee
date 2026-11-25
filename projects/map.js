@@ -144,15 +144,33 @@
   }
 
   MapView.prototype.size = function () { return this._size; };
+  // (A size of nothing, as a phone can report for a moment when a tab comes back from the background, is ignored:
+  // it made the scale nothing, and the next flight's logarithm of it left the map blank, its scale reading NaN.
+  // Noah, 25 November 2026.)
   MapView.prototype.resized = function () {
-    this._size = { w: this.host.clientWidth, h: this.host.clientHeight };
-    if (this.world) this.set({ s: this.s, tx: this.tx, ty: this.ty });
+    var w = this.host.clientWidth, h = this.host.clientHeight;
+    if (!(w > 0 && h > 0)) return;
+    this._size = { w: w, h: h };
+    if (this.world) this.set(this.sane() ? { s: this.s, tx: this.tx, ty: this.ty } : this.home());
+  };
+  // Whether the view is a real one; and the whole world, to fall back on when it is not.
+  MapView.prototype.sane = function (v) {
+    v = v || this;
+    return isFinite(v.s) && v.s > 0 && isFinite(v.tx) && isFinite(v.ty);
+  };
+  MapView.prototype.home = function () {
+    return this.viewFor({ x: 0, y: 0, w: this.world.width, h: this.world.height }, { pad: 1 });
   };
 
   // The rectangle of the map the visitor can see, past the panel and the footer.
+  // (Never less than a sliver: with a phone's sheet raised all the way, the map above it measured a few pixels, or
+  // below nothing where the browser counts the window a little taller than the page, and a view fitted to it came
+  // out at a negative scale, whose logarithm left the map blank. Noah, 25 November 2026.)
   MapView.prototype.rect = function () {
     var z = this.size(), i = this.insets;
-    return { l: i.left, t: i.top, r: z.w - i.right, b: z.h - i.bottom, w: z.w - i.left - i.right, h: z.h - i.top - i.bottom };
+    var w = Math.max(z.w - i.left - i.right, Math.min(z.w, 120)), h = Math.max(z.h - i.top - i.bottom, Math.min(z.h, 120));
+    var t = Math.min(i.top, z.h - h), l = Math.min(i.left, z.w - w);
+    return { l: l, t: t, r: l + w, b: t + h, w: w, h: h };
   };
   // The scale at which the whole world fits the screen (zoom 1), and the scale limits.
   MapView.prototype.fit = function () {
@@ -181,6 +199,7 @@
   };
   MapView.prototype.set = function (v, fast) {
     var c = this.clampView(v);
+    if (!this.sane(c)) { c = this.clampView(this.home()); if (!this.sane(c)) return; }
     this.s = c.s; this.tx = c.tx; this.ty = c.ty;
     this.render(false, fast);
   };
@@ -213,6 +232,8 @@
     opts = opts || {};
     this.stop();
     to = this.clampView(to);
+    if (!this.sane(to)) return;
+    if (!this.sane()) { this.set(to); if (opts.done) opts.done(); return; }
     var self = this, r = this.rect();
     var from = { s: this.s, tx: this.tx, ty: this.ty };
     var cx = r.l + r.w / 2, cy = r.t + r.h / 2;
@@ -235,7 +256,7 @@
       var s = Math.exp(ls0 + (ls1 - ls0) * k) * (1 - dip * Math.sin(Math.PI * k));
       var px = p0[0] + (p1[0] - p0[0]) * k, py = p0[1] + (p1[1] - p0[1]) * k;
       var v = { s: s, tx: cx - px * s, ty: cy - py * s };
-      if (t >= 1) v = to;
+      if (t >= 1 || !self.sane(v)) v = to;
       self.s = v.s; self.tx = v.tx; self.ty = v.ty;
       var c = self.clampView(v);
       self.s = c.s; self.tx = c.tx; self.ty = c.ty;
@@ -733,6 +754,8 @@
   };
   MapView.prototype._draw = function () {
     if (!this.world) return;
+    // (Never draw a view that is not a real one: go back to the whole world instead.)
+    if (!this.sane()) { var h0 = this.clampView(this.home()); if (!this.sane(h0)) return; this.s = h0.s; this.tx = h0.tx; this.ty = h0.ty; }
     clearTimeout(this.idle);
     var s = this.s, z = this.zoom(), M = this.M, W = this.world.width, span = W * s;
     // At rest, the view's offset is brought back to the copy of the world under the middle of the map.
@@ -1026,6 +1049,8 @@
       if (pinch && pointers.size >= 2) {
         var pts = Array.from(pointers.values()).slice(0, 2), m = mid(pts);
         var d = Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]);
+        // (Two fingers that land together, or nearly, measure the pinch from where they have parted to.)
+        if (pinch.d < 24) { if (d >= 24) { pinch.d = d; pinch.m = m; pinch.s = self.s; pinch.tx = self.tx; pinch.ty = self.ty; } return; }
         var s = pinch.s * d / pinch.d;
         var wx = (pinch.m[0] - pinch.tx) / pinch.s, wy = (pinch.m[1] - pinch.ty) / pinch.s;
         var cs = clamp(s, self.limits().min, self.limits().max);
