@@ -19,10 +19,27 @@ const jwt = (claims) => "h." + Buffer.from(JSON.stringify(claims)).toString("bas
 const TOKEN = jwt({ sub: "11111111-2222-3333-4444-555555555555", email: "reader@example.com", exp: Math.floor(Date.now() / 1000) + 36000, user_metadata: { full_name: "Ada Reader" } });
 
 // The stand-in for chronia-comments. `s.answer(body)` may return [status, json] to take over an action, `s.delay(body)`
-// a wait in ms, and `s.fail` a status for every call (or "abort").
+// a wait in ms, and `s.fail` a status for every call (or "abort"). With `s.tree` false it is the function before
+// replies and upvotes: no votes or replies in a list, and 400 action to thread, vote, and mine.
 function standIn() {
-  const s = { calls: [], comments: [], me: null, role: null, fail: null, answer: null, delay: null, nextId: 5000, left: 100, nameWhy: {}, pictureError: null };
-  s.add = (c) => { const x = Object.assign({ id: s.nextId++, username: "Herodotus", avatar: null, polity: "France", at: "1900", text: "A comment.", mine: false }, c); s.comments.push(x); return x; };
+  const s = { calls: [], comments: [], me: null, role: null, fail: null, answer: null, delay: null, nextId: 5000, left: 100, nameWhy: {}, pictureError: null, tree: true, voted: new Set() };
+  s.add = (c) => {
+    const x = Object.assign({ id: s.nextId++, username: "Herodotus", avatar: null, polity: "France", at: "1900", text: "A comment.", mine: false, parent: null, votes: 0, state: "live" }, c);
+    const p = x.parent !== null ? s.comments.find((y) => y.id === x.parent) : null;
+    x.root = p ? p.root || p.id : null;
+    x.depth = p ? Math.min(8, p.depth + 1) : 0;
+    if (p && p.depth === 8) { x.parent = p.parent; x.replying_to = p.username; }
+    s.comments.push(x);
+    return x;
+  };
+  // A comment as the function sends it, for the reader (signed in or not).
+  const out = (c, auth) => {
+    const base = { id: c.id, username: c.username, avatar: c.avatar, polity: c.polity, at: c.at, text: c.text, mine: !!auth && !!c.mine };
+    if (!s.tree) return base;
+    if (c.deleted) return Object.assign(base, { username: null, avatar: null, text: "", mine: false, parent: c.parent, root: c.root, depth: c.depth, votes: 0, voted: false, replying_to: null, deleted: true });
+    return Object.assign(base, { parent: c.parent, root: c.root, depth: c.depth, votes: c.votes, voted: !!auth && s.voted.has(c.id), replying_to: c.replying_to || null });
+  };
+  const replies = (c) => s.comments.filter((r) => r.root === c.id && !r.deleted).length;
   s.handle = async (route) => {
     const req = route.request();
     if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type", "Access-Control-Allow-Methods": "POST" } });
@@ -35,11 +52,21 @@ function standIn() {
     if (s.answer) { const r = s.answer(body); if (r) return reply(r[0], r[1]); }
     const a = body.action;
     if (a === "list") {
-      let l = s.comments.filter((c) => c.any || (body.names || []).includes(c.polity));
-      l = l.slice().sort((x, y) => y.id - x.id);
+      if (!["new", "near", "top", undefined].includes(body.sort) || (body.sort === "top" && !s.tree)) return reply(400, { error: "field", field: "sort" });
+      let l = s.comments.filter((c) => (c.any || (body.names || []).includes(c.polity)) && c.parent === null && (!c.deleted || replies(c)));
+      l = l.slice().sort((x, y) => (body.sort === "top" ? y.votes - x.votes : 0) || y.id - x.id);
       const off = body.offset || 0;
-      return reply(200, { comments: l.slice(off, off + 20).map((c) => Object.assign({}, c, { any: undefined, mine: !!auth && c.mine })), more: l.length > off + 20, total: l.length });
+      return reply(200, { comments: l.slice(off, off + 20).map((c) => Object.assign(out(c, auth), s.tree ? { replies: replies(c) } : {})), more: l.length > off + 20, total: l.length });
     }
+    if (a === "thread") {
+      if (!s.tree) return reply(400, { error: "action" });
+      const c = s.comments.find((x) => x.id === body.id);
+      if (!c) return reply(404, { error: "gone" });
+      const root = c.root || c.id;
+      const l = s.comments.filter((x) => x.id === root || x.root === root).sort((x, y) => x.id - y.id);
+      return reply(200, { comments: l.map((x) => out(x, auth)), more: false, root });
+    }
+    if (!s.tree && (a === "vote" || a === "mine")) return reply(400, { error: "action" });
     if (!auth) return reply(401, { error: "signin" });
     if (a === "me") return reply(200, { profile: s.me, left: s.left, cap: 100, role: s.role });
     if (a === "name") { const w = s.nameWhy[String(body.username).toLowerCase()]; return reply(200, w ? { ok: false, why: w } : { ok: true }); }
@@ -55,11 +82,30 @@ function standIn() {
     }
     if (a === "post") {
       if (!s.me) return reply(403, { error: "profile" });
-      const c = s.add({ username: s.me.username, avatar: s.me.avatar, polity: body.name, at: body.at, text: body.text, mine: true });
+      if (body.parent !== undefined && !s.comments.some((x) => x.id === body.parent && !x.deleted)) return reply(404, { error: "gone" });
+      const c = s.add({ username: s.me.username, avatar: s.me.avatar, polity: body.name, at: body.at, text: body.text, mine: true, parent: body.parent === undefined ? null : body.parent });
       s.left--;
-      return reply(200, { comment: c, left: s.left });
+      return reply(200, { comment: out(c, auth), left: s.left });
     }
-    if (a === "delete") { s.comments = s.comments.filter((c) => c.id !== body.id); return reply(200, { ok: true }); }
+    if (a === "vote") {
+      const c = s.comments.find((x) => x.id === body.id && !x.deleted);
+      if (!c) return reply(404, { error: "gone" });
+      if (c.mine) return reply(403, { error: "own" });
+      if (body.on && !s.voted.has(c.id)) { s.voted.add(c.id); c.votes++; }
+      if (!body.on && s.voted.has(c.id)) { s.voted.delete(c.id); c.votes--; }
+      return reply(200, { votes: c.votes, voted: s.voted.has(c.id) });
+    }
+    if (a === "mine") {
+      const l = s.comments.filter((c) => c.mine && !c.deleted).sort((x, y) => y.id - x.id), off = body.offset || 0;
+      return reply(200, { comments: l.slice(off, off + 20).map((c) => Object.assign(out(c, auth), { mine: true, state: c.state, replying_to: c.replying_to || (c.parent !== null ? (s.comments.find((p) => p.id === c.parent) || {}).username || null : null) })), more: l.length > off + 20 });
+    }
+    if (a === "delete") {
+      const c = s.comments.find((x) => x.id === body.id);
+      const kids = c && s.comments.some((x) => x.parent === c.id);
+      if (c && kids && s.tree) { Object.assign(c, { deleted: true, mine: false }); return reply(200, { ok: true, soft: true }); }
+      s.comments = s.comments.filter((x) => x.id !== body.id);
+      return reply(200, s.tree ? { ok: true, soft: false } : { ok: true });
+    }
     if (a === "flag") return reply(200, { ok: true });
     return reply(400, { error: "action" });
   };
@@ -114,7 +160,8 @@ const view = (page) => page.evaluate(() => {
       date: (li.querySelector(".ch-cm-date") || {}).textContent || "",
       where: (li.querySelector(".ch-cm-where") || {}).textContent || "",
       text: (li.querySelector(".ch-cm-text") || {}).textContent || "",
-      acts: [...li.querySelectorAll(".ch-cm-acts button")].map((b) => b.textContent),
+      acts: [...li.querySelectorAll(".ch-cm-acts > button")].map((b) => b.textContent),
+      tree: [...li.querySelectorAll(".ch-cm-tree > *")].map((b) => b.textContent),
       imgs: li.querySelectorAll("img").length, bold: li.querySelectorAll("b, i").length
     })),
     count: (cm.querySelector(".ch-cm-count") || {}).textContent || "",
@@ -206,7 +253,7 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   say(v.shown && v.rule, "the section and its rule show", JSON.stringify(v).slice(0, 200));
   say(v.afterSources, "the rule and the section follow Sources", "");
   say(v.head === "Comments on France", "the heading names the tag", v.head);
-  say(v.sort.length === 2 && v.sort[0] === "Newest*" && /^Nearest to /.test(v.sort[1]) && /\|/.test(v.sortText) && !/·/.test(v.sortText), "the sort reads Newest | Nearest to the date, Newest chosen", JSON.stringify(v.sort) + " " + v.sortText);
+  say(v.sort.length === 3 && v.sort[0] === "Newest*" && v.sort[1] === "Top" && /^Nearest to /.test(v.sort[2]) && /^Newest \| Top \| Nearest to /.test(v.sortText) && !/·/.test(v.sortText), "the sort reads Newest | Top | Nearest to the date, Newest chosen", JSON.stringify(v.sort) + " " + v.sortText);
   say(v.items.length === 4, "four comments are listed", v.items.length);
   const it = v.items.find((i) => i.user === "Herodotus") || {};
   say(it.pic === PIC, "a comment with a picture shows it", it.pic);
@@ -226,13 +273,13 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   say(v.signin === "Sign in to comment" && !v.box, "signed out, the composer offers sign-in", v.signin);
   await shot(page, "card-signed-out-desktop", "#card");
   // Sorting by the date asks again, with the map's date.
-  await page.click(".ch-cm-sort button:nth-of-type(2)");
+  await page.click(".ch-cm-sort button:last-of-type");
   await settle(page, 600);
   const near = lists(s).slice(-1)[0] || {};
   const mapAt = await page.evaluate(() => window.__chronia.date() || String(Math.round(window.__chronia.year())));
   say(near.sort === "near" && near.at === mapAt, "Nearest asks again with sort near and the map's date", JSON.stringify(near) + " vs " + mapAt);
   v = await view(page);
-  say(v.sort[1].endsWith("*") && !v.sort[0].endsWith("*"), "and is shown as chosen", JSON.stringify(v.sort));
+  say(v.sort[2].endsWith("*") && !v.sort[0].endsWith("*"), "and is shown as chosen", JSON.stringify(v.sort));
   // Sign in to comment opens the Account panel.
   await page.click(".ch-cm-signin");
   await settle(page, 300);
@@ -321,9 +368,9 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   await settle(page, 1000);
   s.answer = (b) => (b.action === "list" && b.sort === "near" ? [200, { comments: [{ id: 1, username: "Near", avatar: null, polity: TAGGED, at: "1900", text: "near" }], more: false, total: 1 }] : null);
   s.delay = (b) => (b.action === "list" && b.sort !== "near" ? 1500 : 0);
-  await page.click(".ch-cm-sort button:nth-of-type(2)");
+  await page.click(".ch-cm-sort button:last-of-type");
   await page.click(".ch-cm-sort button:nth-of-type(1)");
-  await page.click(".ch-cm-sort button:nth-of-type(2)");
+  await page.click(".ch-cm-sort button:last-of-type");
   await settle(page, 2200);
   v = await view(page);
   say(v.items.length === 1 && v.items[0].user === "Near", "a sort chosen later supersedes an earlier request", JSON.stringify(v.items.map((i) => i.user)));
@@ -644,12 +691,12 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   const name = await page.evaluate((fr) => window.__chronia.polities().find((n) => fr.includes(n)), france[1]);
   await card(page, name);
   await settle(page, 1200);
-  await page.click(".ch-cm-sort button:nth-of-type(2)");
+  await page.click(".ch-cm-sort button:last-of-type");
   await settle(page, 600);
   const at0 = await page.evaluate(() => (document.querySelector(".ch-cm-line") || {}).textContent);
   await page.click("#month-up");
   await settle(page, 900);
-  const st = await page.evaluate(() => ({ open: window.__chronia.card().open, url: location.search, sort: document.querySelectorAll(".ch-cm-sort button")[1].textContent, line: (document.querySelector(".ch-cm-line") || {}).textContent }));
+  const st = await page.evaluate(() => ({ open: window.__chronia.card().open, url: location.search, sort: [...document.querySelectorAll(".ch-cm-sort button")].pop().textContent, line: (document.querySelector(".ch-cm-line") || {}).textContent }));
   const m = /y=([^&]+)/.exec(st.url), at = m ? decodeURIComponent(m[1]) : "";
   const last = lists(s).slice(-1)[0] || {};
   say(st.open && /^1400-\d\d$/.test(at), "M5: a month stepped in a war's year keeps the card open (" + at + ")", JSON.stringify(st));
@@ -717,6 +764,312 @@ let TAGGED = "", UNTAGGED = "", OTHERS = [];
   say(!!last.avatar && last.age === undefined, "picture_error: another picture is then sent as an edit", JSON.stringify(Object.assign({}, last, { avatar: (last.avatar || "").slice(0, 8) })));
   say(!page.errors.length, "no page errors", page.errors.join("; "));
   await page.close();
+}
+
+// ---------------------------------------------------------------- replies, upvotes, and one's own comments
+
+// The thread window as drawn: its box, each comment's id, depth of nesting, left edge, and text, and its parts.
+const threadView = (page) => page.evaluate(() => {
+  const box = document.getElementById("thread");
+  if (!box || box.hidden) return { open: false };
+  const r = box.getBoundingClientRect(), body = document.getElementById("thread-body");
+  const items = [...box.querySelectorAll(".ch-th-item")].map((li) => {
+    let depth = 0, p = li.parentElement;
+    while (p && p !== box) { if (p.classList.contains("ch-th-kids")) depth++; p = p.parentElement; }
+    const c = li.querySelector(":scope > .ch-th-c");
+    return {
+      id: +li.getAttribute("data-id"), depth, left: Math.round(c.getBoundingClientRect().left), mark: li.classList.contains("is-mark"),
+      user: (c.querySelector(".ch-cm-user") || {}).textContent || "", text: (c.querySelector(".ch-cm-text") || {}).textContent || "",
+      gone: (c.querySelector(".ch-cm-gone") || {}).textContent || "", where: (c.querySelector(".ch-cm-where") || {}).textContent || "",
+      tree: [...c.querySelectorAll(".ch-cm-tree > *")].map((b) => b.textContent), acts: [...c.querySelectorAll(".ch-cm-acts > button")].map((b) => b.textContent),
+      composer: !!li.querySelector(":scope > .ch-th-compose")
+    };
+  });
+  return {
+    open: true, left: r.left, right: r.right, width: r.width, top: r.top, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
+    name: document.getElementById("thread-name").textContent, items,
+    overflow: body.scrollWidth > body.clientWidth + 1 || [...box.querySelectorAll("*")].some((e) => e.getBoundingClientRect().right > r.right + 0.5 && e.getClientRects().length),
+    focus: document.activeElement && (document.activeElement.id || document.activeElement.className),
+    msg: [...box.querySelectorAll(".ch-th-msg, .ch-th-compose .ch-cm-msg")].map((m) => m.textContent).join(" ")
+  };
+});
+// A chain of replies down to depth 8 under a top comment, then one more to the comment at depth 8.
+function chain(s, polity) {
+  const names = ["Herodotus", "Thucydides", "Sappho", "Xenophon", "Plutarch", "Polybius", "Livy", "Tacitus", "Suetonius"];
+  const top = s.add({ username: names[0], avatar: PIC, polity, at: "1900-04-14", text: "The Exposition opens; who will go?", votes: 4 });
+  let prev = top;
+  for (let i = 1; i <= 8; i++) prev = s.add({ username: names[i], avatar: i % 3 ? null : PIC, polity, at: "1900", parent: prev.id, votes: 9 - i, text: i === 4 ? "A longer reply at the fourth level, to see how a line of text wraps when it has been stepped in four times already." : "Reply at level " + i + "." });
+  const floor = s.add({ username: "Ammianus", polity, at: "1900", parent: prev.id, text: "Past the eighth level, beside it." });
+  return { top, deepest: prev, floor };
+}
+
+// 15. Upvotes and Top on the card, signed in with a profile; signed out, an upvote asks for sign-in.
+{
+  const s = standIn();
+  s.me = { username: "Strabo", avatar: null, blocked: false };
+  const a = s.add({ username: "Herodotus", polity: TAGGED, at: "1900", text: "Few votes.", votes: 1 });
+  const b = s.add({ username: "Thucydides", polity: TAGGED, at: "1900", text: "Many votes.", votes: 7 });
+  s.add({ username: "Strabo", polity: TAGGED, at: "1900", text: "My own.", votes: 2, mine: true });
+  s.add({ username: "Sappho", polity: TAGGED, at: "1900", text: "A reply.", parent: a.id });
+  s.add({ username: "Livy", polity: TAGGED, at: "1900", text: "Another reply.", parent: a.id });
+  const gone = s.add({ username: "Gone", polity: TAGGED, at: "1900", text: "Deleted since." });
+  s.add({ username: "Polybius", polity: TAGGED, at: "1900", text: "A reply kept.", parent: gone.id });
+  gone.deleted = true;
+  s.add({ username: "Lonely", polity: TAGGED, at: "1900", text: "Deleted, with nothing under it.", deleted: true });
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1500);
+  let v = await view(page);
+  const few = v.items.find((i) => i.text === "Few votes.") || {}, own = v.items.find((i) => i.text === "My own.") || {};
+  say(v.items.length === 4, "the card lists top comments only", JSON.stringify(v.items.map((i) => i.text)));
+  const ph = await page.evaluate((id) => { const li = document.querySelector('.ch-cm-item[data-id="' + id + '"]'); return li && { gone: (li.querySelector(".ch-cm-gone") || {}).textContent, user: !!li.querySelector(".ch-cm-user"), tree: [...li.querySelectorAll(".ch-cm-tree > *")].map((b) => b.textContent), acts: li.querySelectorAll(".ch-cm-acts > button").length }; }, gone.id);
+  say(ph && ph.gone === "Deleted comment" && !ph.user && JSON.stringify(ph.tree) === '["1 reply"]' && !ph.acts, "a deleted comment with a reply is listed as Deleted comment, with only its count of replies", JSON.stringify(ph));
+  say(few.tree && few.tree[0] === "△ 1" && few.tree[1] === "Reply" && few.tree[2] === "2 replies", "a comment's line reads its upvotes | Reply | its replies", JSON.stringify(few.tree));
+  say(await page.evaluate(() => /^△ \d+ \| Reply \| 2 replies \| Report$/.test(document.querySelector(".ch-cm-item:last-child .ch-cm-acts").textContent)), "with | between, and Report after", await page.evaluate(() => document.querySelector(".ch-cm-item:last-child .ch-cm-acts").textContent));
+  say(own.tree && own.tree[0] === "△ 2" && !(await page.$(".ch-cm-item:has(.ch-cm-text:text-is('My own.')) .ch-cm-vote")), "one's own comment shows its count, with no button", JSON.stringify(own.tree));
+  await page.click(".ch-cm-item:has(.ch-cm-text:text-is('Few votes.')) .ch-cm-vote");
+  await settle(page, 500);
+  let vt = s.calls.filter((c) => c.action === "vote").slice(-1)[0] || {};
+  let btn = await page.evaluate(() => { const b = document.querySelector(".ch-cm-item:last-child .ch-cm-vote"); return [b.textContent, b.getAttribute("aria-pressed"), b.getAttribute("aria-label")]; });
+  say(vt.id === a.id && vt.on === true, "pressing the upvote sends vote with on: true", JSON.stringify(vt));
+  say(btn[0] === "▲ 2" && btn[1] === "true" && /2/.test(btn[2]), "and fills it, with the new count", JSON.stringify(btn));
+  await page.click(".ch-cm-item:has(.ch-cm-text:text-is('Few votes.')) .ch-cm-vote");
+  await settle(page, 500);
+  vt = s.calls.filter((c) => c.action === "vote").slice(-1)[0] || {};
+  btn = await page.evaluate(() => { const b = document.querySelector(".ch-cm-item:last-child .ch-cm-vote"); return [b.textContent, b.getAttribute("aria-pressed")]; });
+  say(vt.on === false && btn[0] === "△ 1" && btn[1] === "false", "pressed again, the vote is taken back", JSON.stringify([vt, btn]));
+  s.answer = (q) => (q.action === "vote" ? [429, { error: "limit", cap: 500 }] : null);
+  await page.click(".ch-cm-item:has(.ch-cm-text:text-is('Few votes.')) .ch-cm-vote");
+  await settle(page, 500);
+  s.answer = null;
+  say(/most upvotes for one day/.test(await page.evaluate(() => document.querySelector(".ch-cm-said").textContent)), "past the day's cap, it says so", await page.evaluate(() => document.querySelector(".ch-cm-said").textContent));
+  await page.click(".ch-cm-sort button:text-is('Top')");
+  await settle(page, 600);
+  const top = lists(s).slice(-1)[0] || {};
+  v = await view(page);
+  say(top.sort === "top" && v.items[0].text === "Many votes." && v.sort[1] === "Top*", "Top asks for sort top and lists by upvotes", JSON.stringify([top.sort, v.items.map((i) => i.text), v.sort]));
+  await shot(page, "card-upvotes-top", "#card");
+  if (shots) await page.screenshot({ path: shots + "/card-upvotes-top-desktop.png" });
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+  // Signed out, an upvote opens the Account panel to sign in, and sends nothing.
+  const out = await open(s);
+  await setDate(out, "1900-01-01");
+  await card(out, TAGGED);
+  await settle(out, 1500);
+  const n0 = s.calls.filter((c) => c.action === "vote").length;
+  await out.click(".ch-cm-item:has(.ch-cm-text:text-is('Many votes.')) .ch-cm-vote");
+  await settle(out, 400);
+  say(await out.evaluate(() => !document.getElementById("account").hidden) && s.calls.filter((c) => c.action === "vote").length === n0, "signed out, an upvote opens the Account panel and sends nothing", "");
+  await out.close();
+  // Without a username, an upvote asks for one in the Account panel.
+  const s2 = standIn();
+  s2.add({ username: "Herodotus", polity: TAGGED, at: "1900", text: "Vote for me." });
+  const noName = await open(s2, { signedIn: true });
+  await setDate(noName, "1900-01-01");
+  await card(noName, TAGGED);
+  await settle(noName, 1500);
+  await noName.click(".ch-cm-vote");
+  await settle(noName, 500);
+  say(await noName.evaluate(() => !document.getElementById("account").hidden && !!document.querySelector("#account .ch-pf-name")) && !s2.calls.some((c) => c.action === "vote"), "without a username, an upvote opens the username form", "");
+  await noName.close();
+}
+
+// 16. The thread window: nested to depth 8 and beside it, Reply's composer, a reply posted, Esc, and a soft delete.
+{
+  const s = standIn();
+  s.me = { username: "Strabo", avatar: PIC, blocked: false };
+  const { top, deepest, floor } = chain(s, TAGGED);
+  const mineReply = s.add({ username: "Strabo", avatar: PIC, polity: TAGGED, at: "1900", parent: top.id, text: "My own reply, with one under it.", mine: true });
+  s.add({ username: "Pausanias", polity: TAGGED, at: "1900", parent: mineReply.id, text: "An answer to Strabo." });
+  const page = await open(s, { signedIn: true, width: 1280, height: 800 });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1500);
+  let v = await view(page);
+  say(v.items.length === 1 && v.items[0].tree.includes("11 replies"), "the card shows the top comment with 11 replies", JSON.stringify(v.items.map((i) => i.tree)));
+  await page.click(".ch-cm-replies");
+  await settle(page, 900);
+  let t = await threadView(page);
+  const asked = s.calls.filter((c) => c.action === "thread").slice(-1)[0] || {};
+  say(asked.id === top.id, "the count of replies asks for the thread", JSON.stringify(asked));
+  say(t.open && Math.abs(t.width - 760) < 1 && t.right <= t.vw - 9, "the window is 760 wide on a desktop, at the right", JSON.stringify([t.width, t.right, t.vw]));
+  say(t.name === "France", "its heading names the card's tag", t.name);
+  say(t.items.length === 12 && t.items[0].id === top.id && t.items[0].depth === 0, "it holds the top comment and every reply", t.items.length);
+  const deep = t.items.find((i) => i.id === deepest.id) || {}, fl = t.items.find((i) => i.id === floor.id) || {}, root = t.items[0];
+  say(deep.depth === 8 && deep.left - root.left === 8 * 18, "a reply at depth 8 is nested eight levels in, 18 pixels each", JSON.stringify([deep.depth, deep.left - root.left]));
+  say(fl.depth === 8 && fl.left === deep.left && /Replying to @Suetonius/.test(fl.where), "a reply to it sits beside it, Replying to @its writer", JSON.stringify(fl));
+  say(t.items.every((i, k) => k === 0 || t.items[k - 1].id < i.id || i.depth <= t.items[k - 1].depth), "replies under each parent are oldest first", JSON.stringify(t.items.map((i) => [i.id, i.depth])));
+  say(!t.overflow, "nothing in it is wider than the window", "");
+  say(t.focus === "thread-close", "it takes focus, on its close button", t.focus);
+  if (shots) await page.screenshot({ path: shots + "/thread-desktop-1280.png" });
+  // Reply opens a composer right under that comment, and posts with the parent and its name.
+  await page.click('.ch-th-item[data-id="' + deepest.id + '"] > .ch-th-c .ch-cm-reply');
+  await settle(page, 300);
+  t = await threadView(page);
+  say((t.items.find((i) => i.id === deepest.id) || {}).composer && t.items.filter((i) => i.composer).length === 1, "Reply opens one composer, under that comment", JSON.stringify(t.items.filter((i) => i.composer).map((i) => i.id)));
+  say(await page.evaluate(() => document.activeElement && document.activeElement.tagName === "TEXTAREA"), "with the box focused", "");
+  const line = await page.evaluate(() => document.querySelector(".ch-th-compose .ch-cm-line").textContent);
+  say(/Replying to @Suetonius/.test(line) && /1900/.test(line), "its line says whom and what date the reply carries", line);
+  if (shots) await page.screenshot({ path: shots + "/thread-desktop-composer.png" });
+  await page.fill(".ch-th-compose .ch-cm-box", "A reply from the deepest level.");
+  await page.click(".ch-th-compose .ch-cm-post");
+  await settle(page, 700);
+  const post = s.calls.filter((c) => c.action === "post").slice(-1)[0] || {};
+  t = await threadView(page);
+  const mark = t.items.find((i) => i.mark) || {};
+  say(post.parent === deepest.id && post.name === TAGGED && post.text === "A reply from the deepest level.", "the reply is posted with its parent and the thread's name", JSON.stringify(post));
+  say(mark.text === "A reply from the deepest level." && mark.depth === 8 && !t.items.some((i) => i.composer), "it appears beside, at depth 8, marked, and the composer closes", JSON.stringify(mark));
+  v = await view(page);
+  say(v.items[0].tree.includes("12 replies"), "the card's count of replies goes up", JSON.stringify(v.items[0].tree));
+  // Deleting one's own reply that has a reply under it leaves "Deleted comment" in its place.
+  page.once("dialog", (d) => d.accept());
+  await page.click('.ch-th-item[data-id="' + mineReply.id + '"] > .ch-th-c .ch-cm-acts > button:text-is("Delete")');
+  await settle(page, 600);
+  t = await threadView(page);
+  const del = t.items.find((i) => i.id === mineReply.id) || {};
+  say(del.gone === "Deleted comment" && !del.user && !del.text && t.items.some((i) => i.text === "An answer to Strabo."), "a deleted reply with a reply under it shows as Deleted comment, the reply kept", JSON.stringify(del));
+  // Esc closes the window, and the card stays open, with focus back where it was.
+  await page.keyboard.press("Escape");
+  await settle(page, 300);
+  t = await threadView(page);
+  const after = await page.evaluate(() => ({ card: window.__chronia.card().open, focus: document.activeElement && document.activeElement.className }));
+  say(!t.open && after.card, "Esc closes the window and leaves the card open", JSON.stringify(after));
+  say(/ch-cm-replies/.test(after.focus), "and focus returns to what opened it", after.focus);
+  // The close button too; Reply on the card opens the window with the composer under the top comment.
+  await page.click(".ch-cm-item .ch-cm-reply");
+  await settle(page, 800);
+  t = await threadView(page);
+  say(t.open && t.items[0].composer, "Reply on the card opens the window with a composer under the comment", JSON.stringify(t.items.filter((i) => i.composer).map((i) => i.id)));
+  await page.click("#thread-close");
+  await settle(page, 200);
+  say(!(await threadView(page)).open, "the close button closes it", "");
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+  // A phone: the window is the screen's width, 12 pixels a level, and nothing overflows.
+  const phone = await open(s, { signedIn: true, width: 390, height: 844 });
+  await setDate(phone, "1900-01-01");
+  await card(phone, TAGGED);
+  await settle(phone, 1500);
+  await phone.evaluate(() => document.querySelector(".ch-cm-replies").click());
+  await settle(phone, 900);
+  t = await threadView(phone);
+  const pd = t.items.find((i) => i.id === deepest.id) || {};
+  say(t.open && t.left === 0 && Math.abs(t.right - 390) < 1, "on a phone the window is as wide as the screen", JSON.stringify([t.left, t.right]));
+  say(pd.left - t.items[0].left === 8 * 12, "and steps in 12 pixels a level", pd.left - t.items[0].left);
+  say(!t.overflow, "with nothing wider than the screen", "");
+  say(t.top > 40 && t.bottom <= t.vh, "between the top row and the foot of the screen", JSON.stringify([t.top, t.bottom, t.vh]));
+  if (shots) await phone.screenshot({ path: shots + "/thread-phone-390.png" });
+  await phone.evaluate(() => { const b = document.getElementById("thread-body"); b.scrollTop = b.scrollHeight; });
+  await settle(phone, 200);
+  await phone.evaluate((id) => document.querySelector('.ch-th-item[data-id="' + id + '"] .ch-cm-reply').click(), deepest.id);
+  await settle(phone, 400);
+  t = await threadView(phone);
+  say(!t.overflow, "on a phone, the composer at depth 8 fits too", "");
+  if (shots) await phone.screenshot({ path: shots + "/thread-phone-390-composer.png" });
+  say(!phone.errors.length, "no page errors", phone.errors.join("; "));
+  await phone.close();
+}
+
+// 17. The function as it was before replies: no upvotes, Reply, Top, or thread window, and no errors.
+{
+  const s = standIn();
+  s.tree = false;
+  s.me = { username: "Strabo", avatar: null, blocked: false };
+  s.add({ username: "Herodotus", polity: TAGGED, at: "1900", text: "From the old function." });
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await card(page, TAGGED);
+  await settle(page, 1500);
+  const v = await view(page);
+  say(v.items.length === 1 && v.items[0].tree.length === 0 && JSON.stringify(v.items[0].acts) === '["Report"]', "without votes in the list, no upvotes or Reply are offered", JSON.stringify(v.items));
+  say(v.sort.length === 2 && !v.sort.includes("Top"), "and no Top", JSON.stringify(v.sort));
+  await page.click("#account-btn");
+  await settle(page, 800);
+  const acct = await page.evaluate(() => { const m = document.querySelector("#account .ch-mine"); return { mine: !!m && !m.hidden && !m.closest("[hidden]"), user: document.getElementById("account-username").textContent }; });
+  say(!acct.mine && acct.user === "Strabo", "the Account panel drops Your comments when mine is unknown to the function", JSON.stringify(acct));
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+  // A list with votes from a function that then refuses thread: the window closes, and Reply goes.
+  const s2 = standIn();
+  s2.add({ username: "Sappho", polity: TAGGED, at: "1900", text: "Fresh." });
+  s2.answer = (q) => (q.action === "thread" ? [400, { error: "action" }] : null);
+  const p2 = await open(s2);
+  await setDate(p2, "1900-01-01");
+  await card(p2, TAGGED);
+  await settle(p2, 1500);
+  await p2.click(".ch-cm-reply");
+  await settle(p2, 600);
+  const w = await view(p2);
+  say(!(await threadView(p2)).open && w.items[0].tree.length === 0, "a 400 action to thread closes the window and takes Reply and upvotes away", JSON.stringify(w.items[0]));
+  say(!p2.errors.length, "no page errors", p2.errors.join("; "));
+  await p2.close();
+}
+
+// 18. Your comments in the Account panel: newest first, the country, date, whom a reply answers, the text cut to
+// three lines, the upvotes, hidden ones said; pressing a reply moves the map, opens the card and the thread, marked.
+{
+  const s = standIn();
+  s.me = { username: "Strabo", avatar: PIC, blocked: false };
+  const top = s.add({ username: "Herodotus", polity: "Kingdom of France", at: "1789-07-14", text: "The Bastille fell this morning." });
+  s.add({ username: "Strabo", polity: TAGGED, at: "1900", text: "A comment of mine, and a long one: " + "the Exposition draws the world to Paris, and every pavilion has a story to tell. ".repeat(4), votes: 3, mine: true });
+  s.add({ username: "Strabo", polity: TAGGED, at: "1900-05-01", text: "One hidden by reports.", mine: true, state: "hidden" });
+  const myReply = s.add({ username: "Strabo", polity: "Kingdom of France", at: "1789-07-15", parent: top.id, text: "And the next day, the keys went to Washington.", votes: 5, mine: true });
+  for (let i = 0; i < 21; i++) s.add({ username: "Strabo", polity: TAGGED, at: "1901", text: "Older " + i, mine: true, id: 100 + i });
+  const page = await open(s, { signedIn: true });
+  await setDate(page, "1900-01-01");
+  await page.click("#account-btn");
+  await settle(page, 1500);
+  const rows = () => page.evaluate(() => [...document.querySelectorAll("#account .ch-mine-item")].map((li) => ({
+    id: +li.getAttribute("data-id"), where: li.querySelector(".ch-mine-where").textContent, to: (li.querySelector(".ch-mine-to") || {}).textContent || "",
+    text: li.querySelector(".ch-mine-text").textContent, foot: li.querySelector(".ch-mine-foot").textContent, hidden: (li.querySelector(".ch-mine-hidden") || {}).textContent || "",
+    lines: Math.round(li.querySelector(".ch-mine-text").getBoundingClientRect().height / parseFloat(getComputedStyle(li.querySelector(".ch-mine-text")).lineHeight)),
+    acts: [...li.querySelectorAll(".ch-mine-acts button")].map((b) => b.textContent)
+  })));
+  let r = await rows();
+  const head = await page.evaluate(() => (document.querySelector("#account .ch-mine-head") || {}).textContent);
+  say(head === "Your comments" && s.calls.some((c) => c.action === "mine"), "the Account panel asks for and heads Your comments", head);
+  say(r.length === 20 && r[0].id === myReply.id, "twenty, newest first", JSON.stringify(r.map((x) => x.id)));
+  say(/Kingdom of France \| July 15, 1789/.test(r[0].where) && r[0].to === "Reply to @Herodotus" && r[0].foot === "△ 5", "a reply shows its country | date, Reply to @name, and its upvotes", JSON.stringify(r[0]));
+  const long = r.find((x) => /long one/.test(x.text)) || {};
+  say(long.lines === 3, "a long comment is cut to three lines", long.lines);
+  say((r.find((x) => x.text === "One hidden by reports.") || {}).hidden === "Hidden from others", "a hidden one says Hidden from others", JSON.stringify(r.find((x) => x.text === "One hidden by reports.")));
+  say(r.every((x) => JSON.stringify(x.acts) === '["Delete"]'), "each has Delete", JSON.stringify(r.map((x) => x.acts)));
+  if (shots) await (await page.$("#account")).screenshot({ path: shots + "/account-your-comments.png" });
+  await page.click("#account .ch-mine-more");
+  await settle(page, 600);
+  r = await rows();
+  say(r.length === 24 && (s.calls.filter((c) => c.action === "mine").slice(-1)[0] || {}).offset === 20, "More asks from the 21st", r.length);
+  page.once("dialog", (d) => d.accept());
+  await page.click('#account .ch-mine-item[data-id="' + r[23].id + '"] .ch-mine-acts button');
+  await settle(page, 500);
+  r = await rows();
+  say(r.length === 23 && s.calls.some((c) => c.action === "delete"), "Delete takes it away", r.length);
+  await page.click('#account .ch-mine-item[data-id="' + myReply.id + '"] .ch-mine-open');
+  await settle(page, 1800);
+  await page.waitForFunction(() => window.__chronia.ready(), null, { timeout: 60000 });
+  await settle(page, 800);
+  const st = await page.evaluate(() => ({ acct: !document.getElementById("account").hidden, t: window.__chronia.year(), want: window.__chronia.timeOf("1789-07-15"), card: window.__chronia.card() }));
+  const t = await threadView(page);
+  const m = t.items && t.items.find((i) => i.mark);
+  say(!st.acct, "pressing one closes the Account panel", "");
+  say(Math.abs(st.t - st.want) < 1e-6 && st.card.open && st.card.name === "Kingdom of France", "moves the map to its date and opens its country's card", JSON.stringify(st).slice(0, 200));
+  say(t.open && m && m.id === myReply.id, "and for a reply opens the thread window with it marked", JSON.stringify(t.items && t.items.map((i) => [i.id, i.mark])));
+  say(m && await page.evaluate((id) => { const li = document.querySelector('.ch-th-item[data-id="' + id + '"]'), b = document.getElementById("thread-body").getBoundingClientRect(), r = li.getBoundingClientRect(); return document.activeElement === li && r.top >= b.top && r.bottom <= b.bottom; }, myReply.id), "scrolled into view and focused", "");
+  if (shots) await page.screenshot({ path: shots + "/account-opened-reply.png" });
+  say(!page.errors.length, "no page errors", page.errors.join("; "));
+  await page.close();
+  // On a phone, the panel's list fits.
+  const phone = await open(s, { signedIn: true, width: 390, height: 844 });
+  await setDate(phone, "1900-01-01");
+  await phone.evaluate(() => document.getElementById("account-btn").click());
+  await settle(phone, 1500);
+  const fit = await phone.evaluate(() => { const a = document.getElementById("account").getBoundingClientRect(); return { right: a.right, left: a.left, vw: innerWidth, wide: [...document.querySelectorAll("#account .ch-mine *")].filter((e) => e.getBoundingClientRect().right > a.right + 0.5).length }; });
+  say(fit.left >= 0 && fit.right <= fit.vw && !fit.wide, "on a phone, Your comments fits the panel", JSON.stringify(fit));
+  if (shots) await (await phone.$("#account")).screenshot({ path: shots + "/account-your-comments-phone.png" });
+  say(!phone.errors.length, "no page errors", phone.errors.join("; "));
+  await phone.close();
 }
 
 // Screenshots of the card with comments at desktop width, signed in.

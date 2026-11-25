@@ -346,6 +346,18 @@
       </section>
     </section>
 
+    <!-- A comment's thread, every reply nested under it, in a window wider than the card (comments.js fills it). -->
+    <section class="ch-thread" id="thread" role="dialog" aria-labelledby="thread-name" hidden>
+      <div class="ch-thread-top">
+        <button type="button" class="ch-card-close" id="thread-close" aria-label="Close">
+          <svg class="ch-ico" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l16 16M24 8 8 24" /></svg>
+        </button>
+        <p class="ch-card-kind">Thread</p>
+        <h3 class="ch-thread-name" id="thread-name"></h3>
+      </div>
+      <div class="ch-thread-body" id="thread-body"></div>
+    </section>
+
     <section class="ch-key" id="key" aria-label="Key to the map">
       <button type="button" class="ch-key-btn" id="key-btn" aria-expanded="false" aria-controls="key-list">
         <span>Key</span>

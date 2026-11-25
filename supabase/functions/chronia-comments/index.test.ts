@@ -279,13 +279,15 @@ test("an unknown action is 400 action", async () => {
 // ---------------------------------------------------------------- list
 
 const ROW = { id: 7, username: "Thucydides", avatar: "b1.webp", polity: "Athens", at: "-0431", text: "The war begins", mine: false };
+// What every comment adds for its place in a thread and its upvotes (a top comment with none, from the old shape).
+const TREE = { parent: null, root: null, depth: 0, votes: 0, voted: false, replying_to: null };
 
 test("list needs no sign-in and asks for a public thread", async () => {
   world.rpc.chronia_thread = () => ({ comments: [ROW, { ...ROW, id: 8, avatar: null }], more: true, total: 25 });
   const got = await ask({ action: "list", names: ["Athens", "Delian League"] });
   eq(got.status, 200, "status");
   eq(got.body, {
-    comments: [{ ...ROW, avatar: URL_OF("b1.webp") }, { ...ROW, id: 8, avatar: null }],
+    comments: [{ ...ROW, avatar: URL_OF("b1.webp"), ...TREE }, { ...ROW, id: 8, avatar: null, ...TREE }],
     more: true,
     total: 25,
   }, "answer");
@@ -298,7 +300,7 @@ test("list needs no sign-in and asks for a public thread", async () => {
 test("list never passes on team fields to the public, even if the database sent them", async () => {
   world.rpc.chronia_thread = () => ({ comments: [{ ...ROW, user: BOB, flags: 2, state: "live" }], more: false, total: 1 });
   const got = await ask({ action: "list", names: ["Athens"] });
-  eq(Object.keys(got.body.comments[0]).sort(), ["at", "avatar", "id", "mine", "polity", "text", "username"], "public fields only");
+  eq(Object.keys(got.body.comments[0]).sort(), ["at", "avatar", "depth", "id", "mine", "parent", "polity", "replying_to", "root", "text", "username", "voted", "votes"], "public fields only");
   clean(got, "list", [BOB]);
 });
 
@@ -332,7 +334,7 @@ test("list for a team member asks for and passes on the team's fields", async ()
   world.rpc.chronia_thread = () => ({ comments: [{ ...ROW, user: BOB, flags: 2, state: "live" }], more: false, total: 1 });
   const got = await ask({ action: "list", names: ["Athens"] }, { as: "vera" });
   eq(world.seen("rpc", "chronia_thread")[0].body.p_team, true, "team flag");
-  eq(got.body.comments[0], { ...ROW, avatar: URL_OF("b1.webp"), flags: 2, state: "live", user: BOB }, "team fields");
+  eq(got.body.comments[0], { ...ROW, avatar: URL_OF("b1.webp"), ...TREE, flags: 2, state: "live", user: BOB }, "team fields");
   eq(got.body.role, "viewer", "role");
 });
 
@@ -467,11 +469,11 @@ test("post lands a comment and answers it, with the day's comments left", async 
   const got = await ask(POST, { as: "bob" });
   eq(got.status, 200, "status");
   eq(got.body, {
-    comment: { id: 41, username: "Thucydides", avatar: URL_OF("b1.webp"), polity: "Athens", at: "-0431", text: "The war begins.", mine: true },
+    comment: { id: 41, username: "Thucydides", avatar: URL_OF("b1.webp"), polity: "Athens", at: "-0431", text: "The war begins.", mine: true, ...TREE },
     left: 98,
   }, "answer");
   const a = world.seen("rpc", "chronia_comment_send")[0].body;
-  eq({ ...a, p_at_num: undefined }, { p_user: BOB, p_polity: "Athens", p_at: "-0431", p_body: "The war begins.", p_cap: 100, p_gap_s: 10 }, "rpc args");
+  eq({ ...a, p_at_num: undefined }, { p_user: BOB, p_polity: "Athens", p_at: "-0431", p_body: "The war begins.", p_cap: 100, p_gap_s: 10, p_parent: null }, "rpc args");
   eq(a.p_at_num, -431, "at as a number");
 });
 
@@ -561,9 +563,9 @@ test("a comment with quotes and angle brackets passes through as JSON, untouched
 // ---------------------------------------------------------------- delete
 
 test("delete erases one's own comment", async () => {
-  world.rpc.chronia_comment_delete = () => ({ ok: true });
+  world.rpc.chronia_comment_delete = () => ({ ok: true, soft: false });
   const got = await ask({ action: "delete", id: 41 }, { as: "bob" });
-  eq(got.body, { ok: true }, "answer");
+  eq(got.body, { ok: true, soft: false }, "answer");
   eq(world.seen("rpc", "chronia_comment_delete")[0].body, { p_user: BOB, p_comment: 41 }, "rpc args");
 });
 
@@ -578,7 +580,7 @@ test("delete of another's comment is 404 missing off the team, and changes nothi
 test("a reviewer's delete of another's comment marks it removed", async () => {
   world.rpc.chronia_comment_delete = () => ({ error: "missing" });
   world.rpc.chronia_comment_remove = () => ({ ok: true, comment: { id: 41, state: "removed" } });
-  eq((await ask({ action: "delete", id: 41 }, { as: "rita" })).body, { ok: true }, "answer");
+  eq((await ask({ action: "delete", id: 41 }, { as: "rita" })).body, { ok: true, soft: false }, "answer");
   eq(world.seen("rpc", "chronia_comment_remove")[0].body, { p_comment: 41 }, "removed");
   world.rpc.chronia_comment_remove = () => ({ error: "missing" });
   err(await ask({ action: "delete", id: 42 }, { as: "rita" }), 404, "missing", "not there");
@@ -1040,7 +1042,7 @@ test("queue gives the team every reported comment and picture, the blocked, and 
   const got = await ask({ action: "queue" }, { as: "vera" });
   eq(got.body, {
     role: "viewer",
-    comments: [{ id: 9, username: "Thucydides", avatar: URL_OF("b1.webp"), polity: "Athens", at: "-0431", text: "Bad", mine: false, flags: 3, state: "hidden", user: BOB, sent: "2026-11-24T10:00:00Z" }],
+    comments: [{ id: 9, username: "Thucydides", avatar: URL_OF("b1.webp"), polity: "Athens", at: "-0431", text: "Bad", mine: false, ...TREE, flags: 3, state: "hidden", user: BOB, sent: "2026-11-24T10:00:00Z" }],
     pictures: [{ username: "Thucydides", avatar: URL_OF("b1.webp"), user: BOB, flags: 3, state: "hidden" }],
     blocked: [{ username: "Procopius", user: ALICE }],
     names: ["Athens", "West Francia"],
@@ -1243,4 +1245,116 @@ test("every database call uses the secret key, never the caller's token", async 
     eq(c.headers.get("apikey"), SECRET, c.kind + ":" + c.name + " apikey");
     ok(!(c.headers.get("authorization") || "").includes(TOKENS.rita), c.kind + ":" + c.name + " without the token");
   }
+});
+
+// ---------------------------------------------------------------- replies, upvotes, and one's own comments
+
+test("list orders by Top when asked, and passes on each top comment's count of replies", async () => {
+  world.rpc.chronia_thread = () => ({ comments: [{ ...ROW, votes: 4, voted: true, replies: 3 }], more: false, total: 1 });
+  const got = await ask({ action: "list", names: ["Athens"], sort: "top" }, { as: "alice" });
+  eq(world.seen("rpc", "chronia_thread")[0].body.p_sort, "top", "sort");
+  eq(world.seen("rpc", "chronia_thread")[0].body.p_at_num, null, "no date for top");
+  eq(got.body.comments[0], { ...ROW, avatar: URL_OF("b1.webp"), ...TREE, votes: 4, voted: true, replies: 3 }, "votes and replies");
+});
+
+test("a placeholder keeps no name, picture, or text, whatever the database sent", async () => {
+  world.rpc.chronia_thread = () => ({
+    comments: [{ id: 5, username: "Leaked", avatar: "x.webp", polity: "Athens", at: "1", text: "", deleted: true, replies: 2 },
+               { id: 6, username: null, avatar: null, polity: "Athens", at: "1", text: "", deleted: true, hidden: true, replies: 1 }],
+    more: false, total: 2,
+  });
+  const got = await ask({ action: "list", names: ["Athens"] });
+  eq(got.body.comments[0].deleted, true, "deleted");
+  eq(got.body.comments[0].hidden, undefined, "deleted, not hidden");
+  eq([got.body.comments[1].deleted, got.body.comments[1].hidden], [true, true], "hidden");
+  eq([got.body.comments[0].username, got.body.comments[0].avatar, got.body.comments[1].username], [null, null, null], "no name or picture");
+});
+
+test("thread is open to all, gives the whole thread, and passes the reader for mine and voted", async () => {
+  const reply = { ...ROW, id: 8, parent: 7, root: 7, depth: 1, votes: 2, voted: true, mine: true };
+  world.rpc.chronia_thread_of = () => ({ comments: [{ ...ROW, replies: 1 }, reply], more: false, root: 7 });
+  let got = await ask({ action: "thread", id: 8 });
+  eq(got.status, 200, "status");
+  eq(world.seen("rpc", "chronia_thread_of")[0].body, { p_comment: 8, p_viewer: null, p_limit: 400 }, "rpc args, signed out");
+  eq(got.body.root, 7, "root");
+  eq(got.body.comments[1], { ...reply, avatar: URL_OF("b1.webp"), replying_to: null }, "a reply with its place");
+  got = await ask({ action: "thread", id: 8 }, { as: "alice" });
+  eq(world.seen("rpc", "chronia_thread_of")[1].body.p_viewer, ALICE, "the reader");
+  ok(!("user" in got.body.comments[0]) && !("flags" in got.body.comments[0]), "no team fields");
+  got = await ask({ action: "thread", id: 8 }, { as: "stale" });
+  eq(got.status, 200, "a stale token reads as signed out");
+});
+
+test("thread of nothing shown is 404 gone, and a bad id 400 field", async () => {
+  world.rpc.chronia_thread_of = () => ({ error: "missing" });
+  err(await ask({ action: "thread", id: 8 }), 404, "gone", "missing");
+  for (const id of [undefined, 0, -1, 1.5, "8"]) err(await ask({ action: "thread", id }), 400, "field", String(id), { field: "id" });
+});
+
+test("post with a parent sends it, and answers the reply's place", async () => {
+  posting();
+  world.rpc.chronia_comment_send = () => ({ id: 42, sent: "2026-11-25T12:00:00Z", left: 97, parent: 40, root: 7, depth: 8, replying_to: "Herodotus" });
+  const got = await ask({ ...POST, parent: 41 }, { as: "bob" });
+  eq(world.seen("rpc", "chronia_comment_send")[0].body.p_parent, 41, "parent sent");
+  eq(got.body.comment, { id: 42, username: "Thucydides", avatar: URL_OF("b1.webp"), polity: "Athens", at: "-0431", text: "The war begins.", mine: true,
+                         parent: 40, root: 7, depth: 8, votes: 0, voted: false, replying_to: "Herodotus" }, "answer");
+});
+
+test("post with a parent gone is 404 gone, under another name 400 field parent, and a bad parent 400", async () => {
+  posting();
+  world.rpc.chronia_comment_send = () => ({ error: "gone" });
+  err(await ask({ ...POST, parent: 41 }, { as: "bob" }), 404, "gone", "gone");
+  world.rpc.chronia_comment_send = () => ({ error: "field" });
+  err(await ask({ ...POST, parent: 41 }, { as: "bob" }), 400, "field", "another name", { field: "parent" });
+  const n = world.seen("rpc", "chronia_comment_send").length;
+  for (const parent of [0, -3, 2.5, "41", true]) err(await ask({ ...POST, parent }, { as: "bob" }), 400, "field", String(parent), { field: "parent" });
+  eq(world.seen("rpc", "chronia_comment_send").length, n, "nothing sent for a bad parent");
+});
+
+test("vote needs a sign-in, and answers the count and the reader's vote", async () => {
+  world.rpc.chronia_vote = (a: Json) => ({ ok: true, votes: a.p_on ? 3 : 2, voted: a.p_on });
+  err(await ask({ action: "vote", id: 7, on: true }), 401, "signin", "signed out");
+  eq((await ask({ action: "vote", id: 7, on: true }, { as: "alice" })).body, { votes: 3, voted: true }, "on");
+  eq(world.seen("rpc", "chronia_vote")[0].body, { p_user: ALICE, p_comment: 7, p_on: true, p_cap: 500 }, "rpc args");
+  eq((await ask({ action: "vote", id: 7, on: false }, { as: "alice" })).body, { votes: 2, voted: false }, "off");
+});
+
+test("vote's refusals: own, gone, the day's cap, no profile, blocked, and bad fields", async () => {
+  const cases: [string, number, Record<string, unknown>][] = [["own", 403, {}], ["gone", 404, {}], ["limit", 429, { cap: 500 }], ["profile", 403, {}], ["blocked", 403, {}]];
+  for (const [code, status, extra] of cases) {
+    world.rpc.chronia_vote = () => ({ error: code });
+    err(await ask({ action: "vote", id: 7, on: true }, { as: "alice" }), status, code, code, extra);
+  }
+  const n = world.seen("rpc", "chronia_vote").length;
+  err(await ask({ action: "vote", id: 7, on: "yes" }, { as: "alice" }), 400, "field", "on", { field: "on" });
+  err(await ask({ action: "vote", id: "7", on: true }, { as: "alice" }), 400, "field", "id", { field: "id" });
+  eq(world.seen("rpc", "chronia_vote").length, n, "nothing sent for bad fields");
+});
+
+test("mine needs a sign-in, and gives one's own comments with their state", async () => {
+  world.rpc.chronia_mine = () => ({
+    comments: [{ ...ROW, mine: true, state: "hidden", parent: 3, root: 3, depth: 1, votes: 2, replying_to: "Herodotus" },
+               { ...ROW, id: 6, mine: true, state: "live" }],
+    more: true,
+  });
+  err(await ask({ action: "mine" }), 401, "signin", "signed out");
+  const got = await ask({ action: "mine", offset: 20 }, { as: "bob" });
+  eq(world.seen("rpc", "chronia_mine")[0].body, { p_user: BOB, p_offset: 20, p_limit: 20 }, "rpc args");
+  eq(got.body.more, true, "more");
+  eq(got.body.comments[0], { ...ROW, avatar: URL_OF("b1.webp"), ...TREE, mine: true, parent: 3, root: 3, depth: 1, votes: 2, replying_to: "Herodotus", state: "hidden" }, "a hidden reply");
+  eq(got.body.comments[1].state, "live", "a live comment");
+  err(await ask({ action: "mine", offset: -1 }, { as: "bob" }), 400, "field", "offset", { field: "offset" });
+  clean(got, "mine", [BOB]);
+});
+
+test("delete of one's comment with replies says it is soft", async () => {
+  world.rpc.chronia_comment_delete = () => ({ ok: true, soft: true });
+  eq((await ask({ action: "delete", id: 41 }, { as: "bob" })).body, { ok: true, soft: true }, "soft");
+});
+
+test("queue passes on a reply's parent and root, for the dashboard's reply to #id", async () => {
+  queueing();
+  world.rpc.chronia_queue = () => ({ comments: [{ ...TEAM_ROW, parent: 4, root: 2 }], pictures: [], blocked: [], names: [] });
+  const got = await ask({ action: "queue" }, { as: "vera" });
+  eq([got.body.comments[0].parent, got.body.comments[0].root], [4, 2], "parent and root");
 });

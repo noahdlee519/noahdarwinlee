@@ -211,6 +211,7 @@ body.ch-page {
 
 .ch-frame,
 .ch-card,
+.ch-thread,
 .ch-time,
 .ch-load,
 .ch-about-tip,
@@ -238,6 +239,7 @@ body.ch-page {
 }
 
 .ch-card,
+.ch-thread,
 .ch-about-tip,
 .ch-layers,
 .ch-key,
@@ -2585,6 +2587,307 @@ select.ch-save-input {
 
 .ch-cm-msg:empty {
   display: none;
+}
+
+/* Upvotes, Reply, and the count of replies, in a line under each comment on the card and in the thread window
+   (25 November 2026). An upvote is an open triangle and its count, filled when the reader's own vote is in. */
+.ch-cm-vote {
+  padding: 0 2px 0 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.ch-cm-vote:hover,
+.ch-cm-vote[aria-pressed="true"] {
+  color: var(--ink);
+}
+
+.ch-cm-vote:disabled {
+  cursor: default;
+}
+
+.ch-cm-vote:focus-visible,
+.ch-thread .ch-linkbtn:focus-visible,
+.ch-mine .ch-linkbtn:focus-visible,
+.ch-mine-open:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-cm-votes {
+  font-variant-numeric: tabular-nums;
+}
+
+/* In the place of a comment deleted or hidden that has replies: an empty disc and "Deleted comment". */
+.ch-cm-noface {
+  box-sizing: border-box;
+  border: 1px dashed color-mix(in srgb, var(--rule) 40%, transparent);
+  border-radius: 50%;
+}
+
+.ch-cm-gone {
+  padding-top: 5px;
+  color: var(--ch-muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* The thread window: a plate as the card is, over the map and wider than it, from the top row to the timeline; its
+   name stays at the top while the thread scrolls under it. Each level of replies is a step in, with a faint rule down
+   its left, so eight levels still leave room for the text. */
+.ch-thread {
+  position: fixed;
+  z-index: 24;
+  top: calc(var(--ch-bar) + 2 * var(--ch-gap) + env(safe-area-inset-top, 0px));
+  right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--ch-time-h) + var(--ch-gap));
+  width: min(760px, calc(100vw - 2 * var(--ch-gap)));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 0;
+  color: var(--ink);
+}
+
+.ch-thread[hidden] {
+  display: none;
+}
+
+.ch-thread-top {
+  flex: none;
+  padding: 0 22px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 22%, transparent);
+}
+
+.ch-thread-name {
+  margin: 6px 40px 0 0;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.ch-thread-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 22px 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ch-thread-body p {
+  margin: 0;
+}
+
+.ch-th-list,
+.ch-th-kids {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ch-th-kids {
+  padding-left: 17px; /* with the rule, 18 pixels a level */
+  border-left: 1px solid color-mix(in srgb, var(--rule) 20%, transparent);
+}
+
+.ch-th-item:focus {
+  outline: none;
+}
+
+.ch-th-item:focus-visible > .ch-th-c {
+  outline: 1px dotted var(--ink);
+  outline-offset: 1px;
+}
+
+.ch-thread .ch-th-c {
+  border-top: 0;
+  padding: 8px 6px 6px 0;
+}
+
+/* The reply opened from the account's list, or just posted. */
+.ch-th-item.is-mark > .ch-th-c {
+  background: color-mix(in srgb, var(--ch-brass) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--ch-brass);
+  padding-left: 7px;
+}
+
+.ch-th-compose {
+  margin: 2px 0 10px 42px;
+}
+
+.ch-thread .ch-th-end {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-thread-body > .ch-cm-note:empty,
+.ch-th-msg:empty {
+  display: none;
+}
+
+.ch-thread-body > .ch-cm-msg {
+  margin: 8px 0 0 !important;
+}
+
+/* "Your comments" in the Account panel: each pressed as a whole to go to it, with Delete beside. */
+.ch-mine {
+  margin: 12px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(42, 28, 18, 0.18);
+}
+
+.ch-account .ch-mine-head {
+  margin: 0 0 2px;
+  font-family: var(--ch-sc);
+  letter-spacing: 0.02em;
+}
+
+.ch-mine-list {
+  max-height: min(46vh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+.ch-mine-item {
+  padding: 6px 0 5px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 14%, transparent);
+}
+
+.ch-mine-item:first-child {
+  border-top: 0;
+}
+
+.ch-mine-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1.38;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.ch-mine-open > span {
+  display: block;
+}
+
+.ch-mine-where,
+.ch-mine-to,
+.ch-mine-foot {
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-mine-to {
+  font-style: italic;
+}
+
+.ch-mine-open > .ch-mine-text {
+  display: -webkit-box;
+  margin: 1px 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.ch-mine-open:hover .ch-mine-text {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.ch-mine-hidden {
+  font-size: 12.5px;
+  color: var(--ch-select);
+}
+
+.ch-account .ch-mine-acts {
+  margin: 1px 0 0;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-account .ch-mine-empty,
+.ch-account .ch-mine-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ch-muted);
+}
+
+.ch-mine-note:empty {
+  display: none;
+}
+
+.ch-mine-more {
+  margin: 6px 0 0;
+}
+
+@media (max-width: 640px) {
+  /* On a phone the thread window is a sheet from the top row to the timeline, as wide as the screen. */
+  .ch-thread {
+    left: 0;
+    right: 0;
+    bottom: var(--ch-time-h);
+    width: auto;
+    padding-top: 10px;
+    border-width: 6px 0 0;
+    border-image: var(--ch-plate) 6 0 0 0;
+  }
+
+  .ch-thread-top {
+    padding: 0 16px 8px;
+  }
+
+  .ch-thread-name {
+    font-size: 21px;
+    margin-right: 44px;
+  }
+
+  .ch-thread-body {
+    padding: 4px 16px 14px;
+  }
+
+  .ch-th-kids {
+    padding-left: 11px;
+  }
+
+  .ch-thread .ch-cm-item {
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .ch-thread .ch-cm-face {
+    width: 26px;
+    height: 26px;
+  }
+
+  .ch-thread .ch-cm-initial {
+    font-size: 14px;
+  }
+
+  .ch-th-compose {
+    margin-left: 0;
+  }
 }
 
 /* The profile form, in the composer the first time and in the Account panel after. */

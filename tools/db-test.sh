@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Tests CHRONIA's comments migration on a throwaway PostgreSQL 16 cluster, never on the live project.
+# Tests CHRONIA's comments migrations on a throwaway PostgreSQL 16 cluster, never on the live project.
 #
 # Starts a cluster in a temporary directory, listening only on a socket there; makes Supabase's roles and
 # stand-ins for auth.users and storage.buckets, with Supabase's default grants to anon and authenticated
-# (so the migration's revokes are put to the test); runs the migration twice; then runs the tests. Prints
-# PASS or FAIL, and always stops and removes the cluster.
+# (so the migrations' revokes are put to the test); runs the comments migration twice, then the replies and
+# votes migration on top of it twice; then runs the tests of each (the first file's still hold after the
+# second migration). Prints PASS or FAIL, and always stops and removes the cluster.
 #
 # Usage, from the repository's root:  tools/db-test.sh
 # Exit status 0 only on a pass. As root it runs the cluster as the `postgres` user (initdb refuses root).
@@ -12,11 +13,13 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MIGRATION="$ROOT/supabase/migrations/202611240700_chronia_comments.sql"
+REPLIES="$ROOT/supabase/migrations/202611250600_chronia_replies_votes.sql"
 TESTS="$ROOT/supabase/tests/chronia_comments.sql"
+TESTS2="$ROOT/supabase/tests/chronia_replies_votes.sql"
 BIN="${PG_BIN:-/usr/lib/postgresql/16/bin}"
 PORT=54329
 
-for f in "$MIGRATION" "$TESTS" "$BIN/initdb" "$BIN/pg_ctl" "$BIN/psql"; do
+for f in "$MIGRATION" "$REPLIES" "$TESTS" "$TESTS2" "$BIN/initdb" "$BIN/pg_ctl" "$BIN/psql"; do
   [ -e "$f" ] || { echo "FAIL: missing $f"; exit 1; }
 done
 
@@ -78,7 +81,10 @@ insert into public.chronia_profiles (user_id, username, username_key, age_ok_at)
 values ('00000000-0000-0000-0000-000000000099', 'Seeded_Pre', 'seeded_pre', now());
 SQL
 sql <"$MIGRATION" || fail "the migration, second run"
+sql <"$REPLIES" || fail "the replies migration, first run"
+sql <"$REPLIES" || fail "the replies migration, second run"
 sql <"$TESTS" || fail "the tests"
+sql <"$TESTS2" || fail "the tests of replies and votes"
 
-echo "PASS: chronia_comments (migration run twice, $(grep -c '^do \$\$' "$TESTS") test blocks)"
+echo "PASS: chronia_comments (migrations run twice each, $(grep -c '^do \$\$' "$TESTS") + $(grep -c '^do \$\$' "$TESTS2") test blocks)"
 exit 0
