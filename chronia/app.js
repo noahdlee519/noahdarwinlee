@@ -9551,6 +9551,18 @@
       });
     }
     slight.sort(function (x, y) { return y.d - x.d || y.s.km2 - x.s.km2; });
+    var paired = new Set();
+    slight.forEach(function (m, i) {
+      if (paired.has(m.s.id)) return;
+      for (var j = i + 1; j < slight.length; j++) {
+        var o = slight[j];
+        if (paired.has(o.s.id) || !(bordering(after, m.s.id, o.s.id) || bordering(before, m.s.id, o.s.id))) continue;
+        paired.add(m.s.id); paired.add(o.s.id);
+        out.push({ kind: "between", a: m.s, b: o.s });
+        return;
+      }
+    });
+    slight = slight.filter(function (m) { return !paired.has(m.s.id); });
     if (slight.length) out.push({ kind: "slight", list: slight.map(function (m) { return m.s; }) });
     if (sameFile) {
       var CA = new Set(), disputed = new Map(), PA = pieceRows(before, "people"), PB = pieceRows(after, "people"), lands = [];
@@ -9672,6 +9684,7 @@
           : l.kind === "slight" ? tplParts(T("The borders of {list} shift slightly."), { list: lst(l.list, true) })
           : l.kind === "lands" ? tplParts(T("The lands of {list} change."), { list: lst(l.list, true) })
           : l.kind === "disputed" ? tplParts(T("Land becomes disputed between {list}."), { list: lst(l.list, true) })
+          : l.kind === "between" ? tplParts(T("The border between {a} and {b} shifts slightly."), { a: nm(l.a, true), b: nm(l.b, true) })
           : l.kind === "took" ? tplParts(T("{a} takes about {n} km² from {b}."), { a: nm(l.a, true), n: [fmtKm(l.km)], b: nm(l.b, true) })
           : tplParts(T(lines.length > 1 ? "Borders also move for {list}." : "Borders move for {list}."), { list: lst(l.list, true) });
       }
@@ -9688,6 +9701,7 @@
       else if (l.kind === "slight") row = ["The borders of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " shift slightly.");
       else if (l.kind === "lands") row = ["The lands of "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), " change.");
       else if (l.kind === "disputed") row = ["Land becomes disputed between "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      else if (l.kind === "between") row = ["The border between "].concat(named(l.a, true, false), " and ", named(l.b, true, false), " shifts slightly.");
       else if (l.kind === "took") row = named(l.a, true, true).concat(verb(l.a, " takes", " take") + " about " + fmtKm(l.km) + " km\u00b2 from ", named(l.b, true, false), ".");
       changesList.appendChild(changeLine(row));
     });
