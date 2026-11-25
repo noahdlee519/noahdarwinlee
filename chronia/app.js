@@ -5245,7 +5245,7 @@
   function fmtNow(t) {
     if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry); }
     var d = dateOfDay(dayOfTime(t));
-    return d[2] === MID_DAY ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
+    return d[2] === MID_DAY && !(dayMode && Math.abs(t - now) < 1e-9) ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
@@ -5596,7 +5596,11 @@
       setTimeout(wait, 40);
     })();
   }
+  // The 15th of a month stands for the whole month (MID_DAY), so the date shows only the month there; after the day keys
+  // have been used, the 15th shows as a day like any other, until the date is moved some other way.
+  var dayMode = false, keepDayMode = false;
   function setTime(t, fromRange) {
+    if (!keepDayMode) dayMode = false;
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
     if (!isMonthly(t)) { t = Math.round(t); if (t === 0) t = 1; }
@@ -5690,13 +5694,21 @@
       else if (k > 0) setTime(points[k - 1]);
     } else if (k + 1 < points.length) setTime(points[k + 1]);
   }
+  // The same day of another month, where the date is a day (a date shown by the month stays one; the 31st becomes the
+  // month's last day).
+  function sameDay(y, m, day) {
+    if (dayMode) keepDayMode = true;
+    if (day === MID_DAY) return monthTime(y, m);
+    var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return timeOfDay(dayFromDate(y, m, Math.min(day, last)));
+  }
   function stepUnit(dir) {
     var mf = monthlyFrom();
     if (isMonthly(now)) {
       var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + dir;
       if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
       if (y < mf) setTime(mf - 1);
-      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) { setTime(sameDay(y, m, d[2])); keepDayMode = false; }
       return;
     }
     var yr = Math.round(now);
@@ -5730,7 +5742,7 @@
       var d = dateOfDay(dayOfTime(now)), y = d[0] + dir, m = d[1];
       if (y < mf) setTime(y === 0 ? -1 : y);
       // A year on that would pass the last month stays put: going to the last month would be a step of months, not of a year.
-      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) { setTime(sameDay(y, m, d[2])); keepDayMode = false; }
       return;
     }
     var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
@@ -5738,8 +5750,26 @@
     setTime((modern || dated) && next >= mf ? monthTime(next, 7) : next);
     if (mo && ctlFineYear(next) && Math.round(now) === next) { ctlMonth = mo; syncTime(); writeHash(); scheduleRender(); }
   }
-  // The month buttons step by the month from 1648, and before that only through a war's months.
+  // A day back or forward, from 1648, where the date is a day (before, the day buttons are off).
+  function stepDay(dir) {
+    if (!isMonthly(now)) return;
+    var day = dayOfTime(now) + dir, d = dateOfDay(day);
+    if (d[0] < monthlyFrom()) return;
+    if (d[0] * 12 + d[1] > LAST_YEAR * 12 + LAST_MONTH) return;
+    keepDayMode = true; dayMode = true;
+    try { setTime(timeOfDay(day)); } finally { keepDayMode = false; }
+  }
+  // The month buttons step by the month from 1648, and before that only through a war's months; the day buttons by the
+  // day from 1648.
   function syncSpin() {
+    var daily = isMonthly(now), dtip = daily ? "" : T("By the day from {year}", { year: fmtYear(1648) });
+    ["day-up", "day-down"].forEach(function (id) {
+      var b = $(id);
+      if (!b) return;
+      b.classList.toggle("is-off", !daily);
+      b.setAttribute("aria-disabled", daily ? "false" : "true");
+      b.setAttribute("data-tip", dtip || (id === "day-up" ? T("Forward a day") : T("Back a day")));
+    });
     var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : T("By the month from {year}", { year: fmtYear(1648) });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
@@ -5924,7 +5954,8 @@
     else if (e.key === "Escape") { yearInput.value = fitDate(fmtNow(now)); yearInput.blur(); }
   });
   yearInput.addEventListener("blur", commitYearInput);
-  // The buttons beside the date: back a year and back a month on its left, forward a month and forward a year on its right.
+  // The buttons beside the date: back a year, a month, and a day on its left (three, two, and one arrows), forward a day,
+  // a month, and a year on its right.
   // Hovering a button underlines what it moves: the year (with its era) or the month's name, in a copy of the date laid
   // over the field (an input cannot underline part of its text).
   var yearMark = $("year-mark"), markPart = "";
@@ -5934,14 +5965,17 @@
     if (!part || document.activeElement === yearInput || !m) { yearMark.classList.remove("is-on"); return; }
     var head = m[1], year = m[2], mm = /^(\d+ )?([A-Za-z]+)( )$/.exec(head);
     if (part === "month" && (!mm || $("month-up").getAttribute("aria-disabled") === "true")) { yearMark.classList.remove("is-on"); return; }
+    var dm = part === "day" ? /^(\D*?)(\d+)(\D*)$/.exec(head) : null;
+    if (part === "day" && (!dm || $("day-up").getAttribute("aria-disabled") === "true")) { yearMark.classList.remove("is-on"); return; }
     var esc = function (t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
-    yearMark.innerHTML = part === "year" ? esc(head) + "<u>" + esc(year) + "</u>" : esc(mm[1] || "") + "<u>" + esc(mm[2]) + "</u>" + " " + esc(year);
+    yearMark.innerHTML = part === "year" ? esc(head) + "<u>" + esc(year) + "</u>" : part === "day" ? esc(dm[1]) + "<u>" + esc(dm[2]) + "</u>" + esc(dm[3]) + esc(year) : esc(mm[1] || "") + "<u>" + esc(mm[2]) + "</u>" + " " + esc(year);
     yearMark.style.left = yearInput.offsetLeft + "px";
     yearMark.style.width = yearInput.offsetWidth + "px";
     yearMark.classList.add("is-on");
   }
   [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
-   ["month-up", function () { stepUnit(1); }, "month"], ["month-down", function () { stepUnit(-1); }, "month"]].forEach(function (b) {
+   ["month-up", function () { stepUnit(1); }, "month"], ["month-down", function () { stepUnit(-1); }, "month"],
+   ["day-up", function () { stepDay(1); }, "day"], ["day-down", function () { stepDay(-1); }, "day"]].forEach(function (b) {
     var el = $(b[0]);
     el.addEventListener("click", function () {
       if (el.getAttribute("aria-disabled") === "true") return;

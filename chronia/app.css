@@ -264,10 +264,10 @@ body.ch-page {
   left: calc(var(--ch-gap) + env(safe-area-inset-left, 0px));
   right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
   display: grid;
-  /* The date in the middle column, at most 336 px: the two outer columns share what is left equally, so the date is in
+  /* The date in the middle column, at most 440 px (336 until six keys came, 25 November 2026): the two outer columns share what is left equally, so the date is in
      the page's middle wherever the title and the tools leave room, and each keeps at least its own width (max-content),
      so where they do not the date narrows (see .ch-year-box's container rules) rather than dropping below them. */
-  grid-template-columns: minmax(max-content, 1fr) minmax(0, 336px) minmax(max-content, 1fr);
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, 440px) minmax(max-content, 1fr);
   align-items: start;
   gap: var(--ch-gap);
   pointer-events: none;
@@ -1161,7 +1161,7 @@ select.ch-save-input {
 
 /* The date sits at the top, in the middle column of the top row, in a frame like the title's, at every width above a
    phone's (Noah, 19 November 2026: it used to drop under the row at 880 px and below). It is as wide as the column, at
-   most 336 px; narrower, its keys and figures narrow with it (the container rules below). */
+   most 440 px; narrower, its keys and figures narrow with it (the container rules below). */
 .ch-top > .ch-year-box {
   position: relative;
   grid-column: 2;
@@ -3258,16 +3258,16 @@ select.ch-save-input {
   }
 }
 
-/* The date's keys and figures narrow with its frame: under 300 px the keys are 28 px wide; under 250, 24 px and the
-   figures a size smaller; under 205 only the month keys are kept (the year moves by the arrow keys, the timeline, and
-   typing). */
-@container (max-width: 300px) {
+/* The date's keys and figures narrow with its frame (six keys since 25 November 2026: a year, a month, and a day each way):
+   under 420 px the keys are 28 px wide; under 340, 24 px and the figures a size smaller; under 270 the year keys go, and
+   under 220 the day keys too (the year moves by the arrow keys, the timeline, and typing). */
+@container (max-width: 420px) {
   .ch-spin-btn {
     width: 28px;
   }
 }
 
-@container (max-width: 250px) {
+@container (max-width: 340px) {
   .ch-spin-btn {
     width: 24px;
   }
@@ -3278,7 +3278,7 @@ select.ch-save-input {
   }
 }
 
-@container (max-width: 205px) {
+@container (max-width: 270px) {
   #year-down,
   #year-up {
     display: none;
@@ -3291,6 +3291,20 @@ select.ch-save-input {
   .ch-year,
   .ch-year-mark {
     font-size: 16px;
+  }
+}
+
+@container (max-width: 220px) {
+  #day-down,
+  #day-up {
+    display: none;
+  }
+}
+
+/* On the narrowest phones the six keys of the date in the timeline bar are 28 px wide, so the date keeps its year. */
+@media (max-width: 360px) {
+  .ch-time > .ch-year-box .ch-spin-btn {
+    width: 28px;
   }
 }
 
@@ -3560,7 +3574,7 @@ select.ch-save-input {
   }
 
   .ch-spin-btn {
-    width: 44px;
+    width: 32px;
   }
 
   .ch-when {
