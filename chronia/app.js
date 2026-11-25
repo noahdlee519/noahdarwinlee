@@ -5236,14 +5236,19 @@
 
   function eraYear(y) { return y < 0 ? T("{y} BC", { y: -y }) : y < 1000 ? T("AD {y}", { y: y }) : String(y); }
   function fmtYear(y) { return T("@year", { y: eraYear(y) }); }
-  function monthYear(y, m) { return T("@my", { month: MONTHS_L[m - 1], m: m, y: y > 0 ? String(y) : eraYear(y) }); }
+  // Years under 1000 carry their era ("July AD 800"), as the year alone does, so "January 1" can't be read as a day.
+  function monthYear(y, m) { return T("@my", { month: MONTHS_L[m - 1], m: m, y: y >= 1000 ? String(y) : eraYear(y) }); }
   // Month, day, year ("August 23, 1815"), as the date's frame writes it.
-  function fmtMDY(y, m, d) { return T("@mdy", { month: MONTHS_G[m - 1], m: m, d: d, y: y > 0 ? String(y) : eraYear(y) }); }
+  function fmtMDY(y, m, d) { return T("@mdy", { month: MONTHS_G[m - 1], m: m, d: d, y: y >= 1000 ? String(y) : eraYear(y) }); }
   function fmtDay(day) { var d = dateOfDay(day); return fmtMDY(d[0], d[1], d[2]); }
   function fmtDate(day) { return fmtDay(day); }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry); }
+    if (!isMonthly(t)) {
+      var ry = Math.round(t);
+      if (preDate && Math.abs(t - now) < 1e-9) return preDate.d ? fmtMDY(ry, preDate.m, preDate.d) : monthYear(ry, preDate.m);
+      return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry);
+    }
     var d = dateOfDay(dayOfTime(t));
     return d[2] === MID_DAY && !(dayMode && Math.abs(t - now) < 1e-9) ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
   }
@@ -5599,8 +5604,13 @@
   // The 15th of a month stands for the whole month (MID_DAY), so the date shows only the month there; after the day keys
   // have been used, the 15th shows as a day like any other, until the date is moved some other way.
   var dayMode = false, keepDayMode = false;
+  // Before 1648 the map goes by the year, but a month and a day can still be chosen (Noah, 25 November 2026): preDate holds
+  // them, for the year on screen, as the date's frame shows them; the map is the year's either way. Cleared when the date
+  // moves some other way.
+  var preDate = null, keepPre = false, preWarned = false;
   function setTime(t, fromRange) {
     if (!keepDayMode) dayMode = false;
+    if (!keepPre) preDate = null;
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
     if (!isMonthly(t)) { t = Math.round(t); if (t === 0) t = 1; }
@@ -5702,6 +5712,11 @@
     var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
     return timeOfDay(dayFromDate(y, m, Math.min(day, last)));
   }
+  // The month keys: from 1648, and through a war's months, as stepUnit; otherwise before 1648, a chosen month (stepPre).
+  function stepMonthKey(dir) {
+    if (!isMonthly(now) && !ctlFineYear(Math.round(now))) { stepPre(dir, false); return; }
+    stepUnit(dir);
+  }
   function stepUnit(dir) {
     var mf = monthlyFrom();
     if (isMonthly(now)) {
@@ -5747,12 +5762,62 @@
     }
     var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
     if (next === 0) next = dir;
+    if (preDate) {
+      var pd = preDate, got = preShift(yr, pd.m, pd.d || 1, 0, 12 * dir);
+      if (got[0] < monthlyFrom()) {
+        keepPre = true;
+        try { setTime(got[0]); if (Math.round(now) === got[0]) preDate = { m: got[1], d: pd.d ? got[2] : 0 }; } finally { keepPre = false; }
+        syncTime(); writeHash();
+        return;
+      }
+      if (pd.d) { keepDayMode = true; dayMode = true; }
+      try { setTime(pd.d ? timeOfDay(dayFromDate(got[0], got[1], got[2])) : monthTime(got[0], got[1])); } finally { keepDayMode = false; }
+      return;
+    }
     setTime((modern || dated) && next >= mf ? monthTime(next, 7) : next);
     if (mo && ctlFineYear(next) && Math.round(now) === next) { ctlMonth = mo; syncTime(); writeHash(); scheduleRender(); }
   }
-  // A day back or forward, from 1648, where the date is a day (before, the day buttons are off).
+  // The map's years have no year 0 (1 BC is -1); a calendar's do (1 BC is 0). Dates before 1648 are counted on the
+  // proleptic Gregorian calendar, which is one more reason they are approximate.
+  function astroYear(y) { return y < 0 ? y + 1 : y; }
+  function mapYear(a) { return a <= 0 ? a - 1 : a; }
+  function preShift(y, m, d, days, months) {
+    var dt = new Date(Date.UTC(2000, 0, 1));
+    dt.setUTCFullYear(astroYear(y), m - 1 + months, 1);
+    var last = new Date(dt.getTime()); last.setUTCMonth(last.getUTCMonth() + 1, 0);
+    dt.setUTCDate(Math.min(d, last.getUTCDate()));
+    dt.setUTCDate(dt.getUTCDate() + days);
+    return [mapYear(dt.getUTCFullYear()), dt.getUTCMonth() + 1, dt.getUTCDate()];
+  }
+  function preWarn() {
+    if (preWarned) return;
+    preWarned = true;
+    yearHint(T("Before {from} the map changes only by the year, so a month or a day here may not be accurate.", { from: fmtYear(monthlyFrom()) }));
+  }
+  // Moves the chosen day or month before 1648 (byDay: days, else months), into 1648 where the map has days.
+  function stepPre(n, byDay) {
+    var yr = Math.round(now), base = preDate || { m: 7, d: 0 };
+    var got = preShift(yr, base.m, base.d || MID_DAY, byDay ? n : 0, byDay ? 0 : n), y = got[0];
+    var mf = monthlyFrom();
+    if (y >= mf) {
+      if (byDay || base.d) { keepDayMode = true; dayMode = true; }
+      try { setTime(byDay || base.d ? timeOfDay(dayFromDate(y, got[1], got[2])) : monthTime(y, got[1])); } finally { keepDayMode = false; }
+      return;
+    }
+    if (y < FIRST_T) return;
+    keepPre = true;
+    try {
+      if (y !== yr) setTime(y);
+      if (Math.round(now) !== y) return;
+      preDate = { m: got[1], d: byDay || base.d ? got[2] : 0 };
+    } finally { keepPre = false; }
+    syncTime();
+    writeHash();
+    preWarn();
+  }
+  // A day back or forward; before 1648 the day is kept beside the year's map (stepPre).
   function stepDay(dir) {
-    if (!isMonthly(now)) return;
+    if (!isMonthly(now)) { stepPre(dir, true); return; }
     var day = dayOfTime(now) + dir, d = dateOfDay(day);
     if (d[0] < monthlyFrom()) return;
     if (d[0] * 12 + d[1] > LAST_YEAR * 12 + LAST_MONTH) return;
@@ -5762,20 +5827,19 @@
   // The month buttons step by the month from 1648, and before that only through a war's months; the day buttons by the
   // day from 1648.
   function syncSpin() {
-    var daily = isMonthly(now), dtip = daily ? "" : T("By the day from {year}", { year: fmtYear(1648) });
+    var daily = isMonthly(now), rough = daily ? "" : " " + T("(approximate before {year})", { year: fmtYear(1648) });
     ["day-up", "day-down"].forEach(function (id) {
       var b = $(id);
       if (!b) return;
-      b.classList.toggle("is-off", !daily);
-      b.setAttribute("aria-disabled", daily ? "false" : "true");
-      b.setAttribute("data-tip", dtip || (id === "day-up" ? T("Forward a day") : T("Back a day")));
+      b.classList.remove("is-off");
+      b.setAttribute("aria-disabled", "false");
+      b.setAttribute("data-tip", (id === "day-up" ? T("Forward a day") : T("Back a day")) + rough);
     });
-    var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : T("By the month from {year}", { year: fmtYear(1648) });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
-      b.classList.toggle("is-off", !fine);
-      b.setAttribute("aria-disabled", fine ? "false" : "true");
-      b.setAttribute("data-tip", tip || (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")));
+      b.classList.remove("is-off");
+      b.setAttribute("aria-disabled", "false");
+      b.setAttribute("data-tip", (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")) + rough);
     });
   }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
@@ -5936,8 +6000,14 @@
       return;
     }
     stopPlay();
+    if (p && p[1] && t === p[0]) {
+      keepPre = true;
+      try { if (Math.abs(t - now) > 1e-9) setTime(t); preDate = { m: p[1], d: p[2] || 0 }; } finally { keepPre = false; }
+      syncTime(); writeHash();
+      preWarned = false; preWarn();
+      return;
+    }
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
-    if (p && p[1] && t === p[0]) yearHint(T("Before {from} the map goes by the year, so this is {year}.", { from: fmtYear(monthlyFrom()), year: fmtYear(p[0]) }));
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -5974,7 +6044,7 @@
     yearMark.classList.add("is-on");
   }
   [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
-   ["month-up", function () { stepUnit(1); }, "month"], ["month-down", function () { stepUnit(-1); }, "month"],
+   ["month-up", function () { stepMonthKey(1); }, "month"], ["month-down", function () { stepMonthKey(-1); }, "month"],
    ["day-up", function () { stepDay(1); }, "day"], ["day-down", function () { stepDay(-1); }, "day"]].forEach(function (b) {
     var el = $(b[0]);
     el.addEventListener("click", function () {
