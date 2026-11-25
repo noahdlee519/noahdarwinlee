@@ -7709,12 +7709,35 @@
   // invitation) once Google's script loads; where it can't load, the place's own button (alt) goes to Supabase's
   // sign-in page instead. The script is loaded only when a place asks for it.
   var gsiWaiting = [];
+  // The button is asked for at the width of the place it sits in (248 px at most, and 200 at least, the narrowest
+  // Google draws its large button): the save panel on a phone has only 216 px. Google makes it wider than asked when
+  // its words need more, in whatever language it chooses, so a button still too wide for its place is scaled down to
+  // fit (gsiFit, run whenever the place or the button changes size) and never runs past the panel's edge.
+  var gsiBoxes = typeof WeakSet === "function" ? new WeakSet() : null;
+  var gsiWatch = gsiBoxes && typeof ResizeObserver === "function" ? new ResizeObserver(function (es) {
+    es.forEach(function (e) { gsiFit(gsiBoxes.has(e.target) ? e.target : e.target.parentNode); });
+  }) : null;
+  function gsiFit(box) {
+    var b = box && box.firstElementChild;
+    if (!b) return;
+    b.style.transform = "";
+    var room = box.clientWidth, w = b.offsetWidth;
+    if (!(room > 0 && w > room)) return;
+    // Scaled from its own top left corner and moved to the place's left edge, wherever the place had put it
+    // (centred in some panels, at the left in others).
+    var dx = box.getBoundingClientRect().left + box.clientLeft - b.getBoundingClientRect().left;
+    b.style.transformOrigin = "0 0";
+    b.style.transform = "translate(" + dx.toFixed(2) + "px, 0) scale(" + (room / w).toFixed(4) + ")";
+  }
   function gsiDraw(box, alt) {
     if (box.getAttribute("data-drawn")) return;
     try {
-      google.accounts.id.renderButton(box, { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 248 });
+      var room = box.parentNode ? Math.floor(box.parentNode.getBoundingClientRect().width) : 0;
+      google.accounts.id.renderButton(box, { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: room > 0 ? Math.max(200, Math.min(248, room)) : 248 });
       box.setAttribute("data-drawn", "1");
       alt.hidden = true;
+      gsiFit(box);
+      if (gsiWatch) { gsiBoxes.add(box); gsiWatch.observe(box); if (box.firstElementChild) gsiWatch.observe(box.firstElementChild); }
     } catch (e) { console.warn("google sign-in", e); alt.hidden = false; }
   }
   function startGoogle(box, alt) {
