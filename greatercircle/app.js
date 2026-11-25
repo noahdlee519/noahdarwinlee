@@ -808,7 +808,29 @@
     }
     return [best.x, best.y];
   }
+  function unwrapPoly(poly) {
+    var out = poly.map(function (ring) {
+      var prev = null;
+      return ring.map(function (pt) {
+        var l = pt[0];
+        if (prev !== null) l = prev + (((l - prev) % 360) + 540) % 360 - 180;
+        prev = l;
+        return [l, pt[1]];
+      });
+    });
+    var m = 0; out[0].forEach(function (pt) { m += pt[0]; }); m /= out[0].length;
+    var shift = Math.round(m / 360) * 360;
+    return out.map(function (ring, k) {
+      var s = shift;
+      if (k > 0) { var mk = 0; ring.forEach(function (pt) { mk += pt[0]; }); mk /= ring.length; s = Math.round((mk - (m - shift)) / 360) * 360; }
+      return ring.map(function (pt) { return [pt[0] - s, pt[1]]; });
+    });
+  }
   function spanAt(polys, lon, lat) {
+    for (var w = 0; w < 3; w++) { var o = [0, 360, -360][w], sp = spanAt1(polys, lon + o, lat); if (sp) { sp.off = o; return sp; } }
+    return null;
+  }
+  function spanAt1(polys, lon, lat) {
     var xs = [];
     for (var p = 0; p < polys.length; p++) for (var r = 0; r < polys[p].length; r++) {
       var ring = polys[p][r];
@@ -865,6 +887,8 @@
         var best = null, bestA = 0, total = 0;
         polys.forEach(function (poly) { var ar = d3.geoArea({ type: "Polygon", coordinates: poly }); if (ar > 2 * Math.PI) ar = 4 * Math.PI - ar; total += ar; if (ar > bestA) { bestA = ar; best = poly; } });
         if (best) {
+          best = unwrapPoly(best);
+          polys = polys.map(unwrapPoly);
           var name = (SHORT_NAMES[f.properties.name] || f.properties.name).toLocaleUpperCase("en"), cands;
           if (f.id === ANTARCTICA) cands = [{ lat: -80, lonL: -180, lonR: 180, lon: 0, width: 4000, score: 1, v: G.toVec(0, -80) }];
           else {
@@ -946,7 +970,8 @@
     var u = unitWidths(text), w = lineWidth(u, fs, t);
     var pp = parallelPath(lat, lonC, lonL, lonR, w / 2 + fs);
     if (!pp || pp.pts.length < 3 || pp.left < w / 2 || pp.right < w / 2) return null;
-    var flip = Math.cos(pointAt(pp.pts, 0)[2]) < 0, pos = [], s = -w / 2, chars = text.split("");
+    var mid = pointAt(pp.pts, 0)[2], flip = Math.cos(mid) < 0, pos = [], s = -w / 2, chars = text.split("");
+    if (Math.abs(Math.sin(mid)) > 0.62) return null;
     for (var g = 0; g < chars.length; g++) {
       var adv = u[g] * fs, at = s + adv / 2, q = pointAt(pp.pts, flip ? -at : at);
       var m = fs * 0.6 + 2;
@@ -991,7 +1016,7 @@
       if (!screenOf(lon, lat, v[0], v[1], v[2]) || FX < 40 || FY < 40 || FX > W - 40 || FY > H - 40) continue;
       var sp = spanAt(L.polys, lon, lat);
       if (!sp) continue;
-      out.push({ lat: lat, lonL: sp[0], lonR: sp[1], lon: lon, v: v, d: Math.hypot(FX - cx, FY - cy) });
+      out.push({ lat: lat, lonL: sp[0], lonR: sp[1], lon: lon + sp.off, v: v, d: Math.hypot(FX - cx, FY - cy) });
     }
     out.sort(function (p, q) { return p.d - q.d; });
     var last = L.anchor;
@@ -1305,7 +1330,14 @@
   var inertia = null;
 
   var focusByPointer = false;
-  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); scheduleRender("full"); });
+  var lastKeyAt = 0;
+  document.addEventListener("keydown", function () { lastKeyAt = performance.now(); }, true);
+  document.addEventListener("pointerdown", function () { lastKeyAt = 0; if (canvas.classList.contains("show-ring")) { canvas.classList.remove("show-ring"); scheduleRender("full"); } }, true);
+  canvas.addEventListener("focus", function () {
+    var keyboard = !focusByPointer && lastKeyAt && performance.now() - lastKeyAt < 1000;
+    canvas.classList.toggle("show-ring", !!keyboard);
+    scheduleRender("full");
+  });
   canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); scheduleRender("full"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale() * (flat ? 0.8707 : 1)); }
 
