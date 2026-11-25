@@ -9355,6 +9355,22 @@
     var tb = timeOfDay(dayOfTime(p) - 1);
     return isMonthly(tb) ? tb : Math.floor(tb);
   }
+  // The day an event of the dated table shows on, when the map does not change on its own day: a change between two
+  // files (one span ending in a file's last year, the next beginning in the next file's first) is drawn on 1 January
+  // between them (prepDays), so the Treaty of Adrianople of 14 September 1829 and Greece's independence of 3 February
+  // 1830 both show on 1 January 1830, with their own dates beside them (since 25 November 2026).
+  function eventShownOn(ds) {
+    if (!dated || !/^\d{4}-\d\d-\d\d$/.test(ds)) return null;
+    var y = +ds.slice(0, 4), dn = dayFromDate(y, +ds.slice(5, 7), +ds.slice(8, 10));
+    if (!changeDaySet) changeDaySet = new Set(dated.days || []);
+    if (changeDaySet.has(dn)) return null;
+    for (var i = 1; i < dated.chunks.length; i++) {
+      var f = dated.chunks[i].from;
+      if (f > DAYS_FROM && (y === f || y === f - 1)) return f + "-01-01";
+    }
+    return null;
+  }
+  var changeDaySet = null;
   function changeDate(p) { return p < DAYS_FROM ? fmtYear(yearOf(p)) : fmtDay(dayOfTime(p)); }
   function snapFor(t) {
     if (isModern(t)) return loadModern().then(function () { return modernSnap(Math.min(dayOfTime(t), modern.toDay)); });
@@ -9584,7 +9600,10 @@
     var day = p >= DAYS_FROM ? storedDate(p) : null;
     Promise.all([seam ? null : snapFor(tb), seam ? null : snapFor(p), changesEventsLoad()]).then(function (r) {
       if (changesKey !== key) return;
-      var events = day ? r[2].filter(function (e) { return e[0] === day; }) : [];
+      var events = day ? r[2].filter(function (e) { return e[0] === day; }).concat(r[2].filter(function (e) { return e[0] !== day && eventShownOn(e[0]) === day; }).map(function (e) {
+        var d = e[0].split("-");
+        return [e[0], fmtDay(dayFromDate(+d[0], +d[1], +d[2])) + ": " + e[1], e[2]];
+      })) : [];
       renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1], tb, p) : [], events, seam, !!(r[0] && r[1] && r[0].key === r[1].key));
     }).catch(function (e) {
       console.warn("changes", e);
