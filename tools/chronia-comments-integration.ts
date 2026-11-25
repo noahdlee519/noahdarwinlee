@@ -201,6 +201,42 @@ r = await call(tok(3), { action: "me" }); ok(r.s === 200 && r.j.profile === null
 await sqlv("update public.chronia_profiles set avatar_changes = 0 where user_id = " + q(uid(6))); r = await call(tok(6), { action: "profile", avatar: png(50) }); ok(pub().length === 1, "a picture for account 6", pub());
 await sqlv("delete from auth.users where id = " + q(uid(6))); await back(1); r = await call(tok(1), { action: "post", name: "Paged", at: "2000", text: "sweep" }); await sleep(900);
 ok(r.s === 200 && pub().length === 0 && (await sqlv("select count(*) from public.chronia_avatar_trash")) === "0", "account deleted in the database: its file swept after the next post", [r.s, pub()]);
+// --- replies, upvotes, one's own comments, and a soft delete (accounts 1 Herodotos, 2 Sappho, 4 Viewer_V, 5 Reviewer_R)
+// Every comment moved 11 seconds back after each post: the gap between one account's comments is passed, and the
+// order of sending, which a thread follows, is kept.
+const shift = () => sqlv("update public.chronia_comments set sent_at = sent_at - interval '11 seconds'");
+await shift();
+r = await call(tok(1), { action: "post", name: "Athens", at: "-0430", text: "The plague." }); await shift(); ok(r.s === 200 && r.j.comment.parent === null && r.j.comment.depth === 0 && r.j.comment.votes === 0, "a top comment has no parent", r); const t1 = r.j.comment.id;
+r = await call(tok(2), { action: "post", name: "Athens", at: "-0429", text: "A reply.", parent: t1 }); await shift(); ok(r.s === 200 && r.j.comment.parent === t1 && r.j.comment.root === t1 && r.j.comment.depth === 1, "a reply", r); const rp1 = r.j.comment.id;
+r = await call(tok(4), { action: "post", name: "Sparta", at: "1", text: "Wrong name.", parent: t1 }); ok(r.s === 400 && r.j.error === "field" && r.j.field === "parent", "a reply under another name", r);
+r = await call(tok(4), { action: "post", name: "Athens", at: "1", text: "To nothing.", parent: 99999999 }); ok(r.s === 404 && r.j.error === "gone", "a reply to nothing is gone", r);
+// down to depth 8, then one more beside the deepest
+let prev = rp1; for (let i = 2; i <= 8; i++) { const who = i % 2 ? 2 : 4; r = await call(tok(who), { action: "post", name: "Athens", at: "-0429", text: "Level " + i, parent: prev }); await shift(); if (r.s !== 200) { ok(false, "chain " + i, r); break; } prev = r.j.comment.id; }
+ok(r.j.comment.depth === 8, "a chain down to depth 8", r);
+r = await call(tok(1), { action: "post", name: "Athens", at: "-0429", text: "Past the floor.", parent: prev }); await shift(); ok(r.s === 200 && r.j.comment.depth === 8 && r.j.comment.replying_to === "Viewer_V" && r.j.comment.parent !== prev, "a reply to depth 8 goes beside it, replying to its writer", r);
+r = await call(null, { action: "thread", id: prev }); ok(r.s === 200 && r.j.root === t1 && r.j.comments.length === 10 && r.j.comments[0].id === t1 && r.j.comments[9].replying_to === "Viewer_V" && r.j.comments.every((c: any, i: number) => i === 0 || c.depth >= 1), "the thread from its deepest reply", r.j && r.j.comments && r.j.comments.map((c: any) => [c.id, c.depth]));
+r = await call(null, { action: "list", names: ["Athens"] }); ok(r.j.total === 1 && r.j.comments[0].id === t1 && r.j.comments[0].replies === 9 && r.j.comments[0].votes === 0, "the card lists the top comment with its replies", r);
+// upvotes
+r = await call(tok(2), { action: "vote", id: t1, on: true }); ok(r.s === 200 && r.j.votes === 1 && r.j.voted === true, "an upvote", r);
+r = await call(tok(4), { action: "vote", id: t1, on: true }); ok(r.j.votes === 2, "a second upvote", r);
+r = await call(tok(1), { action: "vote", id: t1, on: true }); ok(r.s === 403 && r.j.error === "own", "not one's own", r);
+r = await call(tok(4), { action: "vote", id: t1, on: false }); ok(r.j.votes === 1 && r.j.voted === false, "taken back", r);
+r = await call(tok(2), { action: "list", names: ["Athens"], sort: "top" }); ok(r.s === 200 && r.j.comments[0].votes === 1 && r.j.comments[0].voted === true, "Top, with the reader's vote", r);
+await sqlv("update public.chronia_profiles set vote_count = 500, vote_day = (now() at time zone 'utc')::date where user_id = " + q(uid(4)));
+r = await call(tok(4), { action: "vote", id: t1, on: true }); ok(r.s === 429 && r.j.error === "limit" && r.j.cap === 500, "500 changes of vote a day", r);
+r = await call(tok(2), { action: "vote", id: 99999999, on: true }); ok(r.s === 404 && r.j.error === "gone", "a vote for nothing is gone", r);
+// one's own
+r = await call(tok(2), { action: "mine" }); ok(r.s === 200 && r.j.comments[0].text === "Level 7" && r.j.comments[0].replying_to === "Viewer_V" && r.j.comments.every((c: any) => c.mine && c.state), "one's own, newest first, each with whom it replies to and its state", r.j && r.j.comments && r.j.comments.slice(0, 2));
+// a soft delete keeps the thread
+r = await call(tok(1), { action: "delete", id: t1 }); ok(r.s === 200 && r.j.soft === true, "deleting a comment with replies is soft", r);
+r = await call(null, { action: "thread", id: rp1 }); ok(r.j.comments[0].id === t1 && r.j.comments[0].deleted === true && r.j.comments[0].username === null && r.j.comments[0].text === "" && r.j.comments.length === 10, "the thread keeps a deleted comment's place", r.j.comments[0]);
+r = await call(null, { action: "list", names: ["Athens"] }); ok(r.j.total === 1 && r.j.comments[0].deleted === true && r.j.comments[0].replies === 9, "the card lists it as a placeholder with its replies", r);
+r = await call(tok(2), { action: "vote", id: t1, on: true }); ok(r.s === 404 && r.j.error === "gone", "a deleted comment can't be voted on", r);
+// erasing an account keeps the others' replies
+r = await call(tok(5), { action: "erase", user: uid(2) }); ok(r.s === 200, "erase Sappho", r);
+r = await call(null, { action: "thread", id: t1 }); ok(r.s === 200 && r.j.comments.length === 10 && r.j.comments.filter((c: any) => c.deleted).length === 5 && r.j.comments.every((c: any) => c.deleted || c.username !== "Sappho"), "erased: her replies, each with a reply under it, stay as placeholders, and the others' replies stay", r.j && r.j.comments && r.j.comments.map((c: any) => [c.depth, c.username, !!c.deleted]));
+ok((await sqlv("select count(*) from public.chronia_comments where user_id = " + q(uid(2)))) === "0", "no comment keeps the erased account");
+r = await call(null, { action: "nonsense_new" }); ok(r.s === 400 && r.j.error === "action", "still an unknown action", r);
 // --- direct access as the page's roles
 const a = await psql("select count(*) from public.chronia_comments", "anon"); ok(!a.ok && /permission denied/.test(a.err), "anon cannot read comments", a);
 const b = await psql("select public.chronia_queue()", "authenticated"); ok(!b.ok && /permission denied/.test(b.err), "authenticated cannot run the queue", b);

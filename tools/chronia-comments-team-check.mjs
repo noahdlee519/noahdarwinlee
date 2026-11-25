@@ -22,7 +22,7 @@ function store() {
     comments: [
       c(11, "u1", "Herodotus", PIC + "x.webp", "Kingdom of France", "1789-07-14", "Long live the king", 2, "live"),
       c(10, "u2", "Thucydides", null, "Old Name Land", "1500", "<img src=x onerror=window.__pwned=1>", 3, "hidden"),
-      c(9, "u3", "Xenophon", null, "Kingdom of France", "1800", "A removed remark", 1, "removed"),
+      Object.assign(c(9, "u3", "Xenophon", null, "Kingdom of France", "1800", "A removed remark", 1, "removed"), { parent: 11, root: 11 }),
       c(8, "u1", "Herodotus", PIC + "x.webp", "Roman Empire", "100", "Hidden by reports", 3, "hidden"),
     ],
     pictures: [
@@ -104,6 +104,8 @@ const last = (sent) => JSON.stringify(sent[sent.length - 1] || null);
   say(/1 live with reports/.test(count) && /2 hidden/.test(count) && /1 removed/.test(count), "the counts at the head are right", count);
   const r11 = await row(page, 11).textContent();
   say(["Herodotus", "Kingdom of France", "1789-07-14", "Long live the king", "2 reports", "live with reports"].every((s) => r11.includes(s)), "a row shows its username, country, date, text, reports, and state", r11);
+  const m9 = await row(page, 9).locator(".cm-meta").textContent(), m11 = await row(page, 11).locator(".cm-meta").textContent();
+  say(/Kingdom of France \| 1800 \| reply to #11 \| 1 report/.test(m9) && !/reply to/.test(m11), "a reply says reply to #its parent; a top comment says nothing of it", m9 + " / " + m11);
   say(await row(page, 10).locator(".cm-face").textContent() === "T", "a writer without a picture shows the initial", await row(page, 10).locator(".cm-face").textContent());
   const img = await row(page, 11).locator("img").evaluate((i) => i.complete && i.naturalWidth > 0).catch(() => false);
   say(img, "a picture from the bucket loads", img);

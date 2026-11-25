@@ -23,4 +23,5 @@ create table public.chronia_team (user_id uuid primary key, role text not null);
 revoke all on public.chronia_team from anon, authenticated; grant select on public.chronia_team to service_role;
 SQL
 PGOPTIONS='-c client_min_messages=warning' sql < $ROOT/supabase/migrations/202611240700_chronia_comments.sql || exit 1
+PGOPTIONS='-c client_min_messages=warning' sql < $ROOT/supabase/migrations/202611250600_chronia_replies_votes.sql || exit 1
 PGSOCK="$TMP" PGPORT_T=$PORT "$DENO" run -A "$ROOT/tools/chronia-comments-integration.ts"

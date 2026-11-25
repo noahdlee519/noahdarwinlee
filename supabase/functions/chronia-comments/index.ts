@@ -1,11 +1,15 @@
 // CHRONIA's comments on the country card, and the profiles they are posted under. The page posts JSON with an
 // `action`; the contract with the page is docs/superpowers/plans/2026-11-24-chronia-comments-api.md.
 //   open to all:  list { names, sort?, at?, offset? }       -> { comments, more, total } (and role, for the team)
+//                 thread { id }                              -> { comments, more, root }
 //   signed in:    me                                         -> { profile, left, cap, role }
 //                 name { username }                          -> { ok, why? }
 //                 profile { username?, age?, avatar? }       -> { profile }
-//                 post { name, at, text }                    -> { comment, left }
-//                 delete { id }  |  flag { id } or { user }  -> { ok: true }
+//                 post { name, at, text, parent? }           -> { comment, left }
+//                 vote { id, on }                            -> { votes, voted }
+//                 mine { offset? }                           -> { comments, more }
+//                 delete { id }                              -> { ok: true, soft }
+//                 flag { id } or { user }                    -> { ok: true }
 //   the team:     queue                                      -> { role, comments, pictures, blocked, names }
 //   a reviewer:   restore { id }, remove { id }             -> { comment }
 //                 block { user, on }, picture { user, on }, erase { user } -> { ok: true }
@@ -25,6 +29,7 @@ const MAX_BODY = 400_000; // characters; a picture is the only large field
 const DAY_CAP = 100; // comments a day (UTC) for each account
 const GAP_S = 10; // seconds between one account's comments
 const FLAG_CAP = 20; // reports a day for each account
+const VOTE_CAP = 500; // upvotes given or taken back a day (UTC) for each account
 const HIDE_AT = 3; // reports from different accounts that hide a comment or a picture
 const PICTURE_CAP = 5; // picture changes a day for each account
 const NAME_DAYS = 30; // days between changes of username
@@ -33,7 +38,8 @@ const SIGN_S = 3600; // seconds the team's address for a hidden or removed pictu
 const SWEEP_MOVES = 50; // picture moves one sweep makes at most
 const SWEEP_TRASH = 100; // picture files one sweep deletes at most
 const MAX_PICTURE = 200 * 1024; // bytes
-const PAGE = 20; // comments to a page of a thread
+const PAGE = 20; // comments to a page of a card's list, and of an account's own
+const THREAD_MAX = 400; // comments of one thread shown at most (no paging inside a thread)
 const MAX_NAMES = 60; // names in one thread
 const MAX_NAME = 200; // characters in a country's name
 const CHECK_MS = 20_000; // how long the picture check may take
@@ -183,17 +189,35 @@ async function account(req: Request): Promise<Account | null> {
   return { id: u.id };
 }
 
-// A comment as the page sees it; the team's fields only for the team, whatever the database sent.
+// A whole number from the database, or null.
+function idOrNull(v: unknown): number | null {
+  return typeof v === "number" && Number.isInteger(v) ? v : null;
+}
+
+// A comment as the page sees it; the team's fields only for the team, whatever the database sent. Its place in a
+// thread (parent, root, depth), its upvotes and the reader's own, and whom it replies to are always given; the
+// count of replies only on a card's list; deleted (and hidden) only for a placeholder, which has no name or text.
 function comment(c: Json, team: boolean) {
   const out: Record<string, unknown> = {
     id: c.id,
-    username: c.username,
+    username: c.username ?? null,
     avatar: avatarUrl(c.avatar),
     polity: c.polity,
     at: c.at,
-    text: c.text,
+    text: typeof c.text === "string" ? c.text : "",
     mine: c.mine === true,
+    parent: idOrNull(c.parent),
+    root: idOrNull(c.root),
+    depth: Number(c.depth) || 0,
+    votes: Number(c.votes) || 0,
+    voted: c.voted === true,
+    replying_to: typeof c.replying_to === "string" ? c.replying_to : null,
   };
+  if (c.replies !== undefined) out.replies = Number(c.replies) || 0;
+  if (c.deleted === true) {
+    Object.assign(out, { username: null, avatar: null, text: "", votes: 0, voted: false, deleted: true });
+    if (c.hidden === true) out.hidden = true;
+  }
   if (team) {
     out.flags = Number(c.flags) || 0;
     out.state = c.state;
@@ -217,6 +241,7 @@ function refused(out: Json, cap: number): never {
     case "own":
       throw new No(403, e);
     case "missing":
+    case "gone":
       throw new No(404, e);
     case "taken":
       throw new No(409, e);
@@ -436,7 +461,7 @@ async function list(body: Json, req: Request) {
   if (!Array.isArray(names) || names.length < 1 || names.length > MAX_NAMES) throw new Bad("names");
   const clean = names.map((n) => text(n, "names", MAX_NAME));
   const sort = body.sort === undefined ? "new" : body.sort;
-  if (sort !== "new" && sort !== "near") throw new Bad("sort");
+  if (sort !== "new" && sort !== "near" && sort !== "top") throw new Bad("sort");
   let at: number | null = null;
   if (sort === "near") {
     at = typeof body.at === "string" ? atNumber(body.at) : null;
@@ -445,18 +470,7 @@ async function list(body: Json, req: Request) {
   const offset = body.offset === undefined ? 0 : num(body.offset, "offset", 0, 1_000_000);
   if (!Number.isInteger(offset)) throw new Bad("offset");
 
-  // A stale or bad token, or a sign-in server that can't be asked, reads as signed out: reading needs no account.
-  let me: Account | null = null, role: string | null = null;
-  if (req.headers.get("authorization")) {
-    try {
-      me = await account(req);
-      if (me) role = await teamRole(me.id);
-    } catch (e) {
-      console.error(e);
-      me = null;
-      role = null;
-    }
-  }
+  const { me, role } = await reader(req);
   const out = await rpc("chronia_thread", {
     p_names: clean,
     p_sort: sort,
@@ -473,6 +487,32 @@ async function list(body: Json, req: Request) {
   };
   if (role) answer.role = role;
   return answer;
+}
+
+// Who is reading, for mine, voted, and the team's fields. A stale or bad token, or a sign-in server that can't be
+// asked, reads as signed out: reading needs no account.
+async function reader(req: Request): Promise<{ me: Account | null; role: string | null }> {
+  if (!req.headers.get("authorization")) return { me: null, role: null };
+  try {
+    const me = await account(req);
+    return { me, role: me ? await teamRole(me.id) : null };
+  } catch (e) {
+    console.error(e);
+    return { me: null, role: null };
+  }
+}
+
+// A whole thread, for the thread window: its top comment and every reply under it, oldest first, at most 400.
+async function thread(body: Json, req: Request) {
+  const n = id(body.id);
+  const { me } = await reader(req);
+  const out = await rpc("chronia_thread_of", { p_comment: n, p_viewer: me ? me.id : null, p_limit: THREAD_MAX });
+  if (!out || out.error) throw new No(404, "gone");
+  return {
+    comments: (Array.isArray(out.comments) ? out.comments : []).map((c: Json) => comment(c, false)),
+    more: !!out.more,
+    root: idOrNull(out.root),
+  };
 }
 
 async function me(user: Account) {
@@ -597,6 +637,7 @@ async function post(user: Account, body: Json) {
   if (typeof body.at !== "string") throw new Bad("at");
   const atNum = atNumber(body.at);
   if (atNum === null) throw new Bad("at");
+  const parent = body.parent === undefined || body.parent === null ? null : id(body.parent, "parent");
 
   const mine = await rpc("chronia_me", { p_user: user.id, p_cap: DAY_CAP });
   const p = mine && mine.profile;
@@ -610,7 +651,10 @@ async function post(user: Account, body: Json) {
     p_body: said.text,
     p_cap: DAY_CAP,
     p_gap_s: GAP_S,
+    p_parent: parent,
   });
+  // A reply's parent under another name is the page's mistake, said as its field.
+  if (out && out.error === "field") throw new Bad("parent");
   if (!out || out.id === undefined || out.id === null) refused(out, DAY_CAP);
   later(sweep);
   return {
@@ -622,19 +666,50 @@ async function post(user: Account, body: Json) {
       at: body.at,
       text: said.text,
       mine: true,
+      parent: idOrNull(out.parent),
+      root: idOrNull(out.root),
+      depth: Number(out.depth) || 0,
+      votes: 0,
+      voted: false,
+      replying_to: typeof out.replying_to === "string" ? out.replying_to : null,
     },
     left: Math.max(0, Number(out.left) || 0),
+  };
+}
+
+// An upvote given or taken back. The database refuses one's own comment, a comment not shown, and the day's cap.
+async function vote(user: Account, body: Json) {
+  const n = id(body.id);
+  const want = on(body.on);
+  const out = await rpc("chronia_vote", { p_user: user.id, p_comment: n, p_on: want, p_cap: VOTE_CAP });
+  if (!out || !out.ok) refused(out, VOTE_CAP);
+  return { votes: Number(out.votes) || 0, voted: out.voted === true };
+}
+
+// The account's own comments and replies, newest first, with each one's state, so a writer knows what others can't see.
+async function mine(user: Account, body: Json) {
+  const offset = body.offset === undefined ? 0 : num(body.offset, "offset", 0, 1_000_000);
+  if (!Number.isInteger(offset)) throw new Bad("offset");
+  const out = await rpc("chronia_mine", { p_user: user.id, p_offset: offset, p_limit: PAGE });
+  return {
+    comments: (out && Array.isArray(out.comments) ? out.comments : []).map((c: Json) => ({
+      ...comment(c, false),
+      mine: true,
+      state: c.state === "hidden" || c.state === "removed" ? c.state : "live",
+    })),
+    more: !!(out && out.more),
   };
 }
 
 async function remove(user: Account, body: Json) {
   const n = id(body.id);
   const out = await rpc("chronia_comment_delete", { p_user: user.id, p_comment: n });
-  if (out && out.ok) return { ok: true };
+  // soft: it had replies, so it stays in their thread as "Deleted comment".
+  if (out && out.ok) return { ok: true, soft: out.soft === true };
   // A reviewer may take down anyone's comment: it is marked removed, and kept for the team.
   if ((await teamRole(user.id)) === "reviewer") {
     const gone = await rpc("chronia_comment_remove", { p_comment: n });
-    if (gone && gone.ok) return { ok: true };
+    if (gone && gone.ok) return { ok: true, soft: false };
   }
   throw new No(404, "missing");
 }
@@ -722,7 +797,8 @@ async function review(action: string, body: Json) {
   return { ok: true };
 }
 
-const SIGNED_IN = ["me", "name", "profile", "post", "delete", "flag"];
+const OPEN = ["list", "thread"];
+const SIGNED_IN = ["me", "name", "profile", "post", "vote", "mine", "delete", "flag"];
 const TEAM = ["queue"];
 const REVIEWER = ["restore", "remove", "block", "picture", "move", "erase"];
 
@@ -746,11 +822,12 @@ export async function handle(req: Request): Promise<Response> {
   }
 
   const action = body.action;
-  const known = action === "list" || SIGNED_IN.includes(action) || TEAM.includes(action) || REVIEWER.includes(action);
+  const known = OPEN.includes(action) || SIGNED_IN.includes(action) || TEAM.includes(action) || REVIEWER.includes(action);
   if (typeof action !== "string" || !known) return json(400, { error: "action" }, o);
 
   try {
     if (action === "list") return json(200, await list(body, req), o);
+    if (action === "thread") return json(200, await thread(body, req), o);
 
     let user: Account | null;
     try {
@@ -770,6 +847,10 @@ export async function handle(req: Request): Promise<Response> {
         return json(200, await profile(user, body), o);
       case "post":
         return json(200, await post(user, body), o);
+      case "vote":
+        return json(200, await vote(user, body), o);
+      case "mine":
+        return json(200, await mine(user, body), o);
       case "delete":
         return json(200, await remove(user, body), o);
       case "flag":

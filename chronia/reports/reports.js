@@ -244,7 +244,10 @@
       head.appendChild(el("span", "cm-name", c.username || "(no name)"));
       li.appendChild(head);
       var meta = el("p", "rp-meta cm-meta");
-      meta.appendChild(document.createTextNode([c.polity || "", c.at || "", plural(c.flags || 0, "report", "reports")].join(" | ") + " | "));
+      // A reply says which comment it answers, by its number, so its thread can be found.
+      var where = [c.polity || "", c.at || ""];
+      if (c.parent) where.push("reply to #" + c.parent);
+      meta.appendChild(document.createTextNode(where.concat(plural(c.flags || 0, "report", "reports")).join(" | ") + " | "));
       meta.appendChild(el("span", "cm-state cm-" + c.state, c.state === "live" && !c.flags ? "live" : STATES[c.state] || c.state));
       if (blocked[c.user]) meta.appendChild(el("span", "cm-tag", "blocked"));
       li.appendChild(meta);
@@ -262,7 +265,7 @@
       a.end();
     }
     function merge(c, n) {
-      ["state", "flags", "text", "polity", "at", "avatar", "username"].forEach(function (k) { if (n[k] !== undefined) c[k] = n[k]; });
+      ["state", "flags", "text", "polity", "at", "avatar", "username", "parent", "root"].forEach(function (k) { if (n[k] !== undefined) c[k] = n[k]; });
       if (c.state === "live" && n.flags === undefined) c.flags = 0;
     }
     // Erase is asked in the row: it names the account and says it cannot be undone.
@@ -271,7 +274,7 @@
       var box = el("div", "cm-ask");
       box.setAttribute("role", "group");
       box.setAttribute("aria-label", "Erase " + username + "'s account?");
-      box.appendChild(el("p", "", "Erase " + username + "'s account: the profile, the picture, every comment, and every report it made? This cannot be undone."));
+      box.appendChild(el("p", "", "Erase " + username + "'s account: the profile, the picture, every comment, and every report it made? Others' replies to its comments stay, under \"Deleted comment\". This cannot be undone."));
       var row = el("div", "rp-acts");
       var yes = button("Erase " + username, function () {
         box.remove();

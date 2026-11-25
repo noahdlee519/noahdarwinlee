@@ -9897,8 +9897,11 @@
       signIn: function () { setAccountOpen(true, false); },
       // A 401 from the comments function: the session is dropped, as reportAsk does, so sign-in is offered again.
       signedOut: function () { keepReportSession(null); },
-      // The Account panel opened (where the profile is edited), signed in.
+      // The Account panel opened (where the profile is edited), signed in; closed (a comment pressed in its list of the
+      // account's own takes the reader to the map); and whether it is open.
       openAccount: function () { setAccountOpen(true, false); },
+      closeAccount: function () { setAccountOpen(false, false); },
+      accountOpen: function () { return !accountPanel.hidden; },
       // The map's date as the page writes it in the address ("1815", "1941-06", "1941-06-22"); a date so written as
       // the page shows dates (the map's own date without one); and the map moved to a date, with the card of the
       // name given (or the card that was open) opened there.
