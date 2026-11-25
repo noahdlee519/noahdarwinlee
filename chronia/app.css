@@ -146,7 +146,10 @@
 /* The page itself can't be zoomed on a touch screen: on an iPhone a double tap, a pinch that began on the interface, or a tap on a
    text box zoomed the whole page, and left it zoomed. The page takes pans only (its panels scroll); the map has its own pinch
    (.ch-globe). With this go the viewport's maximum-scale in index.html and the gesture listeners in app.js. */
-html:has(body.ch-page) { touch-action: pan-x pan-y; }
+/* Safari on iOS 26 paints the strip under the status bar in the page's background colour, and no longer reads the
+   theme-color tag; without a colour of its own the strip was white over the atlas's paper (Noah, 25 November 2026). So
+   the page's colour is the paper's at the top edge of the screen, under the gradient. */
+html:has(body.ch-page) { touch-action: pan-x pan-y; background-color: #e8d9b7; }
 body.ch-page {
   margin: 0;
   padding: 0;
@@ -155,7 +158,7 @@ body.ch-page {
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: pan-x pan-y;
-  background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);
+  background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%) #e8d9b7;
   color: var(--ink);
   font-family: var(--ch-serif);
 }
@@ -1096,9 +1099,13 @@ select.ch-save-input {
   padding: 12px calc(20px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
   /* The bar's upper edge is a brass rail (--ch-rail), drawn in the first five pixels of its padding, over the paper. */
   border-top: 1px solid var(--ch-brass-deep);
-  background-image: var(--ch-rail), var(--ch-grain);
-  background-size: 100% 5px, 260px 260px;
-  background-repeat: no-repeat, repeat;
+  /* The paper is a layer of its own, and the bar's background colour is the grained paper's average shade: Safari on
+     iOS 26 paints the strip under the bar, by the home indicator, in that colour, and with the paper's plain colour the
+     strip was lighter than the bar above it (Noah, 25 November 2026). */
+  background-color: #e6dac1;
+  background-image: var(--ch-rail), var(--ch-grain), linear-gradient(var(--bg), var(--bg));
+  background-size: 100% 5px, 260px 260px, auto;
+  background-repeat: no-repeat, repeat, repeat;
   box-shadow: 0 -2px 10px -6px rgba(58, 42, 27, 0.3);
 }
 
