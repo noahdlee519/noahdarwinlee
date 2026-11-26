@@ -1,6 +1,6 @@
 // Builds chroniaatlas.com: CHRONIA at the root of its own site, with what it borrows from the rest of
 // noahdarwinlee.com (UCHRONIA's data and scripts, the fonts, the site's stylesheet and scripts, and the
-// icons); its own pages (team, faq, reports, premium, privacy, and terms) are in chronia/ with it. Vercel runs it on every
+// icons); its own pages (team, faq, reports, premium, comments, privacy, and terms) are in chronia/ with it. Vercel runs it on every
 // push (vercel.json); it can be run by hand too: node tools/build-chronia-site.mjs [output folder, default chronia-site].
 //
 // The pages are copied as they are, then their links are fixed for the new site: a link into /chronia/
@@ -23,7 +23,7 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "dev.js", "comments.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "dev.js", "comments.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "page-lang.js", "lang", "visit.js", "data", "team", "faq", "reports", "privacy", "terms", "premium", "comments", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
 // UCHRONIA moved here from noahdarwinlee.com/uchronia/ on 22 November 2026; its page there (go.js) sends visitors on.
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "uchronia/lang.js", "uchronia/lang", "fonts"]) copy(f);
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);

@@ -132,6 +132,18 @@ body.cp {
   box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9);
 }
 
+/* The note page-lang.js puts under the heading of a page kept in English, in the reader's language. */
+.cp-lang-note {
+  margin: 0 0 16px;
+  padding: 9px 13px 10px;
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--brass);
+  background: rgba(255, 250, 228, 0.45);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
 .cp-lede,
 .cp-sheet .privacy-lede {
   margin: 0 0 6px;

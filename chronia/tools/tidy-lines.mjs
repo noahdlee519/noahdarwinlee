@@ -17,6 +17,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { closeSlivers } from "./zip-slivers.mjs";
 import { mendInfo, landTest, applyTimeFixes, splitRows } from "./mend-faces.mjs";
+import { changeDays } from "./change-days.mjs";
 
 export function tidyLines(data, require, km, log = console.log, again = false) {
   const client = require("topojson-client"), d3 = require("d3-geo");
@@ -53,6 +54,14 @@ export function tidyLines(data, require, km, log = console.log, again = false) {
     writeFileSync(hiPath, JSON.stringify(hi));
   }
   log("lines tidied in " + total.files + " files: " + total.long + " points added along long segments, " + total.cut + " lines cut where they crossed, " + total.closed + " hairline faces closed (" + total.km2 + " km²), " + total.mouths + " open gaps closed across their mouths, " + total.gaps + " gaps and " + total.overlaps + " overlaps mended (" + total.faces + " faces, " + total.mendedKm2 + " km²) in " + total.shapes + " shapes; " + total.kept + " shapes left as they were, " + total.odd + " pieces of line that would not add up left alone; " + total.days + " rows begun earlier or ended later over holes in time, " + total.split + " rows split in time at a handover");
+  // The days the map changes from 1800, worked out again from the files as tidied (change-days.mjs), since the steps above
+  // move rows' days.
+  const erasPath = resolve(data, "eras.json");
+  const eras = JSON.parse(readFileSync(erasPath));
+  if (eras.dated) {
+    const days = changeDays(eras, (f) => JSON.parse(readFileSync(resolve(data, f))));
+    if (JSON.stringify(days) !== JSON.stringify(eras.dated.days || [])) { log("change days from 1800: " + days.length + " (" + (eras.dated.days || []).length + " before)"); eras.dated.days = days; writeFileSync(erasPath, JSON.stringify(eras)); }
+  }
   return total;
 }
 

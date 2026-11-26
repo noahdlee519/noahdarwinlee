@@ -330,10 +330,9 @@
           <legend class="sr-only">Buffer zone</legend>
           <div class="gc-buffer">
             <label class="gc-buffer-label" for="buffer">Buffer zone:</label>
-            <input type="range" id="buffer" min="0" max="161" step="1" value="80" aria-describedby="buffer-help" />
+            <input type="range" id="buffer" min="0" max="161" step="1" value="80" />
             <output class="gc-buffer-out" id="buffer-out" for="buffer">80 km</output>
           </div>
-          <p class="gc-hint" id="buffer-help">How far the route stays from everything avoided</p>
         </fieldset>
         <fieldset class="gc-opt-group">
           <legend class="gc-label">Winds aloft</legend>
@@ -424,7 +423,8 @@
 
       <div class="gc-foot" id="foot" hidden>
         <button type="button" class="gc-btn gc-btn-primary" id="share">
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2M8 2L5 5M8 2l3 3M3 8v5.5h10V8" /></svg>
+          <svg class="gc-share-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2M8 2L5 5M8 2l3 3M3 8v5.5h10V8" /></svg>
+          <svg class="gc-share-done" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.6" /><path d="M5.2 8.2l2 2 3.7-4" /></svg>
           <span id="share-label">Share this route</span>
         </button>
         <button type="button" class="gc-btn gc-btn-quiet gc-share-image" id="share-image">Save as an image</button>

@@ -12,5 +12,7 @@
   window.CH_LANGS = LANGS;
   window.CH_LANG = lang;
   document.documentElement.lang = lang === "zh" ? "zh-Hans" : lang;
-  if (lang !== "en") document.write('<script src="lang/' + lang + '.js"><\/script>');
+  // The translations sit beside this file, so a page in a folder (comments/) loads them as ../lang.js does.
+  var here = (document.currentScript && document.currentScript.getAttribute("src") || "").replace(/[^\/]*$/, "");
+  if (lang !== "en") document.write('<script src="' + here + 'lang/' + lang + '.js"><\/script>');
 })();
