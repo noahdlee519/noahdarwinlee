@@ -96,7 +96,10 @@
     // The date sits under the top row on narrower screens, so the map starts below it there.
     var ybBottom = yb.parentNode === topRow ? topRow.offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
     // A banner under the top row (adsPlace, where the gaps beside the date are too narrow for two) pushes the map down too.
-    freeT = Math.max(phone ? 58 : 76, ybBottom, typeof adsPlace === "function" && typeof ADS === "object" && ADS ? adsPlace() : 0);
+    var adsUnder = typeof adsPlace === "function" && typeof ADS === "object" && ADS ? adsPlace() : 0;
+    freeT = Math.max(phone ? 58 : 76, ybBottom, adsUnder);
+    // The card starts below such a banner too, not over it (iPads, 26 November 2026).
+    document.documentElement.style.setProperty("--ch-ad-under", (phone ? 0 : Math.round(adsUnder)) + "px");
     freeB = H - timeH - cardH;
     cx = W / 2;
     cy = (freeT + freeB) / 2;

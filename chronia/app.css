@@ -652,6 +652,12 @@ body.ch-page {
   margin-right: 0.3em;
 }
 
+/* The row of links wraps between links, never inside one ("Get / Premium" on a small phone). */
+.ch-about-tip .ch-sources a,
+.ch-about-tip .ch-sources button {
+  white-space: nowrap;
+}
+
 .ch-about-tip .ch-sources {
   margin-top: 9px;
   padding-top: 8px;
@@ -1993,11 +1999,13 @@ select.ch-save-input {
 .ch-card {
   position: fixed;
   z-index: 22;
-  top: calc(var(--ch-bar) + 2 * var(--ch-gap) + env(safe-area-inset-top, 0px));
+  /* Below the top row, or below the banner under it where there is one (--ch-ad-under, set by layout()). */
+  --ch-card-top: max(calc(var(--ch-bar) + 2 * var(--ch-gap) + env(safe-area-inset-top, 0px)), var(--ch-ad-under, 0px));
+  top: var(--ch-card-top);
   right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
   width: min(360px, calc(100vw - 2 * var(--ch-gap)));
-  max-height: calc(100vh - var(--ch-bar) - 3 * var(--ch-gap) - var(--ch-time-h));
-  max-height: calc(100dvh - var(--ch-bar) - 3 * var(--ch-gap) - var(--ch-time-h));
+  max-height: calc(100vh - var(--ch-card-top) - var(--ch-gap) - var(--ch-time-h));
+  max-height: calc(100dvh - var(--ch-card-top) - var(--ch-gap) - var(--ch-time-h));
   box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -4585,6 +4593,10 @@ select.ch-save-input {
 }
 .ch-ad-house.is-narrow .ch-ad-house-sub {
   display: none;
+}
+.ch-ad-house.is-narrow .ch-ad-house-title {
+  font-size: 13px;
+  line-height: 1.1;
 }
 .ch-ad-demo {
   display: flex;
