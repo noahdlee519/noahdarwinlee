@@ -519,18 +519,11 @@
   stroke: none;
 }
 
-/* National parks: no fill; at the closest zooms only a faint fine edge. The name does the work. */
+/* National parks and nature reserves: no fill and no edge at any zoom (Noah, 26 November 2026); the name does the
+   work. */
 .map-park {
   fill: none;
-  stroke: #5fae7d;
-  stroke-width: 0.8px;
-  stroke-opacity: 0;
-  vector-effect: non-scaling-stroke;
-  transition: stroke-opacity 300ms ease;
-}
-
-.map.is-z4 .map-park {
-  stroke-opacity: 0.4;
+  stroke: none;
 }
 
 .k-park text {

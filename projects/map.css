@@ -315,11 +315,13 @@ textarea {
 
 /* ---------------------------------------------------------------- labels */
 
+/* A name leaving goes at once; only a name arriving fades in. Fading names out as well made a busy map twinkle on
+   every zoom (Noah, 26 November 2026). */
 .lbl {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 180ms ease, visibility 0s linear 180ms;
+  transition: none;
 }
 
 .lbl.is-on {
@@ -820,6 +822,27 @@ a {
   transform: translateX(-100%);
   visibility: hidden;
   transition: transform 300ms var(--ease-out), visibility 0s linear 300ms;
+}
+
+/* Scrolled, the panel puts a white strip behind the search box, as Google Maps does, so its text no longer slides
+   up round the box (Noah, 26 November 2026). */
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 72px;
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(var(--shadow-rgb), 0.08), 0 4px 10px -6px rgba(var(--shadow-rgb), 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.panel.is-scrolled::before {
+  opacity: 1;
 }
 
 .is-panel .panel {
@@ -2147,8 +2170,9 @@ body:not(.is-panel) .panel-tab .ic {
 
   /* One white button at the right, above the sheet: the location button. No next-world button and no world's name
      on a phone (Noah, 24 November 2026), and no zoom buttons: pinch and double-tap zoom, as in the app. */
-  .drawer-next,
-  .drawer-note {
+  /* (Specific enough to outrank the menu's own row styles, set later in the file: the row still showed.) */
+  .drawer .drawer-row.drawer-next,
+  .drawer .drawer-note {
     display: none;
   }
 

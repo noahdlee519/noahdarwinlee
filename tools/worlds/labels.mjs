@@ -510,6 +510,39 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const at = got.search(size, got.angle, got.lines, 0);
       if (at) got = { ...got, x: at.x, y: at.y, size };
     }
+    // Then towards the middle (Noah, 26 November 2026: names sat to one side of their country, wherever the most
+    // room was). The middle is the deepest point near where it was put, drawn a little towards the country's centre of
+    // mass; the name moves to the spot nearest it where it still fits, at the found size or down to four fifths of it.
+    {
+      let mx = 0, my = 0;
+      for (const i of pixels) { mx += i % W; my += (i / W) | 0; }
+      mx /= pixels.length; my /= pixels.length;
+      // (Within reach of where the name was put: a country of two lobes keeps its name on the larger one, and the
+      // name is centred on that lobe rather than sent to the other.)
+      const reach = 0.3 * Math.sqrt(pixels.length);
+      let deep = pixels[0], deepScore = -Infinity;
+      for (const i of pixels) {
+        if (Math.hypot((i % W) - got.x, ((i / W) | 0) - got.y) > reach) continue;
+        const sc = dOwner[i] - 0.04 * Math.hypot((i % W) - mx, ((i / W) | 0) - my);
+        if (sc > deepScore) { deepScore = sc; deep = i; }
+      }
+      const vx = (deep % W) + 0.5, vy = ((deep / W) | 0) + 0.5;
+      const near = (x, y) => Math.hypot(x - vx, y - vy);
+      const now = near(got.x, got.y);
+      if (got.fitsAt && now > 1.5 * S) {
+        const grid = Math.max(1, Math.round(Math.sqrt(pixels.length) / 60));
+        const cands = pixels.filter((i) => !((i % W) % grid) && !(((i / W) | 0) % grid)).map((i) => [(i % W) + 0.5, ((i / W) | 0) + 0.5]).filter(([x, y]) => near(x, y) < now * 0.8).sort((a, b) => near(a[0], a[1]) - near(b[0], b[1])).slice(0, 900);
+        let moved = null;
+        for (const f of [1, 0.92, 0.85, 0.8]) {
+          const size = Math.max(floor, got.size * f);
+          // (Never onto a capital's dot, which the capital's own name needs room beside.)
+          const clearOfDots = (x, y) => !labelRects({ x, y, size, angle: got.angle, lines: got.lines, spacing: got.spacing || 0 }, 0.9 * S).some((rc) => capitalDots.some((t) => rectsOverlap(rc, { cx: t.x, cy: t.y, hw: 6 * S, hh: 4.5 * S, cos: 1, sin: 0 })));
+          for (const [x, y] of cands) if (got.fitsAt(x, y, size, got.angle, got.lines, got.spacing || 0) && clearOfDots(x, y)) { moved = { x, y, size }; break; }
+          if (moved) break;
+        }
+        if (moved) got = { ...got, ...moved };
+      }
+    }
     const label = {
       id: project.id, kind: 'country', text: project.name, lines: got.lines,
       x: got.x, y: got.y, size: got.size, angle: got.angle, spacing: got.spacing || 0,

@@ -333,7 +333,7 @@
   }
 
   function viewSaved() {
-    var h = '<header class="head head-plain"><h2 class="title" tabindex="-1">Saved</h2><p class="sub">Projects you’ve hearted, kept in this browser</p></header>';
+    var h = '<header class="head head-plain"><h2 class="title" tabindex="-1">Saved</h2><p class="sub">Projects you’ve saved, kept in this browser</p></header>';
     var items = state.saved.map(function (id) { return state.byId[id]; }).filter(Boolean);
     if (!items.length) {
       h += '<div class="empty">' + icon("i-bookmark", "empty-heart") + "<p>Nothing saved yet. Open a country and press Save to keep it here.</p></div>";
@@ -375,10 +375,13 @@
     stopVideos();
     els.panelBody.innerHTML = html;
     var head = $(".head", els.panelBody);
-    if (head) head.insertAdjacentHTML("afterend", peekLinks());
+    // (The footer's links under the heading of the lists only, not a project's, where they sat between its address
+    // and its buttons.)
+    if (head && view !== "project") head.insertAdjacentHTML("afterend", peekLinks());
     els.panel.setAttribute("data-view", view || "none");
     els.panel.setAttribute("aria-label", view === "project" ? (province ? state.byId[id].provinces.filter(function (v) { return v.id === province; })[0].name : state.byId[id].name) : view === "world" ? state.world.name : view === "saved" ? "Saved" : view === "contact" ? "Contact" : "Details");
     els.panelScroll.scrollTop = 0;
+    els.panel.classList.remove("is-scrolled");
     bindPanel();
     renderPeek();
     if (view) showPanel(true, opts.sheet);
@@ -1227,6 +1230,8 @@
       resizeRaf = requestAnimationFrame(function () { state.map.resized(); layout(); });
     });
     phoneQuery.addEventListener("change", layout);
+    // (On a computer, once the panel has scrolled past its first few lines.)
+    els.panelScroll.addEventListener("scroll", function () { els.panel.classList.toggle("is-scrolled", !isPhone() && els.panelScroll.scrollTop > 56); }, { passive: true });
     // Back from the background, or from the browser's back and forward cache: measure the screen again.
     var wake = function () { if (document.visibilityState === "visible") requestAnimationFrame(function () { state.map.resized(); layout(); }); };
     document.addEventListener("visibilitychange", wake);

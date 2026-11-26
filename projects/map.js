@@ -150,8 +150,14 @@
   MapView.prototype.resized = function () {
     var w = this.host.clientWidth, h = this.host.clientHeight;
     if (!(w > 0 && h > 0)) return;
+    var old = this._size;
     this._size = { w: w, h: h };
-    if (this.world) this.set(this.sane() ? { s: this.s, tx: this.tx, ty: this.ty } : this.home());
+    if (!this.world) return;
+    if (!this.sane()) { this.set(this.home()); return; }
+    // The point at the middle of the map stays at the middle as the window changes size, as on Google Maps; the map
+    // was pinned by its top-left corner, and a narrowed window pushed a picked country off its right side.
+    var dx = old && old.w > 0 ? (w - old.w) / 2 : 0, dy = old && old.h > 0 ? (h - old.h) / 2 : 0;
+    this.set({ s: this.s, tx: this.tx + dx, ty: this.ty + dy });
   };
   // Whether the view is a real one; and the whole world, to fall back on when it is not.
   MapView.prototype.sane = function (v) {
@@ -524,6 +530,8 @@
       var water = !!WATER[l.kind];
       var kind = l.kind;
       var floor = LABEL_FLOOR[kind] || 11, cap = Math.max(LABEL_CAP[kind] || 14, floor);
+      // A small country's name may go down to 9 px, so it can be shown from the farthest zoom (Noah, 26 November 2026).
+      if (kind === "country" && l.size < 14) floor = 9;
       // A country's name grows no larger than it is with the whole world in view (zoom 1). Places' names keep one
       // modest size on screen at every zoom, and their dots with them (see LABEL_FLOOR and LABEL_CAP).
       if (kind === "country") cap = Math.max(floor, Math.min(cap, 0.977 * Math.pow(self.ref(), 0.78) * l.size));
@@ -660,6 +668,8 @@
       var mz = l.minZoom <= 6 ? l.minZoom : Math.min(MAX_ZOOM, 6 + (l.minZoom - 6) * (MAX_ZOOM - 6) / 10);
       // Noah, 24 November 2026: far out, only the countries are named, as on Google Maps; capitals and cities wait
       // for a closer zoom, even for the country that is selected.
+      // Every country is named from the farthest zoom, collisions allowing.
+      if (l.kind === "country") mz = 1;
       var placeMin = PLACE_MIN_ZOOM[l.kind];
       if (placeMin) { mz = Math.max(mz, placeMin); if (z + 1e-6 < placeMin - 1) forced = false; }
       if ((z + 1e-6 >= mz) || forced || (inProvince && z * 1.6 >= mz)) {
@@ -689,6 +699,8 @@
         var M = self.M;
         var ex = Math.abs(hw * Math.cos(ang)) + Math.abs(hh * Math.sin(ang)), ey = Math.abs(hw * Math.sin(ang)) + Math.abs(hh * Math.cos(ang));
         var on = ccx + ex > -M && ccx - ex < size.w + M && ccy + ey > -M && ccy - ey < size.h + M;
+        // A sea's or a lake's name, never cut by the edge of the map: whole on the screen, or not at all.
+        if (on && WATER[l.kind] && (ccx - ex < r.l || ccx + ex > size.w || ccy - ey < 0 || ccy + ey > size.h)) on = false;
         // Never half under the panel or the sheet.
         if (ins.left && ccx - ex < r.l + 4 && ccx + ex > r.l - 4) on = false;
         if (ins.bottom && ccy + ey > r.b - 4 && ccy - ey < r.b + 4) on = false;
