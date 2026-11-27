@@ -125,6 +125,15 @@
     this.pane.className = "map-pane";
     this.pane.style.setProperty("--overscan", this.M + "px");
     host.appendChild(this.pane);
+    // The land is painted on a canvas under the drawing: the whole-world picture and the finer tiles, from pictures
+    // decoded once, painted in the same moment as the drawing changes. In the drawing itself the browser could paint
+    // a zoomed map before its pictures, or drop the drawing's pixels for a frame when short of memory, and the land
+    // flashed to bare sea; on a canvas of its own, the land is always there (Noah, 27 November 2026).
+    this.canvas = document.createElement("canvas");
+    this.canvas.className = "map-canvas";
+    this.canvas.setAttribute("aria-hidden", "true");
+    this.pane.appendChild(this.canvas);
+    this.ctx = this.canvas.getContext && this.canvas.getContext("2d", { alpha: true });
     this.svg = svg("svg", { class: "map-svg", role: "application", "aria-label": "Map", tabindex: "0" }, this.pane);
     this.svg.setAttribute("aria-roledescription", "map");
     this.ocean = svg("rect", { class: "map-ocean", x: 0, y: 0, width: "100%", height: "100%" }, this.svg);
@@ -284,7 +293,10 @@
     this.stop();
     this.world = world;
     this.root.textContent = "";
-    this.host.classList.remove("is-image-in");
+    this.host.classList.remove("is-image-in", "is-canvas");
+    if (this.groundBmp && this.groundBmp.close) this.groundBmp.close();
+    this.groundBmp = null;
+    if (this.tiles) this.tiles.clear();
     var W = world.width, H = world.height, g = this.root;
     this.layers = [];
     function layer(cls, copied) {
@@ -380,13 +392,23 @@
       img.decoding = "async";
       img.onload = img.onerror = function () {
         self.baseHref = href;
-        self._setImageHref(image);
         if (self.onPicture) self.onPicture(href);
-        self._refresh(Limg);
-        requestAnimationFrame(function () {
-          self.host.classList.add("is-image-in");
-          resolve();
-        });
+        var done = function () {
+          requestAnimationFrame(function () {
+            self.host.classList.add("is-image-in");
+            resolve();
+          });
+        };
+        // On a canvas where the browser can (all current ones); else in the drawing, as before.
+        if (self.ctx && window.createImageBitmap && img.naturalWidth) {
+          createImageBitmap(img).then(function (bmp) {
+            if (self.world !== world) { if (bmp.close) bmp.close(); return; }
+            self.groundBmp = bmp;
+            self.host.classList.add("is-canvas");
+            self._paintGround();
+            done();
+          }, function () { self._setImageHref(image); self._refresh(Limg); done(); });
+        } else { self._setImageHref(image); self._refresh(Limg); done(); }
       };
       img.src = href;
     }); });
@@ -817,8 +839,31 @@
     if (z >= 1.3 && !this.detailAsked && !this.anim && !this.interacting) this._loadDetail();
     this.placeLabels();
     if (!this.anim && !this.interacting) this.tiles.update();
+    this._paintGround();
     if (this.onDraw) this.onDraw(this);
     this.onView(this);
+  };
+
+  // The land, on the canvas: the whole-world picture once for each copy of the world, then the tiles, coarser under
+  // finer, all placed by the view last drawn (the box they share with the drawing slides and scales them between
+  // draws). At most two canvas pixels to a screen pixel.
+  MapView.prototype._paintGround = function () {
+    var cv = this.canvas, ctx = this.ctx, c = this.c;
+    if (!ctx || !this.world || !c) return;
+    var z = this.size(), M = this.M, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var cw = Math.max(1, Math.round((z.w + 2 * M) * dpr)), ch = Math.max(1, Math.round((z.h + 2 * M) * dpr));
+    if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    if (!this.groundBmp) return;
+    var W = this.world.width, H = this.world.height;
+    ctx.setTransform(dpr * c.s, 0, 0, dpr * c.s, dpr * (c.tx + M), dpr * (c.ty + M));
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    var ks = this.copies || [0];
+    for (var i = 0; i < ks.length; i++) ctx.drawImage(this.groundBmp, ks[i] * W, 0, W, H);
+    var els = this.tiles ? this.tiles.drawn() : [];
+    for (var j = 0; j < els.length; j++) { var e = els[j]; ctx.drawImage(e.bmp, e.x0, e.y0, e.x1 - e.x0, e.y1 - e.y0); }
   };
 
   // ------------------------------------------------------------ finer detail
@@ -895,7 +940,6 @@
     this.view = view;
     this.els = {};
     this.level = null;
-    this.seen = {}; // tiles loaded once: shown again at once, with no fade (Noah, 24 November 2026: tiles flashed on zoom)
   }
   Tiles.prototype.levelFor = function () {
     var v = this.view, w = v.world, T = w.tiles;
@@ -935,59 +979,59 @@
       if (!self.els[key]) self.els[key] = self._make(want[key]);
       if (!self.els[key].loaded) pending++;
     });
-    // Tiles of this level a little out of view stay, so a pan or a zoom back shows them at once; tiles of another
-    // level stay until this level's are in, and are then kept underneath while the view is near them, so a zoom back
-    // and forth across a level never drops to the softer whole-world picture.
-    var z2 = v.size(), far = Math.max(z2.w, z2.h) / v.s; // one screen, in map units
+    // Kept only while near the view, and few: a close-in tile is a megapixel picture, about 4 MB once decoded, and
+    // the 260 once kept here (Noah, 24 November 2026, for a zoom back without a fade) left the browser short of memory,
+    // so that it dropped and redrew whole parts of the page, land and all, as the map was zoomed (Noah, 27 November
+    // 2026). Now: this level's tiles within half a screen of the view; another level's only until this level's are
+    // in, as it was; and never more than 48.
+    var z2 = v.size(), far = 0.5 * Math.max(z2.w, z2.h) / v.s;
     var bx0 = (-v.tx) / v.s - far, bx1 = (z2.w - v.tx) / v.s + far, by0 = (-v.ty) / v.s - far, by1 = (z2.h - v.ty) / v.s + far;
-    var keys = Object.keys(this.els);
-    keys.forEach(function (key) {
+    Object.keys(this.els).forEach(function (key) {
       if (want[key]) return;
       var el = self.els[key], near = el.x1 >= bx0 && el.x0 <= bx1 && el.y1 >= by0 && el.y0 <= by1;
       var otherLevel = !lv || el.scale !== lv.scale;
-      if (!near || (otherLevel && !pending && lv && el.scale < lv.scale) || !el.loaded) { el.node.remove(); delete self.els[key]; }
+      if (!near || !el.loaded || (otherLevel && (!pending || !lv))) self._drop(key);
     });
-    // A ceiling on what is kept: the farthest go first.
-    keys = Object.keys(this.els);
-    if (keys.length > 260) {
+    var keys = Object.keys(this.els);
+    if (keys.length > 48) {
       var cx = (z2.w / 2 - v.tx) / v.s, cy = (z2.h / 2 - v.ty) / v.s;
       keys.filter(function (k) { return !want[k]; }).map(function (k) {
         var e = self.els[k]; return { k: k, d: Math.hypot((e.x0 + e.x1) / 2 - cx, (e.y0 + e.y1) / 2 - cy) };
-      }).sort(function (a, b) { return b.d - a.d; }).slice(0, keys.length - 260).forEach(function (o) {
-        self.els[o.k].node.remove(); delete self.els[o.k];
-      });
+      }).sort(function (a, b) { return b.d - a.d; }).slice(0, keys.length - 48).forEach(function (o) { self._drop(o.k); });
     }
     this.pending = pending;
   };
-  // One group per level, finer over coarser, so tiles kept from another level never cover sharper ones.
-  Tiles.prototype._layer = function (scale) {
-    var host = this.view.tileHost, g = host.querySelector('g[data-scale="' + scale + '"]');
-    if (g) return g;
-    g = svg("g", { "data-scale": scale }, host);
-    var after = [].slice.call(host.children).filter(function (c) { return c !== g && +c.getAttribute("data-scale") > scale; })[0];
-    if (after) host.insertBefore(g, after);
-    return g;
+  // A tile let go, its picture freed.
+  Tiles.prototype._drop = function (key) {
+    var el = this.els[key];
+    if (el) { el.gone = true; if (el.bmp && el.bmp.close) el.bmp.close(); }
+    delete this.els[key];
+  };
+  Tiles.prototype.clear = function () {
+    var self = this;
+    Object.keys(this.els).forEach(function (k) { self._drop(k); });
+    this.pending = 0;
+  };
+  // The tiles to paint, coarser first so finer ones lie over them.
+  Tiles.prototype.drawn = function () {
+    var self = this;
+    return Object.keys(this.els).map(function (k) { return self.els[k]; }).filter(function (e) { return e.bmp; }).sort(function (a, b) { return a.scale - b.scale; });
   };
   Tiles.prototype._make = function (t) {
     var v = this.view, w = v.world, lv = t.lv, self = this;
     var px = Math.min(lv.size, Math.round(w.width * lv.scale) - t.col * lv.size), py = Math.min(lv.size, Math.round(w.height * lv.scale) - t.row * lv.size);
-    var node = svg("image", {
-      decoding: "sync",
-      class: "map-tile", x: t.col * lv.unit + t.k * w.width, y: t.row * lv.unit,
-      width: px / lv.scale, height: py / lv.scale, preserveAspectRatio: "none"
-    }, this._layer(lv.scale));
     var x0 = t.col * lv.unit + t.k * w.width, y0 = t.row * lv.unit;
-    var el = { node: node, scale: lv.scale, url: ROOT + "worlds/" + w.tiles.src + lv.scale + "/" + t.col + "-" + t.row + ".png", loaded: false,
+    var el = { scale: lv.scale, url: ROOT + "worlds/" + w.tiles.src + lv.scale + "/" + t.col + "-" + t.row + ".png", loaded: false, bmp: null,
       x0: x0, y0: y0, x1: x0 + px / lv.scale, y1: y0 + py / lv.scale };
-    if (this.seen[el.url]) node.classList.add("is-seen");
-    node.addEventListener("load", function () {
+    var finish = function () {
       el.loaded = true;
-      self.seen[el.url] = true;
-      node.classList.add("is-in");
       if (self.pending && !--self.pending) self.update();
-    });
-    node.addEventListener("error", function () { el.loaded = true; });
-    v.picture(el.url).then(function (href) { node.setAttribute("href", href); });
+      v._paintGround();
+    };
+    // Fetched and decoded off the page, then painted whole: a tile appears at once, with no fade.
+    v.picture(el.url).then(function (href) { return fetch(href); }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+      .then(function (b) { return createImageBitmap(b); })
+      .then(function (bmp) { if (el.gone || v.world !== w) { if (bmp.close) bmp.close(); return; } el.bmp = bmp; finish(); }, function () { if (!el.gone) finish(); });
     return el;
   };
 

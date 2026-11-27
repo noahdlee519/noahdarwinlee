@@ -652,7 +652,7 @@ async function menuStage(browser) {
     ['rivers', 'Rivers and lakes', () => shown('.map-rivers path, .map-lakes')],
     ['parks', 'National parks', () => shown('.map-parks path, .map-park')],
     ['borders', 'Borders (and province lines with them)', () => page.evaluate(() => [...document.querySelectorAll('.map-borders, .map-provinces')].every((e) => getComputedStyle(e).display !== 'none'))],
-    ['terrain', 'Terrain', () => shown('.map-image')],
+    ['terrain', 'Terrain', () => shown('.map-canvas')],
     ['water-names', 'Water names', () => labelsOn(['sea', 'gulf', 'bay', 'strait', 'channel', 'sound', 'fjord', 'lagoon', 'harbour', 'inlet', 'cove', 'ocean', 'lake', 'river'])],
   ];
   for (const [name, label, isShown] of LAYERS) {
@@ -741,10 +741,10 @@ async function sharpStage(browser) {
       const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.ref() * 6;
       m.set({ s, tx: r.l + r.w / 2 - (l.x - 40) * s, ty: r.t + r.h / 2 - (l.y + 20) * s });
       m.render(true);
-      for (let i = 0; i < 60 && (m.tiles.pending || !document.querySelector('.map-tile.is-in')); i++) await new Promise((res) => setTimeout(res, 100));
+      for (let i = 0; i < 60 && (m.tiles.pending || !Object.values(m.tiles.els).some((e) => e.bmp)); i++) await new Promise((res) => setTimeout(res, 100));
       await new Promise((res) => setTimeout(res, 300));
       const lv = m.tiles.level;
-      return { zoom: m.zoom(), scale: lv && lv.scale, needed: m.s * Math.min(devicePixelRatio, 2), shown: document.querySelectorAll('.map-tile.is-in').length, pending: m.tiles.pending };
+      return { zoom: m.zoom(), scale: lv && lv.scale, needed: m.s * Math.min(devicePixelRatio, 2), shown: Object.values(m.tiles.els).filter((e) => e.bmp).length, pending: m.tiles.pending };
     });
     ok(Math.abs(got.zoom - 6) < 0.01 && got.scale >= got.needed && got.shown > 0 && !got.pending, `${phone ? 'phone' : 'desktop'} at 6x on a ${phone ? 3 : 2}x screen: ${got.shown} tiles at ${got.scale} pixels per map unit, for the ${got.needed.toFixed(1)} the screen shows`);
     await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom4-phone.png' : '/tmp/portfolio-map-zoom4.png' });
@@ -760,7 +760,7 @@ async function sharpStage(browser) {
       await new Promise((res) => setTimeout(res, 1000));
       const lv = m.tiles.level, T = m.world.tiles.levels;
       const on = (q) => [...document.querySelectorAll(q)].some((e) => getComputedStyle(e).opacity !== '0' && e.getBoundingClientRect().width > 0);
-      return { zoom: m.zoom(), finest: lv && lv.scale === T[T.length - 1].scale, shown: document.querySelectorAll('.map-tile.is-in').length, urban: on('.map-urban .map-built'), streets: on('.map-streets .r-street'), minor: on('.map-streets .r-minor') };
+      return { zoom: m.zoom(), finest: lv && lv.scale === T[T.length - 1].scale, shown: Object.values(m.tiles.els).filter((e) => e.bmp).length, urban: on('.map-urban .map-built'), streets: on('.map-streets .r-street'), minor: on('.map-streets .r-minor') };
     });
     ok(Math.abs(close.zoom - MAX_ZOOM) < 0.01 && close.finest && close.shown > 0 && close.urban && close.streets && close.minor, `${phone ? 'phone' : 'desktop'} at ${MAX_ZOOM}x: the finest tiles, and the capital's built-up ground, streets, and lanes drawn over them`);
     await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom16-phone.png' : '/tmp/portfolio-map-zoom16.png' });
