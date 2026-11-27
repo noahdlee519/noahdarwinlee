@@ -1147,6 +1147,19 @@
     openers.forEach(function (b) { b.addEventListener("click", function () { if (box.hidden) open(b); else close(); }); });
     scrim.addEventListener("click", function () { close(); });
     $("[data-drawer-close]", box).addEventListener("click", function () { close(); });
+    // Leaving the page with the menu open (to the old site, the résumé, or About), the browser kept the page as it
+    // was, menu and all, and on coming back showed it open for a moment before it shut (Noah, 27 November 2026). It
+    // is shut, at once and with no slide, as the page is put away, and again as it comes back.
+    var shut = function () {
+      if (box.hidden && !box.classList.contains("is-closing")) return;
+      clearTimeout(closing);
+      box.hidden = true; scrim.hidden = true;
+      box.classList.remove("is-open", "is-closing"); scrim.classList.remove("is-open", "is-closing");
+      document.body.classList.remove("is-drawer");
+      openers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+    };
+    window.addEventListener("pagehide", shut);
+    window.addEventListener("pageshow", shut);
     document.addEventListener("keydown", function (e) {
       if (box.hidden) return;
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }

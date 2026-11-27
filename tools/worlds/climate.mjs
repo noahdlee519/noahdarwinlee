@@ -375,13 +375,11 @@ export function renderCover(prep, wx0, wy0, w, h) {
       const b = bil(basins, mx, my) + 0.0012 * n2;
       if (b > 0.0024) return COVER.SALT;
     }
-    // Dune seas, rippled, in the driest low sand: only in the finer tiles, and only a shade off the sand.
+    // Dune seas in the driest low sand: plain patches a shade off the sand, with soft, wandering edges, as Google
+    // Maps shades a desert. (No ripples or stripes: Noah, 27 November 2026.)
     if (scale >= 8 && vS < 0.7 && eh < 0.16) {
-      const erg = fbm(DN.erg, mx / (40 * S0), my / (40 * S0), 2);
-      if (erg > 0.12) {
-        const u = (mx * dca + my * dsa) / (1.4 * S0) + 2.4 * fbm(nDune, mx / (8 * S0), my / (8 * S0), 2);
-        if (Math.sin(u * Math.PI * 2) > 0.55 - 0.5 * smoothstep(0.12, 0.4, erg)) return COVER.DUNE;
-      }
+      const erg = fbm(DN.erg, mx / (40 * S0), my / (40 * S0), 2) + 0.12 * fbm(nDune, mx / (9 * S0), my / (9 * S0), 2);
+      if (erg > 0.2) return COVER.DUNE;
     }
     return vS + 0.85 * n1 + 0.15 * n2 < 0.95 ? COVER.DESERT : COVER.STEPPE;
   };
@@ -429,7 +427,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
       let m = moist[s];
       if (bank && bank[s] > 0.02) m += Math.min(0.5, bank[s] * 1.6);
       // ---- Deserts, in their own manner: broad smooth fields of pale sand and dry grass, darker warm grey-beige on
-      // the rocky plateaus and mountains, near-white salt flats in the dry basins, dune ripples only close in, and
+      // the rocky plateaus and mountains, near-white salt flats in the dry basins, plain dune patches only close in, and
       // small green oases; no shards. ----
       if (onLand || nearest) {
         const desert = desertClass(mx, my);
@@ -470,7 +468,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
         const eh = E(mx, my);
         if (fl > 2.2 * S0 && eh > 0.3 && t - 18 * (eh - elev[i0]) < -4 + 24 * (eh - 0.3)) { c = COVER.SNOW; cover[i] = c; glacier = true; }
       }
-      // Sand: beaches on dry or warm coasts, and dune fields (ergs) in the driest desert, in long ripples.
+      // Sand: beaches on dry or warm coasts, and patches of sand in the driest desert.
       if (c === COVER.DESERT || c === COVER.STEPPE || c === COVER.GRASS) {
         // (The distance to the sea read between the pixels, so the beach is an even band along the shore, not a row
         // of the grid's squares, however close the map is drawn.)
@@ -480,11 +478,8 @@ export function renderCover(prep, wx0, wy0, w, h) {
         // island.
         const stretch = dd < 1.6 ? fbm(nDune, mx / (11 * S0) + 31.7, my / (11 * S0) - 12.3, 2) : -1;
         const beach = scale >= 4 && stretch > 0.02 && dd < 0.75 + 1.6 * Math.min(0.5, stretch) && (moist[s] < 0.34 || t > 18) && e < 0.06;
-        let dune = false;
-        if (scale >= 4 && c === COVER.DESERT && moist[s] < 0.06 && e < 0.26) {
-          const u = (mx * dca + my * dsa) / (1.7 * S0) + 2.2 * fbm(nDune, mx / (9 * S0), my / (9 * S0), 2);
-          dune = Math.sin(u * Math.PI * 2) > 0.15 + 0.6 * smoothstep(0.06, 0.02, -moist[s] + 0.08);
-        }
+        // (Sand in the desert itself comes in plain patches too, never in ripples.)
+        const dune = scale >= 4 && c === COVER.DESERT && moist[s] < 0.05 && e < 0.26 && fbm(nDune, mx / (14 * S0) - 7.1, my / (14 * S0) + 3.9, 2) > 0.18;
         if (beach || dune) { c = COVER.SAND; cover[i] = c; }
       }
       if (onLand && urban && c !== COVER.SNOW) { const u = urban(mx, my, elev[i0]); if (u) { cover[i] = u === 2 ? COVER.CORE : COVER.URBAN; continue; } }

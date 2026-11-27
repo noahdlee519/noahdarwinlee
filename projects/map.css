@@ -824,6 +824,15 @@ a {
   transition: transform 300ms var(--ease-out), visibility 0s linear 300ms;
 }
 
+/* Nothing slides or fades while the page loads. A browser that laid the page out once before this stylesheet came
+   showed the side panel open, then slid it away to the left as the styles arrived (Noah, 27 November 2026). The
+   body carries is-loading from the page itself until the map is ready. */
+.is-loading *,
+.is-loading *::before,
+.is-loading *::after {
+  transition: none !important;
+}
+
 /* Scrolled, the panel puts a white strip behind the search box, as Google Maps does, so its text no longer slides
    up round the box (Noah, 26 November 2026). */
 .panel::before {
@@ -2166,6 +2175,13 @@ body:not(.is-panel) .panel-tab .ic {
     top: 64px;
     border-radius: 20px;
     max-height: calc(100vh - 220px);
+  }
+
+  /* The sheet waits to be seen until the page has placed it: drawn at once, it showed higher than its place for a
+     moment and dropped (Noah, 27 November 2026). */
+  body:not(.is-phone) .panel {
+    visibility: hidden;
+    transition: none;
   }
 
   /* One white button at the right, above the sheet: the location button. No next-world button and no world's name
