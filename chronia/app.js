@@ -96,6 +96,7 @@
     // The date sits under the top row on narrower screens, so the map starts below it there.
     var ybBottom = yb.parentNode === topRow ? topRow.offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
     // A banner under the top row (adsPlace, where the gaps beside the date are too narrow for two) pushes the map down too.
+    fitSite();
     var adsUnder = typeof adsPlace === "function" && typeof ADS === "object" && ADS ? adsPlace() : 0;
     freeT = Math.max(phone ? 58 : 76, ybBottom, adsUnder);
     // The card starts below such a banner too, not over it (iPads, 26 November 2026).
@@ -114,6 +115,16 @@
     applyView();
     placeTicks();
   }
+  // The address under the name is never wider than the name: from its size in the style sheet, it is set smaller where
+  // it would run past the name's last letter (on the narrowest phones, Noah, 27 November 2026).
+  function fitSite() {
+    var site = document.querySelector(".ch-site"), title = document.querySelector(".ch-brand .ch-title");
+    if (!site || !title) return;
+    site.style.fontSize = "";
+    var cs = getComputedStyle(title), room = title.getBoundingClientRect().width - parseFloat(cs.letterSpacing || 0), w = site.getBoundingClientRect().width;
+    if (room > 0 && w > room) site.style.fontSize = Math.max(5, parseFloat(getComputedStyle(site).fontSize) * room / w).toFixed(2) + "px";
+  }
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function () { fitSite(); });
   function zoomRange() {
     if (!flat) return [MIN_ZOOM, MAX_ZOOM];
     return [1, Math.max(2, MAX_ZOOM * baseR / baseK)];
@@ -4924,31 +4935,47 @@
     syncCompass();
     nudge();
   }
+  // Moves the map so the place `ll` (lon, lat) is back under the screen point x, y.
+  function keepAt(ll, x, y) {
+    if (!ll) return;
+    if (flat) {
+      view.lon = ll[0] - (x - cx) / FB.k / D2R;
+      view.lat = ll[1] + (y - cy) / FB.k / D2R;
+      applyView();
+      return;
+    }
+    for (var i = 0; i < 4; i++) {
+      var after = projection(ll);
+      if (!after) break;
+      if (Math.hypot(x - after[0], y - after[1]) < 0.25) break;
+      var s = degPerPx(), d = unroll(x - after[0], y - after[1]);
+      view.lon -= d[0] * s;
+      view.lat += d[1] * s;
+      applyView();
+    }
+  }
   function zoomAt(z, x, y) {
     var before = lonLatAt(x, y);
     view.zoom = z;
     applyView();
-    if (before) {
-      if (flat) {
-        view.lon = before[0] - (x - cx) / FB.k / D2R;
-        view.lat = before[1] + (y - cy) / FB.k / D2R;
-        applyView();
-      } else {
-        for (var i = 0; i < 2; i++) {
-          var after = projection(before);
-          if (!after) break;
-          var s = degPerPx(), d = unroll(x - after[0], y - after[1]);
-          view.lon -= d[0] * s;
-          view.lat += d[1] * s;
-          applyView();
-        }
-      }
-    }
+    keepAt(before, x, y);
     nudge();
   }
 
   var pointers = new Map(), drag = null, pinch = null, inertia = null, downAt = null;
   function stopInertia() { if (inertia) { cancelAnimationFrame(inertia.raf); inertia = null; } }
+  // Two-finger gestures. PINCH_MIN keeps fingers set down almost together from zooming wildly on a tiny spread;
+  // TWIST_GAP is the spread below which a twist is too noisy to turn the globe; PINCH_JUMP is a midpoint move, in one
+  // event, too big to be a finger's.
+  var PINCH_MIN = 40, TWIST_GAP = 90, PINCH_JUMP = 90;
+  function startPinch(pts, ids) {
+    pinch = {
+      ids: ids || Array.from(pointers.keys()).slice(0, 2),
+      d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), z: view.zoom,
+      mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2,
+      a: Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x), twist: 0, turning: pinch && pinch.turning || false
+    };
+  }
   canvas.addEventListener("pointerdown", function (e) {
     lastDownType = e.pointerType;
     stopInertia();
@@ -4965,7 +4992,7 @@
       downAt = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: false };
     } else if (pointers.size === 2) {
       var pts = Array.from(pointers.values());
-      pinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), z: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2, a: Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x), twist: 0, turning: false };
+      startPinch(pts);
       drag = null;
       if (downAt) downAt.moved = true;
     }
@@ -4982,19 +5009,30 @@
       return;
     }
     if (pinch && pointers.size >= 2) {
-      var pts = Array.from(pointers.values());
-      var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
-      zoomAt(pinch.z * d / Math.max(1, pinch.d), mx, my);
-      panBy(mx - pinch.mx, my - pinch.my);
-      pinch.mx = mx; pinch.my = my;
-      // Twisting two fingers turns the globe, once the twist passes TWIST_FROM degrees, so a pinch doesn't turn it by chance.
-      var a = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x), da = wrap180((a - pinch.a) / D2R);
+      // Only the two fingers the pinch began with move it; a third is ignored.
+      var p0 = pointers.get(pinch.ids[0]), p1 = pointers.get(pinch.ids[1]);
+      if (!p0 || !p1) return;
+      var d = Math.hypot(p0.x - p1.x, p0.y - p1.y), mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+      // One finger's event moves the midpoint by half its step; a jump larger than a finger can make between two events
+      // (a finger lifted and set down unseen) starts the pinch afresh rather than throwing the map.
+      if (Math.hypot(mx - pinch.mx, my - pinch.my) > PINCH_JUMP) { startPinch([p0, p1], pinch.ids); return; }
+      // The place under the fingers' midpoint stays under it: the zoom is about it, and so is any turn.
+      var under = lonLatAt(pinch.mx, pinch.my);
+      view.zoom = pinch.z * Math.max(PINCH_MIN, d) / Math.max(PINCH_MIN, pinch.d);
+      applyView();
+      // Twisting turns the globe only past a threshold, raised once the pinch has zoomed, and then only by the twist
+      // beyond it, so it eases in instead of jumping. Fingers close together give a noisy angle, so they don't turn it.
+      var a = Math.atan2(p1.y - p0.y, p1.x - p0.x), da = wrap180((a - pinch.a) / D2R);
       pinch.a = a;
-      if (!flat) {
+      if (!flat && d >= TWIST_GAP && Math.abs(da) < 30) {
         pinch.twist += da;
+        var from = Math.abs(Math.log(view.zoom / pinch.z)) > 0.2 ? TWIST_ZOOMED : TWIST_FROM;
         if (pinch.turning) rollBy(da);
-        else if (Math.abs(pinch.twist) > TWIST_FROM) { pinch.turning = true; rollBy(pinch.twist); }
+        else if (Math.abs(pinch.twist) > from) { pinch.turning = true; rollBy(pinch.twist - Math.sign(pinch.twist) * from); }
       }
+      keepAt(under, mx, my);
+      pinch.mx = mx; pinch.my = my;
+      nudge();
       return;
     }
     if (!drag) return;
@@ -5021,6 +5059,7 @@
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = null;
+    else if (pinch && pinch.ids.indexOf(e.pointerId) >= 0) { var two = Array.from(pointers.keys()).slice(0, 2); startPinch(two.map(function (k) { return pointers.get(k); }), two); }
     if (devDrag) {
       var dd = devDrag;
       devDrag = null;
@@ -5087,7 +5126,7 @@
 
   // Turning: the buttons under Globe in the View panel and the keys [ and ] turn the globe TURN_STEP degrees, and N, the
   // compass, or the third button turns it back north up, over TURN_MS (at once when motion is reduced).
-  var TWIST_FROM = 12, TURN_STEP = 15, TURN_MS = 380, turnAnim = 0;
+  var TWIST_FROM = 15, TWIST_ZOOMED = 30, TURN_STEP = 15, TURN_MS = 380, turnAnim = 0;
   function turnTo(target) {
     if (flat) return;
     cancelAnimationFrame(turnAnim);
@@ -9291,7 +9330,8 @@
     if (keep) try { localStorage.setItem(STORE_KEY, open ? "1" : "0"); } catch (e) {}
     scheduleRender();
   }
-  var keyOpen = !phoneQuery.matches && window.innerHeight >= 600;
+  // Open at first on a computer; closed on phones, tablets (a touch screen with no hover, as an iPad), and short screens.
+  var keyOpen = !phoneQuery.matches && window.innerHeight >= 600 && !(window.matchMedia && matchMedia("(hover: none) and (pointer: coarse)").matches);
   try { var savedKey = localStorage.getItem(STORE_KEY); if (savedKey === "1" || savedKey === "0") keyOpen = savedKey === "1"; } catch (e) {}
   setKeyOpen(keyOpen, false);
   keyBtn.addEventListener("click", function () { setKeyOpen(keyList.hidden, true); });
