@@ -5513,7 +5513,7 @@
   // The rubber band: pulled past 34,000 BC or the present, the bar's years and its marker follow the pull at a
   // lessening rate, up to BAND_MAX px, and spring back when let go (over BAND_MS); a glide or a scroll that runs into
   // an end bounces a little. None of it with reduced motion.
-  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, wheelLet = false, wheelStep = 0, BAND_MAX = 36, BAND_MS = 90;
+  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, wheelLet = false, wheelStep = 0, wheelPrev = 0, wheelRun = 0, WHEEL_FADE = 4, BAND_MAX = 36, BAND_MS = 90;
   function rubber(o) { return Math.sign(o) * BAND_MAX * (1 - 1 / (Math.abs(o) * 0.55 / BAND_MAX + 1)); }
   // How far, in px, the start `s` lies past an end: positive past the beginning, negative past the present.
   function pastEnd(s) { return (clampStart(s) - s) * tl.ppy; }
@@ -6036,21 +6036,26 @@
     if (!d) return;
     e.preventDefault();
     var to = tl.start + d / tl.ppy, o = pastEnd(to);
-    // Scrolling on past an end stretches the bar, which springs back once the scrolling stops, or as soon as its steps
-    // fall under three quarters of the largest: a trackpad's glide after the fingers lift sends shrinking steps for up to a second, and they
-    // shouldn't hold the stretch open. Until the scrolling stops, that glide is let go without stretching again.
+    // Scrolling on past an end stretches the bar and holds it while the fingers keep scrolling; it springs back once
+    // they let go. A browser doesn't say when fingers leave a trackpad, and the trackpad glides on for up to a second
+    // after, so the glide is told by its shape: four steps in a row, each smaller than the one before, under 60% of the
+    // largest (WHEEL_FADE). A hand slowing down rarely does that; it then springs back at once, and the rest of the glide
+    // is let go without stretching again. Otherwise it springs back 90 ms after the scrolling stops.
     if (o && (band || wheelLet || Math.abs(clampStart(to) - tl.start) < 1e-6)) {
       clearTimeout(bandIdle);
-      bandIdle = setTimeout(function () { wheelOver = 0; wheelLet = false; wheelStep = 0; springBack(); }, 40);
+      bandIdle = setTimeout(function () { wheelOver = 0; wheelLet = false; wheelStep = wheelPrev = wheelRun = 0; springBack(); }, 90);
       if (wheelLet) return;
-      if (band && Math.abs(d) < wheelStep * 0.75) { wheelLet = true; wheelOver = 0; springBack(); return; }
-      wheelStep = Math.max(wheelStep, Math.abs(d));
+      var ad = Math.abs(d);
+      wheelRun = ad < wheelPrev * 0.98 ? wheelRun + 1 : 0;
+      wheelPrev = ad;
+      wheelStep = Math.max(wheelStep, ad);
+      if (band && wheelRun >= WHEEL_FADE && ad < wheelStep * 0.6) { wheelLet = true; wheelOver = 0; springBack(); return; }
       wheelOver = band && Math.sign(o) !== Math.sign(wheelOver) ? 0 : wheelOver;
       wheelOver += o;
       setBand(rubber(wheelOver));
       return;
     }
-    wheelOver = 0; wheelLet = false; wheelStep = 0;
+    wheelOver = 0; wheelLet = false; wheelStep = wheelPrev = wheelRun = 0;
     if (band) setBand(0);
     setWindow(to);
     markerInWindow();
