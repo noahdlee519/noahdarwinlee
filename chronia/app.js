@@ -698,6 +698,7 @@
   var SETTLE_MS = 160, SETTLE_HELD_MS = 600;
   function settle() { moving = false; scheduleRender(); writeHash(); }
   function nudge() {
+    scaleWake();
     moving = true;
     clearTimeout(settleTimer);
     settleTimer = setTimeout(settle, pointers && pointers.size ? SETTLE_HELD_MS : SETTLE_MS);
@@ -9398,6 +9399,62 @@
   setKeyOpen(keyOpen, false);
   keyBtn.addEventListener("click", function () { setKeyOpen(keyList.hidden, true); });
 
+  // The scale bar. It wakes whenever the map moves (nudge) and fades SCALE_MS after the last move. It measures at the
+  // centre of the screen: on the flat map (equirectangular) along the parallel there, R cos φ / k km a pixel; on the
+  // globe, where the scale is true only near the centre, R / r. It shows only once a region is in view, since across a
+  // whole world the scale changes too much for one bar to mean anything: on the flat map while the screen spans under
+  // SCALE_SPAN degrees of latitude, on the globe while the screen's corners are within SCALE_REACH degrees of its centre.
+  var SCALE_MS = 3000, SCALE_SPAN = 90, SCALE_REACH = 60, EARTH_KM = 6371.0088, MI_KM = 1.609344;
+  var scaleBox = $("scale"), scaleTimer = 0, scaleRaf = 0;
+  function niceUnder(v) {
+    var p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+    return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
+  }
+  function scaleRow(id, units, perPx, most) {
+    var n = niceUnder(perPx * most), w = n / perPx, m = n / Math.pow(10, Math.floor(Math.log10(n)));
+    // Five squares for a 5, four for a 2 or a 1, so each square is a round share.
+    var bar = $(id);
+    bar.style.width = w.toFixed(1) + "px";
+    bar.style.setProperty("--seg", (w / (m === 5 ? 5 : 4)).toFixed(2) + "px");
+    $(id + "-n").textContent = n.toLocaleString(LANG || "en") + " " + units;
+  }
+  function scaleKmPerPx() {
+    if (flat) {
+      if ((freeB - freeT) / FB.k / D2R > SCALE_SPAN) return 0;
+      var phi = FB.yc - ((freeT + freeB) / 2 - cy) / FB.k;
+      return EARTH_KM * Math.cos(phi) / FB.k;
+    }
+    var reach = Math.max(Math.hypot(cx, freeT - cy), Math.hypot(W - cx, freeB - cy));
+    if (reach >= B.r || Math.asin(reach / B.r) / D2R > SCALE_REACH) return 0;
+    return EARTH_KM / B.r;
+  }
+  function placeScale() {
+    var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ch-gap")) || 10;
+    var ch = $("changes"), anchor = ch && !ch.hidden ? ch.getBoundingClientRect() : $("side").getBoundingClientRect();
+    var sw = scaleBox.offsetWidth, sh = scaleBox.offsetHeight, kr = $("key").getBoundingClientRect();
+    var right = innerWidth - anchor.left + gap, bottom = innerHeight - anchor.bottom;
+    // Beside Changes, on its bottom line; where the key (or anything else on that line) leaves no room, above Changes.
+    var left = anchor.left - gap - sw;
+    if (left < kr.right + gap && kr.bottom > anchor.bottom - sh) { right = innerWidth - anchor.right; bottom = innerHeight - anchor.top + gap; }
+    scaleBox.style.right = Math.max(0, right).toFixed(0) + "px";
+    scaleBox.style.bottom = Math.max(0, bottom).toFixed(0) + "px";
+  }
+  function scaleNow() {
+    scaleRaf = 0;
+    var kpp = scaleKmPerPx();
+    if (!kpp || !isFinite(kpp)) { scaleBox.classList.remove("is-on"); return; }
+    var most = phoneQuery.matches ? 80 : 110;
+    scaleRow("scale-km", "km", kpp, most);
+    scaleRow("scale-mi", "mi", kpp / MI_KM, most);
+    placeScale();
+    scaleBox.classList.add("is-on");
+  }
+  function scaleWake() {
+    if (!scaleBox || !ready) return;
+    if (!scaleRaf) scaleRaf = requestAnimationFrame(scaleNow);
+    clearTimeout(scaleTimer);
+    scaleTimer = setTimeout(function () { scaleBox.classList.remove("is-on"); }, SCALE_MS);
+  }
   var hoverTip = $("hover-tip"), tipTimer = 0;
 
   // The wars on the map at the date, with their sides' flags, while the zones of control are on (#wars).
@@ -10832,6 +10889,8 @@
     turn: function (deg) { rollBy(deg); writeHash(); },
     roll: function () { return view.roll; },
     lonLatAt: function (x, y) { return lonLatAt(x, y); },
+    // The scale bar: km a pixel at the centre (0 where it isn't shown), and whether it is showing; wake() as a move would.
+    scale: function (wake) { if (wake) scaleWake(); return { kmPerPx: scaleKmPerPx(), on: scaleBox.classList.contains("is-on"), km: $("scale-km-n").textContent, mi: $("scale-mi-n").textContent }; },
     project: function (lon, lat) { return projectLL(lon, lat); },
     prepareFrame: function (t) { var t0 = performance.now(), ok = prepareFrame(t); return ok ? performance.now() - t0 : -1; },
     loadingJSON: function () { return jsonLoading; },
