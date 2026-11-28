@@ -609,10 +609,12 @@ body.ch-page {
   box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-lit);
 }
 
+/* The panels hang one gap below the frame they open from, so their tops line up with the card's (Noah, 27 November 2026:
+   at 8 px they sat 2 px above it). */
 .ch-about-tip,
 .ch-layers {
   position: absolute;
-  top: calc(100% + var(--ch-bz) + 8px);
+  top: calc(100% + var(--ch-bz) + var(--ch-gap));
   right: -5px;
   z-index: 7;
   box-sizing: border-box;
@@ -734,7 +736,7 @@ body.ch-page {
 
 .ch-search {
   position: absolute;
-  top: calc(100% + var(--ch-bz) + 8px);
+  top: calc(100% + var(--ch-bz) + var(--ch-gap));
   right: calc(-1 * var(--ch-bz));
   z-index: 7;
   box-sizing: border-box;
