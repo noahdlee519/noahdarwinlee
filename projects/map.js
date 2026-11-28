@@ -680,6 +680,10 @@
     var fixedCount = placed.length;
     function obstacleHit(box) { return placed.slice(0, fixedCount).some(function (q) { return overlap(box, q); }); }
     var hidden = this.hiddenKinds || {};
+    // While the map moves, no name appears: those already showing stay while they still fit, and the rest come once
+    // the map rests, as on Google Maps. Placed afresh on every frame of a zoom out, whole sets of towns showed for one
+    // frame and went, which flickered (Noah, 27 November 2026).
+    var moving = !!(this.anim || this.interacting);
     order.forEach(function (it) {
       var l = it.l, show = false;
       if (hidden[l.kind]) { if (it.shown) { it.shown = false; it.el.classList.remove("is-on"); } return; }
@@ -726,6 +730,7 @@
         // Never half under the panel or the sheet.
         if (ins.left && ccx - ex < r.l + 4 && ccx + ex > r.l - 4) on = false;
         if (ins.bottom && ccy + ey > r.b - 4 && ccy - ey < r.b + 4) on = false;
+        if (on && moving && !it.shown && !forced) on = false;
         if (on) {
           show = !placed.some(function (q) { return overlap(box, q); }) || !!(forced && !obstacleHit(box));
           if (show) placed.push(box);

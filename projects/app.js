@@ -23,7 +23,9 @@
   var params = new URLSearchParams(location.search);
   var state = {
     projects: [], byId: {}, worlds: [], entry: null, world: null, map: null,
-    view: null, project: null, province: null, panelOpen: true, sheet: "peek",
+    // The side panel starts shut: a layout before the world arrives used to show it open, then shut it as the map
+    // came (Noah, 27 November 2026). The startup below opens it when a link names a project.
+    view: null, project: null, province: null, panelOpen: false, sheet: "peek",
     saved: [], shapes: {}
   };
   var els = {
