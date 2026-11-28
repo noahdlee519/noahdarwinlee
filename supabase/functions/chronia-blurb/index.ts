@@ -370,7 +370,39 @@ async function write(ask: Ask, keys: Keys): Promise<Made> {
 
 const inflight = new Map<string, Promise<Response>>();
 
+// The notes for chroniaatlas.com's pages (/places/, built by tools/build-chronia-places.mjs on every deploy): a GET with
+// ?export=1 lists the kept notes in order of their keys, EXPORT_PAGE at a time, from after `after`. They are the notes
+// any reader is shown on a card, so this asks no origin and gives nothing that isn't public already: no counts, no
+// visitors, and no model. It costs one read of the table a page, and the answer is cached for ten minutes.
+const EXPORT_PAGE = 1000;
+export function exportAsk(url: URL) {
+  if (url.searchParams.get("export") !== "1") return null;
+  const after = url.searchParams.get("after") || "";
+  if (after.length > 200 || /[\u0000-\u001f]/.test(after)) throw new Bad("after");
+  return { after };
+}
+async function exportNotes(after: string) {
+  const q = "select=key,kind,subject,period,text,created_at&order=key.asc&limit=" + EXPORT_PAGE + (after ? "&key=gt." + encodeURIComponent('"' + after.replace(/["\\]/g, "") + '"') : "");
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/chronia_blurbs?" + q, { headers: dbKey() });
+  if (!res.ok) throw new Error("export " + res.status + " " + (await res.text()).slice(0, 200));
+  const rows = await res.json();
+  const notes = (Array.isArray(rows) ? rows : []).map((r: any) => ({ key: r.key, kind: r.kind, subject: r.subject, period: r.period, text: r.text, made: String(r.created_at || "").slice(0, 10) }));
+  return { notes, next: notes.length === EXPORT_PAGE ? notes[notes.length - 1].key : null };
+}
+
 export async function handle(req: Request): Promise<Response> {
+  if (req.method === "GET") {
+    let ex: { after: string } | null = null;
+    try { ex = exportAsk(new URL(req.url)); } catch (_) { return new Response(JSON.stringify({ error: "field", field: "after" }), { status: 400, headers: { "Content-Type": "application/json" } }); }
+    if (ex) {
+      try {
+        return new Response(JSON.stringify(await exportNotes(ex.after)), { status: 200, headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=600", "Access-Control-Allow-Origin": "*" } });
+      } catch (e) {
+        console.error(e);
+        return new Response(JSON.stringify({ error: "store" }), { status: 500, headers: { "Content-Type": "application/json" } });
+      }
+    }
+  }
   const origin = req.headers.get("origin");
   if (!allowed(origin)) return new Response("Forbidden", { status: 403 });
   const o = origin as string;
