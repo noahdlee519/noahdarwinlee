@@ -6042,7 +6042,7 @@
       wheelOver += o;
       setBand(rubber(wheelOver));
       clearTimeout(bandIdle);
-      bandIdle = setTimeout(function () { wheelOver = 0; springBack(); }, 140);
+      bandIdle = setTimeout(function () { wheelOver = 0; springBack(); }, 70);
       return;
     }
     wheelOver = 0;
