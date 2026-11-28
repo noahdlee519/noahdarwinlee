@@ -5513,7 +5513,7 @@
   // The rubber band: pulled past 34,000 BC or the present, the bar's years and its marker follow the pull at a
   // lessening rate, up to BAND_MAX px, and spring back when let go (over BAND_MS); a glide or a scroll that runs into
   // an end bounces a little. None of it with reduced motion.
-  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, BAND_MAX = 36, BAND_MS = 180;
+  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, BAND_MAX = 36, BAND_MS = 90;
   function rubber(o) { return Math.sign(o) * BAND_MAX * (1 - 1 / (Math.abs(o) * 0.55 / BAND_MAX + 1)); }
   // How far, in px, the start `s` lies past an end: positive past the beginning, negative past the present.
   function pastEnd(s) { return (clampStart(s) - s) * tl.ppy; }
