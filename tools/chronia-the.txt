@@ -301,7 +301,6 @@ state	the	one	Caucasian Imamate
 state	-	one	Caulonia
 state	-	one	Cayenne
 state	the	many	Cayman Islands
-state	the	one	Celltic Hallsatt culture
 state	the	one	Central African Republic
 state	the	many	Central Asian khanates
 state	-	one	Centralist Mexico
@@ -343,7 +342,7 @@ state	the	many	Chota Nagpur Tributary States
 state	-	one	Chu
 state	-	one	Chüzan
 state	-	one	Cilicia
-state	the	many	Cimerians
+state	the	many	Cimmerians
 state	-	one	Circeii
 state	the	many	Cis-Sutlej states
 state	the	one	Cisalpine Republic
@@ -717,7 +716,7 @@ state	-	one	Estonia
 state	-	one	Eswatini
 state	-	one	Ethiopia
 state	the	one	Ethiopian Empire
-state	the	many	Ethiopian HIghland Peoples
+state	the	many	Ethiopian Highland Peoples
 state	-	one	Etruria
 state	the	many	Etruscans
 state	-	one	Europa
@@ -928,6 +927,7 @@ state	the	one	Hafsid dynasty
 state	-	one	Hainan
 state	-	one	Haiti
 state	the	one	Halaib Triangle
+state	the	one	Hallstatt culture
 state	the	many	Hamdanid Emirates
 state	the	many	Hamidids
 state	the	one	Hammadid dynasty
@@ -994,7 +994,7 @@ state	-	one	Iguvium
 state	the	one	Ikhshidid dynasty
 state	the	one	Ilemi Triangle
 state	the	one	Ilkhanate
-state	-	one	Illinnois
+state	-	one	Illinois
 state	the	one	Illyrian Kingdom
 state	the	many	Illyrian Provinces
 state	-	one	Illyricum
@@ -1124,7 +1124,6 @@ state	the	one	Karabakh Khanate
 state	the	many	Karamanids
 state	the	one	Karamanli dynasty
 state	the	many	Karasids
-state	the	many	Karkhanids
 state	the	one	Karkota dynasty
 state	the	many	Kartids
 state	-	one	Kashmir
@@ -1345,7 +1344,6 @@ state	the	one	Kingdom of the Suebi
 state	the	one	Kingdom of the Thuringii
 state	the	one	Kingdom of the Two Sicilies
 state	the	many	Kingdoms of Malabar
-state	the	many	Klachuris
 state	-	one	Koch Bihar
 state	-	one	Koguryo
 state	-	one	Kolhapur State
@@ -1608,9 +1606,7 @@ state	the	one	Mon state
 state	-	one	Monaco
 state	the	one	Mongol Empire
 state	-	one	Mongolia
-state	-	one	Monte Alb?n
 state	-	one	Monte Albán
-state	-	one	Monte Alb�n
 state	-	one	Montenegro
 state	-	one	Montserrat
 state	-	one	Moravian Serbia
@@ -1952,7 +1948,6 @@ state	the	one	Principality of Zeta
 state	the	one	Principality of the Obotrites
 state	-	one	Pro-Habsburg Spain
 state	the	one	Prome Kingdom
-state	-	many	Prot-Altaic Proto-Altaic pastoralists
 state	the	one	Protectorate of Bohemia and Moravia
 state	the	one	Protectorate of the Western Regions
 state	the	many	Proto-Aksumite kingdoms
@@ -2375,7 +2370,6 @@ state	-	one	Tenochtitlan
 state	-	one	Teotihuacan
 state	-	one	Teotihuacàn
 state	-	one	Teotihuacán
-state	-	one	Teotihuac�n
 state	-	one	Terina
 state	the	one	Territory of the Military Commander in Serbia
 state	the	one	Territory of the Saar Basin
@@ -2619,7 +2613,6 @@ state	-	one	Zheng
 state	-	one	Zhongshan
 state	the	one	Zhou dynasty
 state	the	many	Zhou states
-state	the	many	Zhow states
 state	-	one	Zhu
 state	-	one	Zimbabwe
 state	the	one	Zirid dynasty
@@ -4377,7 +4370,6 @@ people	the	many	Zoró/Pangyjej
 people	the	many	Zo’é
 people	the	many	Zulu
 people	the	many	Zuni
-people	-	one	[Gáuigú (Kiowa)
 people	-	one	ditidaqiic̓aq disib̓aʔk (Ditidaht)
 people	-	one	kòréβahώ (korebaju/Koreguaje)
 people	-	one	np̓əšqʷáw̓səxʷ (Wenatchi)

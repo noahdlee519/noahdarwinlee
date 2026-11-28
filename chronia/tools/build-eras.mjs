@@ -1200,6 +1200,8 @@ const withBox = (s) => ({ ...s, uid: uidNext++, box: boxOf(s.polys), cells: cell
 const cellOpt = (polys, drop) => { const cells = cellsOf(polys); return { cells, cellsW: cellSum(cells), drop }; };
 
 const CLIO_NAME = {
+  "Klachuris": "Kalachuris of Ratanpur",
+  "Karkhanids": "Kara-Khanids",
   "Nabataeans": "Nabataean Kingdom",
   "Cimmerian Bosporus": "Bosporan Kingdom",
   "Chámpa": "Champa",
@@ -1226,7 +1228,8 @@ const CLIO_RENAME = [[1801, 9999, "Kingdom of Great Britain", "United Kingdom"]]
 const CLIO_WIKI = {
   "United Kingdom": "United Kingdom of Great Britain and Ireland", "Livonian Confederation": "Livonian Confederation",
   "Sultanate of Zanzibar": "Sultanate of Zanzibar", "Dutch Cape Colony": "Dutch Cape Colony", "Arab Iraq": "Arab Iraq",
-  "Kingdom of Pajana": "", "Sultanate of Sambaliung": "", "Holy Roman Empire": "Holy Roman Empire", "Kingdom of Hawaii": "Hawaiian Kingdom"
+  "Kingdom of Pajana": "", "Sultanate of Sambaliung": "", "Holy Roman Empire": "Holy Roman Empire", "Kingdom of Hawaii": "Hawaiian Kingdom",
+  "Kalachuris of Ratanpur": "Kalachuris of Ratnapura", "Kara-Khanids": "Kara-Khanid Khanate"
 };
 const CLIO_DROP = new Set(["Principality of Monaco", "Kingdom of Monaco", "Principality of Liechtenstein", "Republic of San Marino", "Principality of Andorra", "Isle of Man"]);
 const CLIO_HEAD = { "(Spanish Empire)": "Kingdom of Spain", "(Portuguese Empire)": "Kingdom of Portugal", "(British Empire)": "Kingdom of Great Britain" };
@@ -1598,6 +1601,7 @@ const NAME_FIX = [
   ["Proto-Altaic pastoralists", "Eastern steppe pastoralists", -1750, -362, { people: 1, wiki: "Deer stone" }],
   ["Cimerians", "Srubnaya culture", -1750, -1201, { people: 1, wiki: "Srubnaya culture" }],
   ["Cimerians", "Cimmerians", -1200, -601, { people: 1, wiki: "Cimmerians" }],
+  ["[Gáuigú (Kiowa)", "Kiowa", 1446, 1495, { people: 1, wiki: "Kiowa" }],
   ["Tibetans", "Proto-Tibetan cultures", -1750, -601, { people: 1, wiki: "Prehistoric Tibet" }],
   ["Illyrians", "Balkan Bronze Age cultures", -1750, -1101, { people: 1, wiki: "Bronze Age Europe" }],
   ["Urartu", "Hurrians", -1750, -1301, { people: 1, wiki: "Hurrians" }],
