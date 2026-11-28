@@ -770,7 +770,17 @@
   // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
   function polityNameL(id) { var n = polityName(id); return (PL.pol && PL.pol[n]) || n; }
   function placeNameL(n, qid) { return (qid && PL.q && PL.q[qid + "|" + n]) || (PL.city && PL.city[n]) || n; }
-  function inGroup(id) { var n = polityNameL(id); return LANG !== "en" ? T("in {name}", { name: n }) : /^British America$/.test(n) ? "in " + n : "in the " + n; }
+  // "in Poland" but "in the Holy Roman Empire": a group's English name takes "the" when it holds a common noun (Empire,
+  // Kingdom of, Crown of, League, Union, Netherlands, State, Confederacy), and not when it is a bare name such as Poland,
+  // East Francia, or Kievan Rus' (Noah, 27 November 2026: the tooltip said "in the Poland").
+  var THE_GROUP = /\b(Empire|Kingdom|Crown|League|Union|Netherlands|State|States|Confederacy|Confederation|Republic|Duchy|Order|Caliphate|Sultanate|Khanate|Commonwealth)\b/;
+  function inGroup(id) { var n = polityNameL(id); return LANG !== "en" ? T("in {name}", { name: n }) : THE_GROUP.test(n) && !/^British America$/.test(n) ? "in the " + n : "in " + n; }
+  // A group, such as Poland in 1316, is drawn only through its members: it has no shape of its own on the map.
+  function isGroupIn(snap, id) {
+    if (!snap || id < 0 || snap.byId.has(id)) return false;
+    for (var i = 0; i < snap.polys.length; i++) { var q = snap.polys[i]; if (q && q.member === id) return true; }
+    return false;
+  }
   var colourDays = [], colourYears = [];
   function colourMarks() {
     var d = new Set(), y = new Set();
@@ -1868,9 +1878,9 @@
       ctx.restore();
     }
     if (outside) ctx.restore();
-    var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) : null;
+    var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) || (isGroupIn(snap, selected) ? { id: selected, group: true } : null) : null;
     var unheld = null;
-    var tint = function (id, color) {
+    var tint = function (id, color, grp) {
       if (bleed > 0.6) {
         if (!unheld) {
           unheld = new Path2D();
@@ -1884,10 +1894,10 @@
         ctx.lineWidth = bleed; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = color; ctx.stroke();
         ctx.restore();
       }
-      ctx.beginPath(); tracePolity(snap, L, id); ctx.fillStyle = color; ctx.fill();
+      ctx.beginPath(); tracePolity(snap, L, id, grp); ctx.fillStyle = color; ctx.fill();
     };
     if (hp && hp !== sp) tint(hp.id, pal.hover);
-    if (sp) tint(sp.id, "rgba(140,42,26,0.12)");
+    if (sp) tint(sp.id, "rgba(140,42,26,0.12)", sp.group);
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     if (perf) pmark("bands");
@@ -1924,7 +1934,7 @@
     ctx.setLineDash([0.1, dot * 2.1]); ctx.lineWidth = dot; ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
-    if (sp) drawSelected(snap, L, sp.id);
+    if (sp) drawSelected(snap, L, sp.id, sp.group);
     if (lapse) drawLapseWash(snap, L, landPath);
     if (flat) ctx.restore();
 
@@ -2000,9 +2010,9 @@
   // The selected state is ruled along its outside edge only, just beyond its border, so the seams between its pieces
   // (where its borders are exact and where they are approximate, or where a stretch of it ends sooner) do not cut it into
   // regions of their own.
-  function drawSelected(snap, L, id) {
+  function drawSelected(snap, L, id, grp) {
     var shape = new Path2D();
-    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(shape, L.feats[i]); }
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && (p.id === id || grp && p.member === id)) traceAll(shape, L.feats[i]); }
     var outside = new Path2D();
     outside.rect(-10, -10, W + 20, H + 20);
     outside.addPath(shape);
@@ -2015,8 +2025,8 @@
     ctx.stroke(shape);
     ctx.restore();
   }
-  function tracePolity(snap, L, id) {
-    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(ctx, L.feats[i]); }
+  function tracePolity(snap, L, id, grp) {
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && (p.id === id || grp && p.member === id)) traceAll(ctx, L.feats[i]); }
   }
 
   function drawAging(S) {
@@ -5084,10 +5094,10 @@
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
       if (devMode && devMode !== "label" && devClick(e.clientX, e.clientY)) { drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
-      var p = town ? null : polityAt(e.clientX, e.clientY);
+      var p = town ? null : polityAt(e.clientX, e.clientY), lab = town ? null : polityLabelAt(e.clientX, e.clientY);
       if ((playTimer || lapse) && (town || p)) { pauseNote(e.clientX, e.clientY); drag = null; downAt = null; return; }
       divClick = town ? null : lonLatAt(e.clientX, e.clientY);
-      if (town) openCity(town); else select(p ? p.id : -1);
+      if (town) openCity(town); else select(lab ? lab.id : p ? p.id : -1);
     } else if (drag && drag.spin === null && drag.samples.length >= 2 && !reduceMotion) {
       var s = drag.samples, a = s[0], b = s[s.length - 1];
       for (var i = s.length - 1; i > 0; i--) if (b[0] - s[i][0] > 80) { a = s[i]; break; }
@@ -5257,8 +5267,9 @@
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W - 8 ? x - w - 28 : x) + "px";
     tip.style.top = y + "px";
+    resyncCoords();
   }
-  function hideTip() { tip.hidden = true; }
+  function hideTip() { tip.hidden = true; resyncCoords(); }
   // While the map plays or follows a country, a click on a state or a city opens nothing: a note on the atlas's paper,
   // where the click was, says to pause first, and fades after two and a half seconds (since 25 November 2026).
   var pauseNoteEl = $("pause-note"), pauseNoteTimer = 0;
@@ -5287,9 +5298,20 @@
     coords.textContent = part(ll[1], "N", "S") + ", " + part(ll[0], "E", "W");
     coords.hidden = false;
     var w = coords.offsetWidth;
+    // With a tooltip showing, the coordinates sit just above it, on its left edge, whatever its height (Noah, 27 November
+    // 2026: a two-line tooltip, a city with its modern name, rose into them).
+    if (!tip.hidden) {
+      var r = tip.getBoundingClientRect();
+      coords.style.transform = "none";
+      coords.style.left = Math.round(r.left) + "px";
+      coords.style.top = Math.round(Math.max(8, r.top - 6 - coords.offsetHeight)) + "px";
+      return;
+    }
+    coords.style.transform = "";
     coords.style.left = (mouseAt[0] + 14 + w > W - 8 ? mouseAt[0] - w - 28 : mouseAt[0]) + "px";
     coords.style.top = Math.max(48, mouseAt[1]) + "px";
   }
+  function resyncCoords() { if (coords && !coords.hidden) syncCoords(true); }
   canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouseAt = [e.clientX, e.clientY]; syncCoords(e.shiftKey); } });
   canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { mouseAt = null; syncCoords(false); } });
   document.addEventListener("keydown", function (e) { if (e.key === "Shift") syncCoords(true); });
@@ -5300,6 +5322,18 @@
   document.addEventListener("pointerdown", function () { document.documentElement.classList.remove("ch-tabbing"); }, true);
   document.addEventListener("keyup", function (e) { if (e.key === "Shift") syncCoords(false); });
   window.addEventListener("blur", function () { syncCoords(false); });
+  // The state or people whose name is under the point: a click on a name opens what the name names, so a click on
+  // POLAND in 1316 opens Poland, not the duchy the letters lie on (Noah, 27 November 2026).
+  function polityLabelAt(x, y) {
+    for (var i = placedLabels.length - 1; i >= 0; i--) {
+      var l = placedLabels[i];
+      if ((l.kind !== "polity" && l.kind !== "people") || l.sea || !l.boxes || !catalogue[l.id]) continue;
+      var b = l.box;
+      if (!b || x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) continue;
+      for (var j = 0; j < l.boxes.length; j++) { var q = l.boxes[j]; if (x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h) return l; }
+    }
+    return null;
+  }
   function cityAt(x, y, touch) {
     var best = null, bestD = Infinity, pad = touch ? 8 : 3;
     for (var i = 0; i < placedLabels.length; i++) {
@@ -5321,6 +5355,7 @@
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W - 8 ? x - w - 28 : x) + "px";
     tip.style.top = y + "px";
+    resyncCoords();
   }
 
   function eraYear(y) { return y < 0 ? T("{y} BC", { y: -y }) : y < 1000 ? T("AD {y}", { y: y }) : String(y); }
@@ -6883,7 +6918,18 @@
       b.addEventListener("click", function () { flyTo(lon, lat, Math.max(localScale(), 1500)); });
       line(label).appendChild(b);
     };
-    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityNameL(id))); };
+    var addPolity = function (el, id) { if (current.byId.has(id) || isGroupIn(current, id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityNameL(id))); };
+    // A group's card lists its members, each a button to its own card (Noah, 27 November 2026), as a member's card names
+    // the group it is part of.
+    if (!p && current && isGroupIn(current, selected)) {
+      var seen = new Set(), ml = null;
+      current.order.forEach(function (q) {
+        if (q.member !== selected || q.id === selected || seen.has(q.id)) return;
+        seen.add(q.id);
+        if (!ml) ml = line("Made up of"); else ml.appendChild(document.createTextNode(T(", ")));
+        ml.appendChild(polityButton(q.id));
+      });
+    }
     if (p) {
       if (p.claims) {
         var dl = line("Disputed between");
@@ -6916,7 +6962,7 @@
         current.vague.forEach(function (k) { var ab = k.split("|"); if (+ab[0] === p.id && current.byId.has(+ab[1]) && unsettled.indexOf(+ab[1]) < 0) unsettled.push(+ab[1]); });
         if (unsettled.length) line("").textContent = T(unsettled.length > 1 ? "Its borders with {names} were not yet settled, so they are dotted." : "Its border with {names} was not yet settled, so it is dotted.", { names: claimNames(unsettled) });
       }
-    } else {
+    } else if (!isGroupIn(current, selected)) {
       line("").textContent = T(modernNow || byDay ? "Not on the map on {date}." : datedNow ? "Not on the map in {date}." : "Not on the map of {date}.", { date: modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDate(dayOfTime(now)) : when) : current ? fmtYear(current.year) : fmtNow(now) });
     }
     var title = wikiTitle(selected, whenYear), y = askYear();
