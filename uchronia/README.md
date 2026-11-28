@@ -781,9 +781,12 @@ it there). Built on the bones of `/greatercircle/`.
     outline's title; where the outline and the map differ, the map wins.
   - A redraw is drawn in two steps, because a map of the whole world takes
     Claude longer to write than the server function may run (150 seconds a
-    request). First an outline: the year, the title, a short history, the
-    new countries, renames, and subjects, and a brief for each part of the
-    world whose map changes. The page then asks for every part named in the
+    request). First an outline, itself written in two requests (since
+    28 November 2026): the world (`outline`: the year, the title, a short
+    history, and the new countries, renames, and subjects), and then, with
+    the world's ticket, the briefs (`briefs`: a brief for each part of the
+    world whose map changes), which come back with the whole outline and a
+    new ticket over it. The page then asks for every part named in the
     outline at once, each its own request: Western Europe; Eastern Europe
     and Russia; Western and Central Asia; South and East Asia; Africa; North
     America and the Caribbean; South America; and Oceania and Antarctica.
@@ -795,6 +798,16 @@ it there). Built on the bones of `/greatercircle/`.
     world has it, and the message says which. A part still being written
     when its time is nearly up is cut short at the last complete edit,
     rather than lost.
+  - The world and the briefs are each written at low effort, like the
+    parts, within 12,000 tokens, and each prompt tells Claude to decide as
+    it writes rather than draft the answer in its thinking first (since 28
+    November 2026; before, the outline was one request at medium effort,
+    and a long turning point could spend 11,870 of its 12,000 tokens
+    thinking and leave the outline unwritten, so the page said the
+    historian could not redraw it). At about 110 tokens a second, more
+    tokens would not help: the request's deadline (135 seconds) would end
+    it first. The page still takes an outline sent whole, as the function
+    sent it before.
   - Once every part is in, the page lists what it could not place: a region
     not in the catalogue under the country named, a country that is neither
     on the map nor founded, and a new country left without land. If there
@@ -805,8 +818,9 @@ it there). Built on the bones of `/greatercircle/`.
     edits that are added to the parts' own. Then the page draws the map
     again and writes the history. Like the parts, the mending is allowed
     once per ticket and does not count against the daily limits.
-  - The outline counts once against the daily limits; its parts and the
-    history written after it do not, but
+  - The outline counts once against the daily limits (in its first
+    request, the world; if the briefs then fail, the count is given back);
+    its briefs, its parts, and the history written after it do not, but
     each part can be asked for only once, and only with the ticket the
     outline came with: a signature over the outline and the turning point,
     good for twenty minutes, that the function checks (`historian_once`

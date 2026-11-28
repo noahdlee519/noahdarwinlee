@@ -7930,31 +7930,57 @@
         });
       }).catch(function (e) { console.warn("historian part", id, e); end(null); });
     };
+    var world = null;
+    var start = function (ev) {
+      if (done || outline) return;
+      if (!ev.outline || typeof ev.outline !== "object" || ev.outline.declined) return finish(T("The historian declines to draw that world."));
+      outline = ev.outline; names = ev.names || names; ticket = typeof ev.ticket === "string" ? ev.ticket : "";
+      var ids = (Array.isArray(outline.parts) ? outline.parts : []).map(function (b) { return b && b.part; }).filter(function (id, k, all) { return typeof id === "string" && all.indexOf(id) === k; });
+      total = left = ids.length;
+      if (!total) return settle();
+      ids.forEach(function (id) { partFrac[id] = 0; });
+      workStep(2);
+      workPhase(0.2, 0.3, 45, ids.map(function (id) { return T("Drawing {name}", { name: names[id] || T("the map") }); }));
+      if (typeof outline.title === "string" && outline.title) workSay(T(total === 1 ? "Drawing “{title}”, {n} part of the world" : "Drawing “{title}”, {n} parts of the world", { title: outline.title.slice(0, 80), n: total }));
+      progress();
+      ids.forEach(function (id) { drawPart(id, ticket); });
+    };
+    var couldNot = function () { finish(T("The historian could not redraw this. Try again in a moment.")); };
+    var brief = function (ev) {
+      names = ev.names || {};
+      post({ mode: "briefs", premise: premise, outline: ev.outline, ticket: typeof ev.ticket === "string" ? ev.ticket : "" }).then(function (res) {
+        if (!res.ok || !res.body) { console.warn("historian briefs", res.status); return couldNot(); }
+        return readEvents(res, function (e2) {
+          if (done || outline) return;
+          if (e2.t === "peek") {
+            if (isFinite(e2.n)) workReal(0.11 + 0.08 * (1 - Math.exp(-e2.n / 3000)));
+            if (typeof e2.v === "string" && e2.v) workSay(e2.v.slice(0, 120));
+          }
+          else if (e2.t === "outline") start(e2);
+          else if (e2.t === "error" || e2.t === "end" || e2.t === "closed") { if (e2.t !== "closed") console.warn("historian briefs", e2.status || e2.reason); couldNot(); }
+        });
+      }).catch(function (e) { console.warn("historian briefs", e); couldNot(); });
+    };
     post({ mode: "outline", premise: premise }).then(function (res) {
       if (res.status === 401) return finish(SIGN_IN);
       if (res.status === 429) return limitText(res, T("The historian has done all they can for today. Try again tomorrow.")).then(finish);
       if (res.status === 503) return finish(T("The historian is not taking requests yet."));
       if (!res.ok || !res.body) return finish(T("The historian could not be reached. Try again in a moment."));
       return readEvents(res, function (ev) {
-        if (done || outline) return;
+        if (done || outline || world) return;
         if (ev.t === "peek") {
           if (work && work.at < 1) workStep(1, SAY.outline);
-          if (isFinite(ev.n)) workReal(0.02 + 0.17 * (1 - Math.exp(-ev.n / 3000)));
+          if (isFinite(ev.n)) workReal(0.02 + 0.09 * (1 - Math.exp(-ev.n / 2000)));
           if (typeof ev.v === "string" && ev.v) workSay(ev.v.slice(0, 120));
         }
-        else if (ev.t === "outline") {
+        else if (ev.t === "world") {
+          if (world) return;
           if (!ev.outline || typeof ev.outline !== "object" || ev.outline.declined) return finish(T("The historian declines to draw that world."));
-          outline = ev.outline; names = ev.names || {}; ticket = typeof ev.ticket === "string" ? ev.ticket : "";
-          var ids = (Array.isArray(outline.parts) ? outline.parts : []).map(function (b) { return b && b.part; }).filter(function (id, k, all) { return typeof id === "string" && all.indexOf(id) === k; });
-          total = left = ids.length;
-          if (!total) return settle();
-          ids.forEach(function (id) { partFrac[id] = 0; });
-          workStep(2);
-          workPhase(0.2, 0.3, 45, ids.map(function (id) { return T("Drawing {name}", { name: names[id] || T("the map") }); }));
-          if (typeof outline.title === "string" && outline.title) workSay(T(total === 1 ? "Drawing “{title}”, {n} part of the world" : "Drawing “{title}”, {n} parts of the world", { title: outline.title.slice(0, 80), n: total }));
-          progress();
-          ids.forEach(function (id) { drawPart(id, ev.ticket); });
-        } else if (ev.t === "end") finish(ev.reason === "refusal" ? T("The historian declined to redraw this one.") : T("The historian could not redraw this. Try again in a moment."));
+          world = ev.outline;
+          brief(ev);
+        }
+        else if (ev.t === "outline") start(ev);
+        else if (ev.t === "end") finish(ev.reason === "refusal" ? T("The historian declined to redraw this one.") : T("The historian could not redraw this. Try again in a moment."));
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? T("The historian's key was refused.") : ev.credit ? T("The historian is out of credit.") : T("The historian could not redraw this. Try again in a moment.")); }
         else if (ev.t === "closed") finish(T("The historian could not redraw this. Try again in a moment."));
       });
