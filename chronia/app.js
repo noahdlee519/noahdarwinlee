@@ -5513,7 +5513,7 @@
   // The rubber band: pulled past 34,000 BC or the present, the bar's years and its marker follow the pull at a
   // lessening rate, up to BAND_MAX px, and spring back when let go (over BAND_MS); a glide or a scroll that runs into
   // an end bounces a little. None of it with reduced motion.
-  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, BAND_MAX = 36, BAND_MS = 90;
+  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, wheelLet = false, wheelStep = 0, BAND_MAX = 36, BAND_MS = 90;
   function rubber(o) { return Math.sign(o) * BAND_MAX * (1 - 1 / (Math.abs(o) * 0.55 / BAND_MAX + 1)); }
   // How far, in px, the start `s` lies past an end: positive past the beginning, negative past the present.
   function pastEnd(s) { return (clampStart(s) - s) * tl.ppy; }
@@ -6036,16 +6036,21 @@
     if (!d) return;
     e.preventDefault();
     var to = tl.start + d / tl.ppy, o = pastEnd(to);
-    // Scrolling on past an end stretches the bar, which springs back once the scrolling stops.
-    if (o && (band || Math.abs(clampStart(to) - tl.start) < 1e-6)) {
+    // Scrolling on past an end stretches the bar, which springs back once the scrolling stops, or as soon as its steps
+    // fall under three quarters of the largest: a trackpad's glide after the fingers lift sends shrinking steps for up to a second, and they
+    // shouldn't hold the stretch open. Until the scrolling stops, that glide is let go without stretching again.
+    if (o && (band || wheelLet || Math.abs(clampStart(to) - tl.start) < 1e-6)) {
+      clearTimeout(bandIdle);
+      bandIdle = setTimeout(function () { wheelOver = 0; wheelLet = false; wheelStep = 0; springBack(); }, 40);
+      if (wheelLet) return;
+      if (band && Math.abs(d) < wheelStep * 0.75) { wheelLet = true; wheelOver = 0; springBack(); return; }
+      wheelStep = Math.max(wheelStep, Math.abs(d));
       wheelOver = band && Math.sign(o) !== Math.sign(wheelOver) ? 0 : wheelOver;
       wheelOver += o;
       setBand(rubber(wheelOver));
-      clearTimeout(bandIdle);
-      bandIdle = setTimeout(function () { wheelOver = 0; springBack(); }, 70);
       return;
     }
-    wheelOver = 0;
+    wheelOver = 0; wheelLet = false; wheelStep = 0;
     if (band) setBand(0);
     setWindow(to);
     markerInWindow();
