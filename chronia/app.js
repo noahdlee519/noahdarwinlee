@@ -7860,7 +7860,7 @@
     // Signed in on the way to buying Premium (signinForPremium): back to its page.
     var toPremium = false;
     try { toPremium = !!a && sessionStorage.getItem("chronia-premium-back") === "1"; if (toPremium) sessionStorage.removeItem("chronia-premium-back"); } catch (e) {}
-    if (toPremium) { location.assign("premium/"); return; }
+    if (toPremium) { location.assign("premium/?buy=1"); return; }
     syncReport();
   }
   (function takeSignIn() {
@@ -8450,15 +8450,16 @@
     return ask;
   }
   // The account panel offers Premium with a link to its own page (premium/), which lists what it gives and sells it.
-  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, and once they
-  // have signed in (here, or through Supabase's page and back) they are sent back to it.
+  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, saying that
+  // signing in is the step before Stripe's page, and once they have signed in (here, or through Supabase's page and
+  // back) they are sent back to it with ?buy=1, which takes them straight on to Stripe's payment page.
   var PREMIUM_BACK = "chronia-premium-back";
   (function signinForPremium() {
     if (!/[?&]signin=premium(&|$)/.test(location.search || "")) return;
     try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])signin=premium(&|$)/, function (all, a, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
-    if (reportSession) { location.replace("premium/"); return; }
+    if (reportSession) { location.replace("premium/?buy=1"); return; }
     try { sessionStorage.setItem(PREMIUM_BACK, "1"); } catch (e) {}
-    setTimeout(function () { setAccountOpen(true, false); }, 0);
+    setTimeout(function () { $("account-premium-step").hidden = false; setAccountOpen(true, false); }, 0);
   })();
   // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
   // payment, so the page asks a few times before giving up.
