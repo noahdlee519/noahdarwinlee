@@ -770,11 +770,107 @@
   // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
   function polityNameL(id) { var n = polityName(id); return (PL.pol && PL.pol[n]) || n; }
   function placeNameL(n, qid) { return (qid && PL.q && PL.q[qid + "|" + n]) || (PL.city && PL.city[n]) || n; }
-  // "in Poland" but "in the Holy Roman Empire": a group's English name takes "the" when it holds a common noun (Empire,
-  // Kingdom of, Crown of, League, Union, Netherlands, State, Confederacy), and not when it is a bare name such as Poland,
-  // East Francia, or Kievan Rus' (Noah, 27 November 2026: the tooltip said "in the Poland").
-  var THE_GROUP = /\b(Empire|Kingdom|Crown|League|Union|Netherlands|State|States|Confederacy|Confederation|Republic|Duchy|Order|Caliphate|Sultanate|Khanate|Commonwealth)\b/;
-  function inGroup(id) { var n = polityNameL(id); return LANG !== "en" ? T("in {name}", { name: n }) : THE_GROUP.test(n) && !/^British America$/.test(n) ? "in the " + n : "in " + n; }
+  // English names in a sentence take "the" or not as English does: "in Poland" and "held by France", but "in the Holy
+  // Roman Empire", "the Duchy of Kraków", "the Seljuks", "the Gambia", "the Gold Coast" (Noah, 27 November 2026: the
+  // tooltip said "in the Poland"). One function, nameForm, reads a name's shape and answers two things at once: whether
+  // it takes "the", and whether it is plural ("The Seljuks appear", "The Soviet Union appears"). It goes by, in order:
+  //   1. the lists just below, for the names whose shape misleads;
+  //   2. what kind of name it is: a people takes "the" and a plural verb (the Cherokee), unless it is a culture or an age
+  //      (the Yamnaya culture appears), a land's own name (Haida Gwaii, Gaelic Ireland), or a way of life rather than a
+  //      name (hunter-gatherers, maize farmers);
+  //   3. a description in lower case (minor states, neither side) and a possessive (Harsha's Empire) take none;
+  //   4. a head noun takes it: "X of Y", a first word such as United or Holy, a last word such as Empire, dynasty,
+  //      States, Coast, or Horde, an -ate (Ilkhanate), and a Chinese dynasty told apart by a direction (the Northern Wei);
+  //      but a place before State, Province, Region, or County does not (Hyderabad State, yet the Orange Free State);
+  //   5. a name under its own language's article takes no second one (Los Altos, La Mancha), and "A and B" follows A
+  //      (Russia and its proxies, the Almohads and al-Andalus);
+  //   6. a plural proper name takes it (the Seljuks, the Philippines, the New Hebrides), and a singular that only ends
+  //      in s does not (Honduras, Wales, Cyprus); every other bare name takes none (Poland, East Francia).
+  // The answers are kept by name, so the tooltip, which asks on every move of the pointer, pays for each name once.
+  // tools/chronia-the-check.mjs runs this very code over every name in the atlas and holds the answers against the
+  // reviewed list in tools/chronia-the.txt, so a new name's article is looked at once and a change to the rule shows
+  // every name it moves. A name the rule gets wrong goes in one of these lists (Noah, 27 November 2026).
+  // No "the", whatever the shape.
+  var THE_NO = /^(Kievan Rus'|British America|Africa Proconsularis|Alba Fucens|Interamna Lirenas|Western Sahara|Disputed land|Macedon and Hellenic League|Eastern Wu|Western Chu|Ivory Coast)$/;
+  // "The" for a place, an office, or a single body: the Gambia, the Punjab, the Kahina, the Axis.
+  var THE_YES = /^(Gambia|Hejaz|Hijaz|Transvaal|Punjab|Vatican|Danelaw|Deccan|Levant|Banat|Rhineland|Occupied Rhineland|Sudetenland|Morea|Peloponnese|Algarve|Ruhr|Saar|Holy See|Congo|Comoros|Sahara|Sahel|Maghreb|Caucasus|Carnatic|Konkan|Doab|Negev|Transkei|Ciskei|Chaco|Yukon|Vendée|Romagna|Comtat Venaissin|Dodecanese|Nepal Mandala|Kahina|Axis|Entente|Papacy|Sublime Porte|Third Reich|Great Jin|Aq Qoyunlu|Qara Qoyunlu|Ak Koyunlu|Kara Koyunlu|Qara Khitai|Kara Khitai|UK|US|USA|USSR|UAE|DRC|GDR|FRG|PRC|CAR)$/;
+  // "The" and a plural verb for a people or a house the data keeps as a state: the Xianbei, the Banu Hilal, the English.
+  var THE_FOLK = /^(Ainus|Papous?|Iroquois|Haudenosaunee|Comanche|Xianbei|Yuezhi|Wusun|Tiele|Oghuz|Ndebele|Shona|Lozi|Ovimbundu|Imbangala|Fante|Akan|Kutama|Barghawata|Maghrawa|Warfajuma|Muisca|Toltec|Chimú|Komi|Khanty|Nganasan|Yukagir|Itelmen|Skirii|Tümed|Türgesh|Khalkha|Nguni|Ngwato|Teke|Yaka|Luba|Lunda|Kuba|Funj|Arma|Akatziri|Barotse|Rozwi|Ruanruan|Khoiasan|Bantou|Hwicce|Gall-Gàidheil|Yenisei Kyrgyz|Southern Xiongnu|S\. Xiongnu|Northern Fujiwara|Northern Uí Néill|Southern Uí Néill|Pallava|Sambuvarayar|Trencavel|Samoyedic people|Nyvukagmit|Banu .+|English|French|British|Spanish|Dutch|Portuguese|Irish|Welsh|Swiss|Chinese|Japanese)$|Yupik$/;
+  // First words that make a name a title: the United Provinces, the Holy Roman Empire, the Free City of Danzig.
+  var THE_FIRST = /^(Kingdoms?|Empire|Republic|Duch(y|ies)|Grand Duchy|Archduchy|Principalit(y|ies)|Margraviate|Electorate|Landgraviate|Sultanate|Khanate|Emirate|Caliphate|Regency|Beylik|Free City|Free Imperial City|Commonwealth|Confederation|Federation|Union|United|Viceroyalty|Vice-Royalty|Captaincy|Colony|Territory|Protectorate|Prince-Bishopric|Prince-Archbishopric|Prince-Abbey|Princely Abbey|Bishopric|Archbishopric|Lordship|Despotate|Imamate|Shogunate|Tsardom|Grand Principality|Khedivate|Dominion|Holy|Papal|Joint|Reichskommissariat|Governorate|Judicate|Janapada|Sanjak|Marquisate|Burgraviate|Banate|Commune|Domain|Archontate|Rajahnate|Shamkhalate|Patriarchate|Operational Zone|Five Boroughs)\b/;
+  // Last words that do the same: the Mongol Empire, the Han dynasty, the Papal States, the Gold Coast, the Sinaloa Cartel.
+  var THE_LAST = /(^| )(empire|kingdoms?|republics?|republiek|union|leagues?|confederacy|confederation|federation|order|commonwealth|dynasty|dynasties|horde|raj|reich|monarchy|netherlands|coalition|alliance|army|junta|government|administration|authority|agency|presidency|zone|restoration|rebellion|period|march|marches|strip|bank|peninsula|glacier|valley|triangle|heights|coast|cape|country|countries|states?|city-states|chiefdoms|chieftainships|colony|colonies|territory|territories|mandate|protectorate|dominion|provinces?|governorate|viceroyalty|voivodeship|okrug|consulate|directory|company|cartel|organi[sz]ation|front|opposition|movement|council|district|subah|civili[sz]ation|cultures?|complex|focus|age|neolithic|settlements|islands|isles|plantations|communities|community|reductions|principality|principalities|duchy|duchies|county|counties|bishopric|lordship|earldom|tsardom|sultanates|khanates|emirates|regency|indies|lords|allies|peoples|tribes|clans|sisters|towns|lands|rajyas|group)$/i;
+  // A place's name before one of these stands bare (Hyderabad State, Hebei Province, Orange County); a describing word
+  // before it brings back "the" (the Orange Free State, the Mahdist State, the North-West Frontier Province).
+  var THE_BARE_HEAD = /(^|\s)(\S+) (State|Province|Region|County|Oblast|Prefecture|Department)$/;
+  var THE_DESCRIBES = /(ian|ean|ist|ic|ese|ish|ite|ern|ous)$|^(Free|Federal|Central|Imperial|Papal|Royal|National|Provisional|Colonial|Independent|Sovereign|Slave|Inca|Neo-Inca|Peoples'|People's|Metropolitan|Capital|Frontier|Cape)$/;
+  // Chinese dynasties and kingdoms told apart by a direction or an age: the Northern Wei, the Later Tang.
+  var THE_CHINA = /^(Former|Later|Northern|Southern|Eastern|Western)( (Northern|Southern|Eastern|Western))? (Han|Jin|Liang|Liao|Qin|Qi|Shu|Song|Tang|Wei|Xia|Yan|Yuan|Zhao|Zhou|Ming|Chen|Sui|Wu|Chu|Min)$/;
+  // A way of life, not a name, takes none, yet is plural: "Borders move for hunter-gatherers". So do "minor states".
+  var THE_WAY = /(^|[ -])(hunter-gatherers|hunters-gatherers|gatherers|hunters|foragers|fishers|farmers|pastoralists|nomads|settlers)$/i;
+  // A people's entry that names a land or an age of a land takes none and is singular: Haida Gwaii, Gaelic Ireland.
+  var THE_LAND = /(^| )(Aki|Istchee|Gwaii|Nunatsiavut|NunatuKavut|Nunavik|Mi'kma'ki|Yala|Wallmapu|Nitaskinan|Nitassinan|Hopitutskwa|Dënéndeh|Jeweḍ|Nành|Wendake-Nionwentsïo|Anishinabewaki|Ełnena|Pangkarra|Nen|Yintikh|Lax'yip|Lax̱yip|ɁamakɁis|Téméxw|Temíx̱w|tmixʷ|Tmicw|Tmíxʷ|La̱xyuup|Aaní|Keyoh|Waaliʔ|Haki-nk|Mundurukânia|Tekohá|Yakni|Yaki|Tula|Ngan'|Nenn'|Tanangin|Nêhiyaw-Askiy|Tsalaguwetiyi|St'aschinuw|Ma-zhoⁿ|Niitsítpiis-stahkoii|Chinantla|Ɂítdeʔ|Ñuu Savi|Secwepemcúl'ecw|Werowocomoco|Greece|Ireland|Pueblo)( |$)/;
+  // A people's entry that is one thing takes a singular verb: the Yamnaya culture appears, the Nordic Bronze Age ends.
+  var ONE_FOLK = /(^| )(culture|civili[sz]ation|complex|focus|age|neolithic|group|region|peninsula)$/i;
+  // Singulars that only end in s, and the plurals in -is that the first of them would otherwise catch.
+  var ONE_S = /(us|os|ss|is|ensis|Rhodes|Cales|Wales|Honduras|Taras|Perdiccas|Lirenas|Fucens|Texas|Kansas|Arkansas|Massachusetts|Caracas|Chiapas|Zacatecas|Tamaulipas|Madras|Amazonas|Buenos Aires|Athens|Thebes|Naples|Algiers|Brussels|Flanders|Guelders|Cleves|Orl[ée]ans|Kitts|Hamas)$/;
+  var MANY_IS = /(Shahis|amsis|churis|Tupis|Somalis|Iraqis)$/;
+  // Plural in form and "the" in a sentence, yet one country to its verb: the Netherlands appears, the United States takes.
+  var ONE_STATE = /(^| )(Netherlands|Antilles|Philippines|Bahamas|Maldives|Seychelles|Comoros|Cameroons)$|^United (?!.*Islands$)|States of /;
+  var THE = 1, MANY = 2, nameForms = new Map();
+  // kind: 0 for a state, 1 for a people, 2 for a division of a state, whose names are mostly places in their own
+  // languages, so that only a head noun, never a final s or an -ate, earns "the" (the District of Columbia, the
+  // Northern Territory, but Chiapas, Landes, Masbate).
+  function nameForm(name, kind) {
+    var key = (kind || 0) + name, f = nameForms.get(key);
+    if (f === undefined) { f = readForm(name || "", kind || 0); nameForms.set(key, f); }
+    return f;
+  }
+  function readForm(n, kind) {
+    n = n.replace(/[’ʼ]/g, "'").replace(/( \([^)]*\))+$/, "").replace(/ \([^)]*\)(?= and )/, "").trim();
+    if (!n) return 0;
+    if (/^the /i.test(n)) return readForm(n.slice(4), kind) & MANY;
+    if (THE_NO.test(n)) return 0;
+    var words = n.split(" "), last = words[words.length - 1], many = /s$/.test(last) && (!ONE_S.test(n) || MANY_IS.test(n));
+    if (THE_WAY.test(n) || /^minor /i.test(n)) return MANY;
+    if (kind === 1) {
+      // A name that does not begin with a capital is in its people's own writing, and may as well be the land's name
+      // as the people's, so it stands bare.
+      if (THE_LAND.test(n) || !capital(n)) return 0;
+      return ONE_FOLK.test(n) ? THE : THE | MANY;
+    }
+    if (kind !== 2 && THE_FOLK.test(n)) return THE | MANY;
+    if (kind !== 2 && THE_YES.test(n)) return THE;
+    if (!capital(n)) return many ? MANY : 0;
+    if (/'s( |$)/.test(n) && !/People's /.test(n)) return 0;
+    var one = ONE_STATE.test(n);
+    if (/ of /.test(n)) return THE | (/s$/.test(n.split(" of ")[0]) && !one ? MANY : 0);
+    var bare = THE_BARE_HEAD.exec(n);
+    if (bare) return THE_DESCRIBES.test(bare[2]) ? THE : 0;
+    if (/^(Los|Las|La|El|Le|Les|Al)[ -]/.test(n)) return 0;
+    if (THE_FIRST.test(n) || THE_LAST.test(n) || kind !== 2 && /^[^-]+ate$/.test(last) || THE_CHINA.test(n) || / Congo$|^Spanish Sahara$|^(Anglo-Egyptian|Egyptian|French) Sudan$/.test(n)) return THE | (many && !one ? MANY : 0);
+    var a = n.split(/,? and |, /)[0];
+    if (a !== n) return readForm(a, kind);
+    if (!many) return 0;
+    // A final s on a word in lower case is a plain plural, not a name: Druze militias, Southern separatists.
+    if (kind === 2 || !capital(last)) return kind === 2 ? 0 : MANY;
+    return one ? THE : THE | MANY;
+  }
+  function capital(w) { var c = w.charAt(0); return c !== c.toLowerCase(); }
+  // A name as it reads inside an English sentence: with "the" where it takes one ("The" to begin the sentence), its
+  // own "The" lowered inside one (the Britains), and a description capitalised where it begins one (Minor states).
+  function theName(n, kind, first) {
+    var own = /^the /i.test(n), body = own ? n.slice(4) : n;
+    if (own || nameForm(n, kind) & THE) return (first ? "The " : "the ") + body;
+    return first && kind !== 1 && /^[a-z]/.test(n) ? n.charAt(0).toUpperCase() + n.slice(1) : n;
+  }
+  // A state's or people's name as it reads inside a sentence: with "the" (or "The" to begin one) in English where the
+  // name takes it, and as it stands in every other language.
+  function theNameL(id, first) {
+    if (LANG !== "en" || !catalogue || !catalogue[id]) return polityNameL(id);
+    return theName(polityName(id), catalogue[id][4] ? 1 : 0, first);
+  }
+  function inGroup(id) { return T("in {name}", { name: theNameL(id) }); }
   // A group, such as Poland in 1316, is drawn only through its members: it has no shape of its own on the map.
   function isGroupIn(snap, id) {
     if (!snap || id < 0 || snap.byId.has(id)) return false;
@@ -4647,6 +4743,9 @@
   }
   // A side's name in the reader's language: the place names' table for a state, the atlas's own strings for the rest.
   function sideNameL(n) { return (PL.pol && PL.pol[n]) || T(n); }
+  // The same inside the hover's sentence, where English wants "held by the Soviet Union" and "presence of the United
+  // States", but "held by Hamas" and "held by Russia and its proxies" (Noah, 27 November 2026).
+  function sideInL(n) { return LANG === "en" ? theName(n, 0, false) : sideNameL(n); }
   // The war and its file at a point, for the hover's "held by" and the card's Sources.
   function controlAt(ll) {
     var c = controlInfoAt(ll);
@@ -4661,7 +4760,7 @@
       var w = wars[k], D = w.data, st = ctlState(w, day);
       for (var i = 0; i < st.rows.length; i++) {
         var r = D.rows[st.rows[i]];
-        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return { key: w.key, name: w.name, source: D.source || "", text: T(D.kind === "presence" ? "presence of {name}" : "held by {name}", { name: sideNameL(D.sides[r[0]][1]) }) + (D.credit ? T(", per {credit}", { credit: T(D.credit) }) : "") };
+        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return { key: w.key, name: w.name, source: D.source || "", text: T(D.kind === "presence" ? "presence of {name}" : "held by {name}", { name: sideInL(D.sides[r[0]][1]) }) + (D.credit ? T(", per {credit}", { credit: T(D.credit) }) : "") };
       }
     }
     return null;
@@ -4811,7 +4910,11 @@
     var name = !card.hidden && layers.subdivisions ? divisionAt(divClick, selected) : null;
     var country = ($("card-name") || {}).textContent || "";
     var nameL = name ? divNameL(divAtReg, name) : "";
-    var text = name ? (country && country !== nameL ? T("You clicked on {name} within {country}.", { name: nameL, country: country }) : T("You clicked on {name}.", { name: nameL })) : "";
+    var countryIn = selected >= 0 ? theNameL(selected) : country;
+    // A division's name takes "the" by the same rule, read more narrowly: "the District of Columbia within the
+    // United States", "the Free State of Anhalt within Germany".
+    var nameIn = name && LANG === "en" ? theName(name, 2, false) : nameL;
+    var text = name ? (country && country !== nameL ? T("You clicked on {name} within {country}.", { name: nameIn, country: countryIn }) : T("You clicked on {name}.", { name: nameIn })) : "";
     var shown = text + "|" + (name ? askYear() + "|" + selected : "");
     if (shown === divShown) return;
     divShown = shown;
@@ -4862,7 +4965,7 @@
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-wiki-ask";
-    b.textContent = T("Write about {name} in {year}", { name: nameL || name, year: fmtYear(y) });
+    b.textContent = T("Write about {name} in {year}", { name: LANG === "en" ? theName(name, 2, false) : nameL || name, year: fmtYear(y) });
     b.addEventListener("click", function () { if (ask === divNoteAsk) show(blurbFetch(q)); });
     by.appendChild(b);
     by.hidden = false;
@@ -5193,7 +5296,7 @@
   }
   var tip = $("tip");
   function claimNames(ids) {
-    var n = ids.map(polityNameL);
+    var n = ids.map(function (id) { return theNameL(id); });
     return n.length < 3 ? n.join(T(" and ")) : n.slice(0, -1).join(T(", ")) + T(", and ") + n[n.length - 1];
   }
   function addTpl(el, tpl, vals) {
@@ -5259,7 +5362,7 @@
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     setTip(dv ? "region" : p.people ? null : "flag", dv ? divNameL(divAtReg, dv) + T(", ") + polityNameL(p.id) : polityNameL(p.id));
-    var sub = p.claims ? T(polityName(p.id) === "Disputed land" ? "between {names}" : "disputed between {names}", { names: claimNames(p.claims) }) + (p.ruler >= 0 ? T(", held by {name}", { name: polityNameL(p.ruler) }) : "") : p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) + (p.member >= 0 && p.member !== p.id ? T(", ") + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? T("bands with no fixed borders") : p.people ? T("a people or culture") : "";
+    var sub = p.claims ? T(polityName(p.id) === "Disputed land" ? "between {names}" : "disputed between {names}", { names: claimNames(p.claims) }) + (p.ruler >= 0 ? T(", held by {name}", { name: theNameL(p.ruler) }) : "") : p.ruler >= 0 ? T("held by {name}", { name: theNameL(p.ruler) }) + (p.member >= 0 && p.member !== p.id ? T(", ") + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? T("bands with no fixed borders") : p.people ? T("a people or culture") : "";
     var held = controlAt(lonLatAt(x, y));
     if (held) sub = (sub ? sub + " | " : "") + held;
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
@@ -6527,7 +6630,7 @@
   function syncLapseBtn() {
     var f = selected >= 0 && !selCity && !card.hidden ? lapseFor(selected) : null;
     $("card-follow").hidden = !f;
-    if (f) $("card-follow-text").textContent = f.tag ? T("Follow {name} through time", { name: f.tag }) : T("Follow it through time");
+    if (f) $("card-follow-text").textContent = f.tag ? T("Follow {name} through time", { name: LANG === "en" ? theName(f.tag, 0, false) : f.tag }) : T("Follow it through time");
   }
   $("card-follow-btn").addEventListener("click", function () { if (selected >= 0) startLapse(selected); });
   function lapseTime(y, first) {
@@ -6978,7 +7081,7 @@
         neighbours: neighbourNames(selected),
         year: y
       },
-      label: nameL, when: fmtYear(y), click: click
+      label: theNameL(selected), when: fmtYear(y), click: click
     });
     if (flagLine) {
       var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : byDay ? dayYear(dayOfTime(now)) : whenYear + 0.5, job = wikiCache.get(title);
@@ -6987,7 +7090,7 @@
         if (!f || factsAt !== factsAsk) return;
         if (f.flag) {
           var im = document.createElement("img");
-          im.className = "ch-flag"; im.alt = T("Flag of {name}", { name: nameL }); im.src = f.flag;
+          im.className = "ch-flag"; im.alt = T("Flag of {name}", { name: theNameL(selected) }); im.src = f.flag;
           flagLine.appendChild(im); flagLine.hidden = false;
         }
         if (f.langs.length) {
@@ -7837,7 +7940,7 @@
     // Signed in on the way to buying Premium (signinForPremium): back to its page.
     var toPremium = false;
     try { toPremium = !!a && sessionStorage.getItem("chronia-premium-back") === "1"; if (toPremium) sessionStorage.removeItem("chronia-premium-back"); } catch (e) {}
-    if (toPremium) { location.assign("premium/"); return; }
+    if (toPremium) { location.assign("premium/?buy=1"); return; }
     syncReport();
   }
   (function takeSignIn() {
@@ -8427,15 +8530,16 @@
     return ask;
   }
   // The account panel offers Premium with a link to its own page (premium/), which lists what it gives and sells it.
-  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, and once they
-  // have signed in (here, or through Supabase's page and back) they are sent back to it.
+  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, saying that
+  // signing in is the step before Stripe's page, and once they have signed in (here, or through Supabase's page and
+  // back) they are sent back to it with ?buy=1, which takes them straight on to Stripe's payment page.
   var PREMIUM_BACK = "chronia-premium-back";
   (function signinForPremium() {
     if (!/[?&]signin=premium(&|$)/.test(location.search || "")) return;
     try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])signin=premium(&|$)/, function (all, a, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
-    if (reportSession) { location.replace("premium/"); return; }
+    if (reportSession) { location.replace("premium/?buy=1"); return; }
     try { sessionStorage.setItem(PREMIUM_BACK, "1"); } catch (e) {}
-    setTimeout(function () { setAccountOpen(true, false); }, 0);
+    setTimeout(function () { $("account-premium-step").hidden = false; setAccountOpen(true, false); }, 0);
   })();
   // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
   // payment, so the page asks a few times before giving up.
@@ -9286,7 +9390,7 @@
       seen.add(p.id);
       var name = polityNameL(p.id);
       if (!name || !p.label) return;
-      var sub = p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
+      var sub = p.ruler >= 0 ? T("held by {name}", { name: theNameL(p.ruler) }) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
       out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, alt2: name !== polityName(p.id) ? polityName(p.id) : "", sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
     });
     if (cities) cityRanked(now).forEach(function (x) {
@@ -10047,11 +10151,11 @@
   }
   function fmtKm(n) { return Number(n >= 100 ? n.toPrecision(2) : Math.round(n)).toLocaleString(LANG); }
   function withKm(parts, x) { return typeof x.sd === "number" ? parts.concat(" (" + (x.sd > 0 ? "+" : "\u2212") + fmtKm(Math.abs(x.sd)) + " km\u00b2)") : parts; }
-  function changeName(s, here) {
+  function changeName(s, here, label) {
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-changes-name";
-    b.textContent = polityNameL(s.id) || "a state";
+    b.textContent = label || polityNameL(s.id) || "a state";
     b.addEventListener("click", function () {
       if (!s.ll) return;
       if (here && current && current.byId && current.byId.has(s.id)) goSearch({ id: s.id, ll: s.ll, km2: s.km2 });
@@ -10059,13 +10163,15 @@
     });
     return b;
   }
-  var THE_FIRST = /^(Kingdoms?|Empire|Republic|Duch(y|ies)|Grand Duchy|Archduchy|Principalit(y|ies)|County|Margraviate|Electorate|Landgraviate|Sultanate|Khanate|Emirate|Caliphate|Regency|Beylik|Free City|Commonwealth|Confederation|Federation|Union|United|Viceroyalty|Captaincy|Colony|Territory|Protectorate|Prince-Bishopric|Bishopric|Archbishopric|Lordship|Despotate|Imamate|Shogunate|Tsardom|Grand Principality|Khedivate|Dominion|Holy|Papal|Joint|State of)\b/;
-  var THE_LAST = /(Empire|Confederation|Republic|[Dd]ynasty|Kingdom|kingdoms|Union|Caliphate|Sultanate|Khanate|Emirate|Islands|States|states|city-states|chiefdoms|Coalition|Horde|Raj|Netherlands|Philippines|Bahamas|Gambia|Commonwealth|Federation|Shogunate|Republics|Provinces|Territories|Isles|Emirates|Free State|Consulate|Directory|Mandate|Colony|Company|Territory|Protectorate|Dominion|Province|Governorate|Viceroyalty)$/;
-  var PLURAL = /(Islands|States|states|kingdoms|city-states|chiefdoms|Provinces|Territories|Isles|Emirates|Netherlands|Philippines|Bahamas|Republics)$/;
-  function verb(s, one, many) { return PLURAL.test(polityName(s.id) || "") ? many : one; }
+  // The English lines take their article and their verb's number from the one rule, nameForm: "The Seljuks appear",
+  // "The Cherokee take", "The Netherlands appears", "Poland takes". The name is the button; its "the" stands before it
+  // as plain text, and a name with its own "The" (The Britains) gives it up to that text, so that it can be lowered
+  // inside a sentence (Noah, 27 November 2026).
+  function kindOf(s) { return catalogue[s.id] && catalogue[s.id][4] ? 1 : 0; }
+  function verb(s, one, many) { return nameForm(polityName(s.id) || "", kindOf(s)) & MANY ? many : one; }
   function named(s, here, first) {
-    var n = polityName(s.id) || "";
-    return THE_FIRST.test(n) || THE_LAST.test(n) ? [first ? "The " : "the ", changeName(s, here)] : [changeName(s, here)];
+    var n = polityName(s.id) || "", t = n ? theName(n, kindOf(s), first) : "", cut = /^the /i.test(t) ? 4 : 0;
+    return cut ? [t.slice(0, 4), changeName(s, here, t.slice(4))] : [changeName(s, here, t)];
   }
   var STATUS_A = ["", "a colony", "a protectorate", "a mandate", "an occupied territory", "a dependency"];
   var STATUS_BECOMES = ["", "{a} becomes a colony of {b}.", "{a} becomes a protectorate of {b}.", "{a} becomes a mandate of {b}.", "{a} becomes an occupied territory of {b}.", "{a} becomes a dependency of {b}."];

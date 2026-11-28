@@ -26,6 +26,16 @@
   font-size: 56px;
   line-height: 1;
 }
+.pm-num {
+  font-family: var(--num);
+  letter-spacing: 0.02em;
+}
+.pm-usd {
+  font-family: var(--serif, inherit);
+  font-size: 0.34em;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
 .pm-terms {
   margin-top: 6px;
   color: var(--muted);
@@ -121,30 +131,8 @@
   font-size: 17px;
 }
 
-.pm-compare,
 .pm-fine {
   margin-top: 30px;
-}
-.pm-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-.pm-pair figure {
-  margin: 0;
-}
-.pm-pair img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid var(--ink);
-  box-shadow: var(--lift);
-}
-.pm-pair figcaption {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 16px;
-  font-style: italic;
 }
 .pm-fine ul {
   margin: 0;
@@ -166,7 +154,4 @@
     font-size: 46px;
   }
   .pm-perks,
-  .pm-pair {
-    grid-template-columns: 1fr;
-  }
 }
