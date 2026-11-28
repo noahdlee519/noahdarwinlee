@@ -45,7 +45,7 @@
     else if ((m = /^(?:(AD|CE) )?(\d{1,4})(?: ?(BC|BCE|AD|CE))?$/i.exec(t))) { y = +m[2]; if (/^BC/i.test(m[3] || "")) y = -y; mo = 0; d = 0; }
     else return null;
     if (!y || mo > 12 || d > 31 || (d && !mo)) return null;
-    if (d && d > new Date(Date.UTC(Math.max(y, 1), mo, 0)).getUTCDate()) return null;
+    if (d && d > (function () { var x = new Date(0); x.setUTCFullYear(y, mo, 0); return x.getUTCDate(); })()) return null;
     return String(y) + (mo ? "-" + p2(mo) : "") + (d ? "-" + p2(d) : "");
   }
   function showDate(s) {

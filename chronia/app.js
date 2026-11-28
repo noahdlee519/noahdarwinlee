@@ -714,14 +714,19 @@
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var MONTHS_L = L10N["@months"] || MONTHS, MONTHS_G = L10N["@monthsOf"] || MONTHS_L;
 
-  function dayFromDate(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - DAY0) / DAY_MS); }
+  // Midnight UTC on a date, for any year. Date.UTC reads a year from 0 to 99 as 1900 to 1999, which made July 15,
+  // AD 44 the same day as July 15, 1944 (and drew the Eastern Front across the Roman world), so no date here goes
+  // through it; setUTCFullYear takes the year as given.
+  function utcMs(y, m0, d) { var x = new Date(0); x.setUTCFullYear(y, m0, d); return x.getTime(); }
+  function daysInMonth(y, m) { return new Date(utcMs(y, m, 0)).getUTCDate(); }
+  function dayFromDate(y, m, d) { return Math.round((utcMs(y, m - 1, d) - DAY0) / DAY_MS); }
   function dateOfDay(day) { var d = new Date(DAY0 + day * DAY_MS); return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; }
   function timeOfDay(day) {
-    var dt = dateOfDay(day), y = dt[0], start = Date.UTC(y, 0, 1), len = (Date.UTC(y + 1, 0, 1) - start) / DAY_MS;
+    var dt = dateOfDay(day), y = dt[0], start = utcMs(y, 0, 1), len = (utcMs(y + 1, 0, 1) - start) / DAY_MS;
     return y + ((DAY0 + day * DAY_MS - start) / DAY_MS + 0.5) / len;
   }
   function dayOfTime(t) {
-    var y = Math.floor(t), start = Date.UTC(y, 0, 1), len = (Date.UTC(y + 1, 0, 1) - start) / DAY_MS;
+    var y = Math.floor(t), start = utcMs(y, 0, 1), len = (utcMs(y + 1, 0, 1) - start) / DAY_MS;
     return Math.floor((start + (t - y) * len * DAY_MS - DAY0) / DAY_MS);
   }
   function isModern(t) { return !!modern && t >= modern.fromTime; }
@@ -5394,7 +5399,7 @@
   function modernTime(y, m, d) {
     if (!(modern || dated) || y < monthlyFrom()) return null;
     if (!m) return monthTime(y, 7);
-    if (m > 12 || (d && d > new Date(Date.UTC(y, m, 0)).getUTCDate())) return null;
+    if (m > 12 || (d && d > daysInMonth(y, m))) return null;
     return timeOfDay(dayFromDate(y, m, d || MID_DAY));
   }
   // A typed date as [year, month, day] (0 for none; years BC negative), or null. The order of the parts is free: July 4 1000,
@@ -5832,7 +5837,7 @@
   function sameDay(y, m, day) {
     if (dayMode) keepDayMode = true;
     if (day === MID_DAY) return monthTime(y, m);
-    var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    var last = daysInMonth(y, m);
     return timeOfDay(dayFromDate(y, m, Math.min(day, last)));
   }
   // The month keys: from 1648, and through a war's months, as stepUnit; otherwise before 1648, a chosen month (stepPre).
@@ -10923,6 +10928,10 @@
     prepareFrame: function (t) { var t0 = performance.now(), ok = prepareFrame(t); return ok ? performance.now() - t0 : -1; },
     loadingJSON: function () { return jsonLoading; },
     wars: function () { return warsAtDate().map(function (r) { return r.name; }); },
+    // Whether any war's zones of control were drawn in the last frame, and the day arithmetic, for the checks.
+    controlDrawn: function () { return ctlDrawn; },
+    controlDay: function () { return ctlDay(); },
+    days: { of: dayFromDate, date: dateOfDay, time: timeOfDay, at: dayOfTime },
     changesText: function () { return changesBody.hidden ? null : changesDate.textContent + " | " + changesList.textContent; },
     openChanges: function (open) { setChangesOpen(open !== false, false); },
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
