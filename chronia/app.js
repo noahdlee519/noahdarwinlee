@@ -10685,16 +10685,34 @@
   // thread's top comment> then opens the thread with the comment marked. They are read once, when the first map is drawn,
   // and taken out of the address, so a reload or a link shared after does not carry them. A name the map lacks, or a
   // comment since deleted, leaves the map at the date, and says nothing.
+  // A link may open a card: ?card=<a state's or people's name> (a comment's link adds &comment and &root), or, from the
+  // place pages (chroniaatlas.com/places/, since 28 November 2026), ?city=<a city's name, then or now>. Without a view of
+  // its own (&v=) the map then flies there once the opening is over, as a search does.
   function openLinked(h) {
-    if (!h.card && !h.comment && !h.root) return;
+    if (!h.card && !h.city && !h.comment && !h.root) return;
     var keep = function (s, lead) {
-      var kv = String(s || "").replace(/^[?#]/, "").split("&").filter(function (x) { return x && !/^(card|comment|root)(=|$)/.test(x); });
+      var kv = String(s || "").replace(/^[?#]/, "").split("&").filter(function (x) { return x && !/^(card|city|comment|root)(=|$)/.test(x); });
       return kv.length ? lead + kv.join("&") : "";
     };
     try { history.replaceState(null, "", location.pathname + keep(location.search, "?") + keep(location.hash, "#")); } catch (e) {}
+    if (h.city && cities) {
+      // A town may be among the lesser places, which load later: the link waits for them once.
+      var findCity = function (again) {
+        var hit = cityRanked(now).find(function (x) { return cityShownName(x.c, now) === h.city; }) || cityRanked(now).find(function (x) { return x.c.name === h.city; });
+        if (!hit) {
+          if (!again) { loadMinorCities(); if (cities.minorLoad) cities.minorLoad.then(function () { findCity(true); }); }
+          return;
+        }
+        openCity({ ref: { city: hit.c }, kind: hit.tier <= 1 ? "city" : "town" });
+        if (!h.v) afterIntro(function () { flyTo(hit.c.lon, hit.c.lat, Math.max(localScale(), hit.tier <= 1 ? 14000 : 20000)); });
+      };
+      findCity(false);
+      return;
+    }
     var p = h.card && current ? current.order.find(function (q) { return polityName(q.id) === h.card; }) : null;
     if (!p) return;
     select(p.id);
+    if (!h.v && p.label) afterIntro(function () { flyTo(p.label[0], p.label[1], scaleFor(p.label[5], 200, 6000)); });
     var mark = Math.floor(+h.comment), root = Math.floor(+h.root) || mark;
     if (!(mark > 0) || !(root > 0)) return;
     loadComments();

@@ -10,6 +10,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statS
 import { dirname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { buildPlaces } from "./build-chronia-places.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = resolve(root, process.argv[2] || "chronia-site");
@@ -74,9 +75,6 @@ writeFileSync(join(out, "manifest.json"), JSON.stringify({
 }, null, 2) + "\n");
 const AI_BOTS = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-Web", "anthropic-ai", "Google-Extended", "Applebot-Extended", "meta-externalagent", "CCBot", "PerplexityBot", "Perplexity-User", "Bytespider", "Amazonbot", "DuckAssistBot", "Diffbot"];
 writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /reports/\n\n" + AI_BOTS.map((b) => "User-agent: " + b + "\nDisallow: /\n\n").join("") + "Sitemap: " + SITE + "/sitemap.xml\n");
-const today = new Date().toISOString().slice(0, 10);
-writeFileSync(join(out, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-  [["/", "1.0"], ["/uchronia/", "0.6"], ["/team/", "0.4"], ["/faq/", "0.4"], ["/premium/", "0.4"], ["/privacy/", "0.2"], ["/terms/", "0.2"]].map(([p, w]) => "  <url><loc>" + SITE + p + "</loc><lastmod>" + today + "</lastmod><priority>" + w + "</priority></url>\n").join("") + "</urlset>\n");
 
 // Whether a path is a page or file of the new site.
 const here = (path) => {
@@ -105,5 +103,12 @@ for (const f of html) {
   s = s.replace(/<meta property="og:site_name" content="Noah Darwin Lee" \/>/, '<meta property="og:site_name" content="CHRONIA" />');
   if (s !== before) { writeFileSync(f, s); fixed++; }
 }
+// The place pages (tools/build-chronia-places.mjs) are made after the links above are fixed: they are written for this
+// site, with addresses from its root. The sitemap lists the site's pages and then them.
+const places = await buildPlaces(out);
+const today = new Date().toISOString().slice(0, 10);
+writeFileSync(join(out, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+  [["/", "1.0"], ["/places/", "0.7"], ["/uchronia/", "0.6"], ["/team/", "0.4"], ["/faq/", "0.4"], ["/premium/", "0.4"], ["/privacy/", "0.2"], ["/terms/", "0.2"]].filter(([p]) => p !== "/places/" || places.length).map(([p, w]) => "  <url><loc>" + SITE + p + "</loc><lastmod>" + today + "</lastmod><priority>" + w + "</priority></url>\n").join("") +
+  places.filter((u) => u.path !== "/places/").map((u) => "  <url><loc>" + SITE + u.path + "</loc>" + (/^\d{4}-\d{2}-\d{2}$/.test(u.lastmod || "") ? "<lastmod>" + u.lastmod + "</lastmod>" : "") + "<priority>0.5</priority></url>\n").join("") + "</urlset>\n");
 const size = (dir) => readdirSync(dir).reduce((t, n) => { const f = join(dir, n); const st = statSync(f); return t + (st.isDirectory() ? size(f) : st.size); }, 0);
-console.log("chroniaatlas.com: " + html.length + " pages (" + fixed + " with links fixed), " + Math.round(size(out) / 1e6) + " MB, in " + relative(root, out));
+console.log("chroniaatlas.com: " + html.length + " pages (" + fixed + " with links fixed) and " + places.length + " place pages, " + Math.round(size(out) / 1e6) + " MB, in " + relative(root, out));
