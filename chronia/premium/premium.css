@@ -1,5 +1,5 @@
-/* CHRONIA Premium's page: the price and the way to buy it in a brass-edged well, the four things it gives, a frame of
-   video with and without the watermark, and the terms in short. The rest is page.css. */
+/* CHRONIA Premium's page: the price and the way to buy it in a brass-edged well (or, for an account that has it, a
+   filled plate saying so), the four things it gives, and the terms in short. The rest is page.css. */
 .pm .cp-sheet {
   width: min(54rem, calc(100% - 20px));
 }
@@ -89,8 +89,39 @@
 .pm-note:empty {
   display: none;
 }
-.pm-had .pm-buy {
-  border-color: var(--verdigris);
+.pm-buy[hidden] {
+  display: none;
+}
+
+/* For an account that has Premium: a filled plate, enamel with a brass edge as the nameplate is, in place of the
+   price and the button. */
+.cp-sheet .pm-have {
+  margin: 26px 0 8px;
+  padding: 26px 28px 28px;
+  border: 5px solid var(--brass);
+  border-image: var(--bezel) 5 / 5px;
+  background: var(--enamel);
+  background-image: linear-gradient(180deg, rgba(255, 236, 190, 0.2), rgba(255, 236, 190, 0.04) 46%, rgba(0, 0, 0, 0.18)), var(--grain);
+  background-size: auto, 260px 260px;
+  background-repeat: repeat;
+  box-shadow: var(--lift);
+  color: var(--brass-hi);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.cp-sheet .pm-have p {
+  margin: 0;
+  color: inherit;
+}
+.cp-sheet .pm-have .pm-have-head {
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+.cp-sheet .pm-have .pm-have-sub {
+  margin-top: 10px;
+  color: var(--ivory);
+  font-size: 20px;
+  opacity: 0.86;
 }
 
 .pm-perks {
@@ -154,4 +185,15 @@
     font-size: 46px;
   }
   .pm-perks,
+}
+@media (max-width: 640px) {
+  .cp-sheet .pm-have {
+    padding: 20px 20px 22px;
+  }
+  .cp-sheet .pm-have .pm-have-head {
+    font-size: 28px;
+  }
+  .cp-sheet .pm-have .pm-have-sub {
+    font-size: 18px;
+  }
 }

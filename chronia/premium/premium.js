@@ -8,6 +8,7 @@
   var BASE = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/";
   var REPORT = BASE + "chronia-report", PREMIUM = BASE + "chronia-premium", AUTH = "chronia-auth", HAD = "chronia-premium";
   var go = document.getElementById("pm-go"), note = document.getElementById("pm-note");
+  var buy = document.getElementById("pm-buy"), plate = document.getElementById("pm-have"), lede = document.querySelector(".cp-lede");
   // The page's language (page-lang.js); English where it has none.
   var T = window.CH_PAGE_T || function (t, v) { return v ? t.replace(/\{(\w+)\}/g, function (m, k) { return v[k]; }) : t; };
   var BUY = "Get Premium for $10";
@@ -63,7 +64,16 @@
     var c = claims(session.a), m = c.user_metadata || {};
     return String(m.full_name || m.name || c.email || "").slice(0, 80);
   }
+  // An account with Premium is thanked and shown a plate saying it has it, in place of the appeal, the price, and
+  // the button; anyone else sees those.
+  function owned(on) {
+    document.body.classList.toggle("pm-had", on);
+    buy.hidden = on;
+    plate.hidden = !on;
+    lede.textContent = on ? T("Thank you for purchasing Premium!") : T("Please consider supporting the CHRONIA team with a purchase.");
+  }
   function signedOut() {
+    owned(false);
     go.hidden = false;
     go.removeAttribute("aria-disabled");
     label(T(BUY));
@@ -71,14 +81,11 @@
     note.textContent = "";
   }
   function have() {
-    document.body.classList.add("pm-had");
-    go.hidden = false;
-    go.removeAttribute("aria-disabled");
-    go.textContent = T("Back to the atlas");
-    go.setAttribute("href", "../");
-    note.textContent = who() ? T("You have CHRONIA Premium, signed in as {name}. Thank you for your support.", { name: who() }) : T("You have CHRONIA Premium. Thank you for your support.");
+    owned(true);
+    note.textContent = "";
   }
   function buyable() {
+    owned(false);
     go.hidden = false;
     go.removeAttribute("aria-disabled");
     label(T(BUY));
@@ -97,19 +104,27 @@
     });
   }
   function closed() {
+    owned(false);
     go.hidden = true;
     note.textContent = T("Premium can't be bought just now. Please try again later.");
   }
 
   function check() {
     if (!session) { signedOut(); return; }
-    go.setAttribute("aria-disabled", "true");
-    label(T(BUY));
-    note.textContent = T("Checking your account…");
+    // Known to have Premium from the last visit (the atlas and this page both keep the account's id once it is
+    // confirmed): the plate shows at once, and the answer below corrects it if that has changed.
+    var known = false;
+    try { known = localStorage.getItem(HAD) === String(claims(session.a).sub || "\u0000"); } catch (e) {}
+    if (known) have();
+    else {
+      go.setAttribute("aria-disabled", "true");
+      label(T(BUY));
+      note.textContent = T("Checking your account…");
+    }
     ask({ action: "status" }).then(function (r) {
       var on = goOn;
       goOn = false;
-      if (r.status !== 200) { buyable(); return; }
+      if (r.status !== 200) { if (!known) buyable(); return; }
       if (!r.body.signedIn) { signedOut(); return; }
       var id = String(claims(session.a).sub || "");
       try { if (r.body.premium) localStorage.setItem(HAD, id); else localStorage.removeItem(HAD); } catch (e) {}

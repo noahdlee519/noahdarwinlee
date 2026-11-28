@@ -8291,7 +8291,12 @@
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
   try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
-  if (premium.on && $("about-premium")) $("about-premium").hidden = true;
+  // The information panel's link to Premium's page: an invitation for those without it, and theirs for those with.
+  function aboutPremium() {
+    var a = $("about-premium") && $("about-premium").querySelector("a");
+    if (a) a.textContent = premium.on ? T("Your Premium") : T("Get Premium");
+  }
+  aboutPremium();
   // Signed out, there is nothing to wait for; signed in, the first answer from chronia-premium (or its failure) settles it.
   premium.known = !premium.who || premium.on;
   // ADS_ON waits for Google's approval of chroniaatlas.com (21 November 2026). Before it, AdSense marks a banner
@@ -8485,7 +8490,7 @@
     box.hidden = !(premium.on || premium.open);
     out.hidden = !premium.open || premium.on;
     $("premium-buy").hidden = premium.on;
-    if ($("about-premium")) $("about-premium").hidden = premium.on;
+    aboutPremium();
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
       : T("No advertisements, no watermark on your videos and images, and more, for $10 once.");

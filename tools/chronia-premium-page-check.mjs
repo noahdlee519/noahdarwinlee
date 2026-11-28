@@ -90,11 +90,57 @@ const text = (page, sel) => page.evaluate((s) => { const e = document.querySelec
   say(!o.asked.includes("checkout") && /\/premium\//.test(o.page.url()) && await text(o.page, "#pm-go") === "Get Premium for $10", "signed out, ?buy=1 does nothing but show the button", [o.asked, o.page.url()]);
   await o.ctx.close();
   o = await open("premium/?buy=1", { signedIn: true, premium: true }); await o.page.waitForTimeout(1200);
-  say(!o.asked.includes("checkout") && /You have CHRONIA Premium/.test(await text(o.page, "#pm-note") || "") && await text(o.page, "#pm-go") === "Back to the atlas", "with Premium already, it says so and offers no purchase", [o.asked, await text(o.page, "#pm-note"), await text(o.page, "#pm-go")]);
+  say(!o.asked.includes("checkout"), "with Premium already, ?buy=1 buys nothing", o.asked);
   await o.ctx.close();
   o = await open("premium/?buy=1", { signedIn: true, onSale: false }); await o.page.waitForTimeout(1200);
   say(!o.asked.includes("checkout") && await o.page.evaluate(() => document.getElementById("pm-go").hidden), "not on sale, nothing is bought and the button is away", o.asked);
   await o.ctx.close();
+}
+// 5b. With Premium already: thanks in place of the appeal, and a filled plate in place of the price and the button.
+{
+  const { page, ctx } = await open("premium/", { signedIn: true, premium: true });
+  await page.waitForFunction(() => { const h = document.getElementById("pm-have"); return h && !h.hidden; }, null, { timeout: 10000 }).catch(() => {});
+  say(await text(page, ".cp-lede") === "Thank you for purchasing Premium!", "with Premium, the opening line is thanks", await text(page, ".cp-lede"));
+  say(await text(page, "#pm-have") === "You have CHRONIA Premium. You have access to the following features:", "with Premium, the plate says so", await text(page, "#pm-have"));
+  const look = await page.evaluate(() => { const h = document.getElementById("pm-have"), b = document.querySelector(".pm-buy"), cs = getComputedStyle(h), r = h.getBoundingClientRect(), sheet = document.querySelector(".cp-sheet").getBoundingClientRect();
+    const rgb = (c) => (c.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number), lum = (c) => { const [r, g, bl] = rgb(c); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+    return { shown: !h.hidden && r.height > 60, image: cs.backgroundImage.slice(0, 60), buyGone: !b || b.hidden || getComputedStyle(b).display === "none", bg: cs.backgroundColor, bgLum: lum(cs.backgroundColor), inkLum: lum(cs.color), wide: r.width / sheet.width, go: (() => { const g = document.getElementById("pm-go"); return !!g && g.getBoundingClientRect().height > 0; })(), usd: /USD/.test(document.querySelector("main").innerText), perks: document.querySelectorAll(".pm-perks li").length }; });
+  say(look.shown, "the plate is shown, and big", look);
+  say(look.buyGone && !look.go && !look.usd, "the price, the button, and the note are gone", look);
+  say(look.bg !== "rgba(0, 0, 0, 0)" && look.bgLum < 90 && look.inkLum > 170, "the plate is filled dark, with light lettering", look);
+  // Seen in a picture too: the middle of the plate, away from its lettering, is dark (a rule for every section on
+  // these pages once drew over the fill, and the computed colour alone did not show it).
+  const px = await page.evaluate(async () => { const h = document.getElementById("pm-have").getBoundingClientRect(); return { x: Math.round(h.right - 40), y: Math.round(h.top + h.height / 2) + window.scrollY }; });
+  const shot = await page.screenshot({ clip: { x: px.x, y: px.y, width: 4, height: 4 }, type: "png" });
+  const dark = await page.evaluate(async (b64) => { const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode(); const c = document.createElement("canvas"); c.width = c.height = 4; const g = c.getContext("2d"); g.drawImage(img, 0, 0); const d = g.getImageData(1, 1, 1, 1).data; return 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2]; }, shot.toString("base64"));
+  say(dark < 90, "the plate looks filled in a picture of the page", dark);
+  say(look.wide > 0.8, "the plate runs the width of the sheet's text", look.wide);
+  say(look.perks === 4, "the four features follow it", look.perks);
+  const all = await page.evaluate(() => document.querySelector("main").innerText);
+  say(!/Get Premium for|Please consider supporting|one-time payment/.test(all), "nothing on the page still asks them to buy");
+  await ctx.close();
+  // An account known to have Premium from last time sees the plate at once, before the function answers.
+  const ctx2 = await browser.newContext({ viewport: { width: 1100, height: 900 } }), p2 = await ctx2.newPage();
+  await p2.addInitScript(([s]) => { try { localStorage.setItem("chronia-auth", s); localStorage.setItem("chronia-premium", "11111111-1111-4111-8111-111111111111"); } catch (e) {} }, [SESSION]);
+  await p2.route(/supabase\.co/, (r) => new Promise(() => {}));
+  await p2.goto(BASE + "premium/", { waitUntil: "domcontentloaded" }); await p2.waitForTimeout(500);
+  say(await p2.evaluate(() => { const h = document.getElementById("pm-have"); return !!h && !h.hidden; }) && await text(p2, ".cp-lede") === "Thank you for purchasing Premium!", "known from last time, the plate shows without waiting for the answer", await text(p2, ".cp-lede"));
+  await ctx2.close();
+}
+// 5c. The atlas's information panel: Get Premium for those without it, Your Premium for those with.
+{
+  for (const [premium, want] of [[false, "Get Premium"], [true, "Your Premium"]]) {
+    const { page, ctx } = await open("", { signedIn: true, premium });
+    await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+    await page.waitForFunction((w) => { const a = document.querySelector("#about-premium a"); return a && a.textContent.trim() === w; }, want, { timeout: 8000 }).catch(() => {});
+    const got = await page.evaluate(() => { const s = document.getElementById("about-premium"), a = s && s.querySelector("a"); return { hidden: !s || s.hidden, text: a ? a.textContent.trim() : null, href: a ? a.getAttribute("href") : null }; });
+    say(!got.hidden && got.text === want && got.href === "premium/", (premium ? "with" : "without") + " Premium, the information panel's link reads " + want, got);
+    await ctx.close();
+  }
+  const { page, ctx } = await open("");
+  await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+  say(await page.evaluate(() => { const a = document.querySelector("#about-premium a"); return !!a && !a.closest("[hidden]") && a.textContent.trim(); }) === "Get Premium", "signed out, it reads Get Premium");
+  await ctx.close();
 }
 // 6. The atlas's sign-in link, for someone already signed in: on to Premium and to Stripe.
 {
