@@ -5252,8 +5252,9 @@
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W - 8 ? x - w - 28 : x) + "px";
     tip.style.top = y + "px";
+    resyncCoords();
   }
-  function hideTip() { tip.hidden = true; }
+  function hideTip() { tip.hidden = true; resyncCoords(); }
   // While the map plays or follows a country, a click on a state or a city opens nothing: a note on the atlas's paper,
   // where the click was, says to pause first, and fades after two and a half seconds (since 25 November 2026).
   var pauseNoteEl = $("pause-note"), pauseNoteTimer = 0;
@@ -5282,9 +5283,20 @@
     coords.textContent = part(ll[1], "N", "S") + ", " + part(ll[0], "E", "W");
     coords.hidden = false;
     var w = coords.offsetWidth;
+    // With a tooltip showing, the coordinates sit just above it, on its left edge, whatever its height (Noah, 27 November
+    // 2026: a two-line tooltip, a city with its modern name, rose into them).
+    if (!tip.hidden) {
+      var r = tip.getBoundingClientRect();
+      coords.style.transform = "none";
+      coords.style.left = Math.round(r.left) + "px";
+      coords.style.top = Math.round(Math.max(8, r.top - 6 - coords.offsetHeight)) + "px";
+      return;
+    }
+    coords.style.transform = "";
     coords.style.left = (mouseAt[0] + 14 + w > W - 8 ? mouseAt[0] - w - 28 : mouseAt[0]) + "px";
     coords.style.top = Math.max(48, mouseAt[1]) + "px";
   }
+  function resyncCoords() { if (coords && !coords.hidden) syncCoords(true); }
   canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouseAt = [e.clientX, e.clientY]; syncCoords(e.shiftKey); } });
   canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { mouseAt = null; syncCoords(false); } });
   document.addEventListener("keydown", function (e) { if (e.key === "Shift") syncCoords(true); });
@@ -5316,6 +5328,7 @@
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W - 8 ? x - w - 28 : x) + "px";
     tip.style.top = y + "px";
+    resyncCoords();
   }
 
   function eraYear(y) { return y < 0 ? T("{y} BC", { y: -y }) : y < 1000 ? T("AD {y}", { y: y }) : String(y); }
