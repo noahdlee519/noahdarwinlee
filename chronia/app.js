@@ -698,6 +698,7 @@
   var SETTLE_MS = 160, SETTLE_HELD_MS = 600;
   function settle() { moving = false; scheduleRender(); writeHash(); }
   function nudge() {
+    scaleWake();
     moving = true;
     clearTimeout(settleTimer);
     settleTimer = setTimeout(settle, pointers && pointers.size ? SETTLE_HELD_MS : SETTLE_MS);
@@ -5500,13 +5501,51 @@
   // Moves the window; the ticks and their labels are one long strip each, moved with a transform.
   function setWindow(s) {
     tl.start = clampStart(s);
-    var x = "translateX(" + (-(tl.start - FIRST_T) * tl.ppy).toFixed(1) + "px)";
+    var x = "translateX(" + ((band || 0) - (tl.start - FIRST_T) * tl.ppy).toFixed(1) + "px)";
     ["ticks-strip", "eras-strip", "events-strip"].forEach(function (id) { var el = $(id); if (el) el.style.transform = x; });
     ["eras", "tl-events"].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.classList.toggle("at-start", tl.start <= FIRST_T + 1e-6);
       el.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
+    });
+  }
+  // The rubber band: pulled past 34,000 BC or the present, the bar's years and its marker follow the pull at a
+  // lessening rate, up to BAND_MAX px, and spring back when let go (over BAND_MS); a glide or a scroll that runs into
+  // an end bounces a little. None of it with reduced motion.
+  var band = 0, bandRaf = 0, bandIdle = 0, wheelOver = 0, BAND_MAX = 36, BAND_MS = 90;
+  function rubber(o) { return Math.sign(o) * BAND_MAX * (1 - 1 / (Math.abs(o) * 0.55 / BAND_MAX + 1)); }
+  // How far, in px, the start `s` lies past an end: positive past the beginning, negative past the present.
+  function pastEnd(s) { return (clampStart(s) - s) * tl.ppy; }
+  function applyBand(px) {
+    band = reduceMotion || Math.abs(px) < 0.3 ? 0 : px;
+    setWindow(tl.start);
+    range.style.transform = band ? "translateX(" + band.toFixed(1) + "px)" : "";
+    // The gap it opens is left empty: the scale's ruled lines (on the fixed .ch-ticks) are clipped away there too.
+    var clip = band ? "inset(-12px " + Math.max(0, -band).toFixed(1) + "px -12px " + Math.max(0, band).toFixed(1) + "px)" : "";
+    ["ticks", "eras"].forEach(function (id) { $(id).style.clipPath = clip; });
+  }
+  function setBand(px) { cancelAnimationFrame(bandRaf); bandRaf = 0; applyBand(px); }
+  function springBack() {
+    cancelAnimationFrame(bandRaf);
+    bandRaf = 0;
+    if (!band) return;
+    var from = band, t0 = performance.now();
+    bandRaf = requestAnimationFrame(function step(ts) {
+      var k = Math.min(1, (ts - t0) / BAND_MS);
+      applyBand(from * Math.pow(1 - k, 3));
+      bandRaf = k < 1 ? requestAnimationFrame(step) : 0;
+    });
+  }
+  // Out to `peak` px and back, for a glide that runs into an end.
+  function bounce(peak) {
+    if (reduceMotion || !peak) return;
+    cancelAnimationFrame(bandRaf);
+    var t0 = performance.now();
+    bandRaf = requestAnimationFrame(function step(ts) {
+      var k = Math.min(1, (ts - t0) / BAND_MS);
+      applyBand(peak * Math.sin(Math.PI * k) * (1 - k * 0.3));
+      bandRaf = k < 1 ? requestAnimationFrame(step) : 0;
     });
   }
   // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it. On a phone,
@@ -5952,6 +5991,7 @@
     cancelAnimationFrame(drag.raf);
     drag = null;
     rangeActive = false;
+    springBack();
     if (t !== null && Math.abs(t - now) > 1e-9) setTime(t); else { syncTime(); scheduleRender(); }
   }
   // At either end of the bar, the window scrolls while the marker is held there, slowly at first and
@@ -5967,6 +6007,9 @@
       range.value = dir < 0 ? "0" : String(RANGE_MAX);
       showDrag(snapTime(yearAt(dir < 0 ? 0 : 1)));
     } else drag.held = 0;
+    // Held past the very end of history, the bar stretches after the pointer.
+    var over = drag.x < r.left && tl.start <= FIRST_T + 1e-6 ? r.left - drag.x : drag.x > r.right && tl.start + tl.span >= lastT() - 1e-6 ? r.right - drag.x : 0;
+    if (over) setBand(rubber(over * 0.6)); else if (band && !bandRaf) springBack();
     drag.raf = requestAnimationFrame(edgeScroll);
   }
   range.addEventListener("pointerdown", function (e) {
@@ -5992,7 +6035,19 @@
     if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= tl.w;
     if (!d) return;
     e.preventDefault();
-    setWindow(tl.start + d / tl.ppy);
+    var to = tl.start + d / tl.ppy, o = pastEnd(to);
+    // Scrolling on past an end stretches the bar, which springs back once the scrolling stops.
+    if (o && (band || Math.abs(clampStart(to) - tl.start) < 1e-6)) {
+      wheelOver = band && Math.sign(o) !== Math.sign(wheelOver) ? 0 : wheelOver;
+      wheelOver += o;
+      setBand(rubber(wheelOver));
+      clearTimeout(bandIdle);
+      bandIdle = setTimeout(function () { wheelOver = 0; springBack(); }, 70);
+      return;
+    }
+    wheelOver = 0;
+    if (band) setBand(0);
+    setWindow(to);
     markerInWindow();
   }, { passive: false });
   function markerInWindow() {
@@ -6009,6 +6064,7 @@
   $("track").addEventListener("pointerdown", function (e) {
     if (getComputedStyle(range).pointerEvents !== "none" || (e.pointerType === "mouse" && e.button !== 0)) return;
     cancelAnimationFrame(glide);
+    if (band) setBand(0);
     var r = $("ticks").getBoundingClientRect(), p = posOf(now), mx = r.left + p * r.width;
     try { this.setPointerCapture(e.pointerId); } catch (err) {}
     swipe = { id: e.pointerId, x0: e.clientX, start0: tl.start, mode: p >= 0 && p <= 1 && Math.abs(e.clientX - mx) <= MARKER_REACH ? "marker" : "wait", hist: [[performance.now(), e.clientX]] };
@@ -6026,7 +6082,12 @@
     swipe.hist.push([performance.now(), e.clientX]);
     if (swipe.hist.length > 8) swipe.hist.shift();
     if (swipe.mode === "wait" && Math.abs(dx) > SWIPE_SLOP) { swipe.mode = "pan"; swipe.x0 = e.clientX; dx = 0; }
-    if (swipe.mode === "pan") { setWindow(swipe.start0 - dx / tl.ppy); markerInWindow(); }
+    if (swipe.mode === "pan") {
+      var to = swipe.start0 - dx / tl.ppy;
+      setWindow(to);
+      setBand(rubber(pastEnd(to)));
+      markerInWindow();
+    }
     else if (swipe.mode === "marker" && drag) {
       var f = trackFrac(e.clientX);
       range.value = String(Math.round(f * RANGE_MAX));
@@ -6039,6 +6100,7 @@
     swipe = null;
     if (sw.mode === "wait" && e.type === "pointerup") { stopPlay(); setTime(snapTime(yearAt(trackFrac(e.clientX)))); return; }
     if (sw.mode !== "pan") return;
+    if (band) { springBack(); return; }
     var h = sw.hist, a = h[0], b = h[h.length - 1], now0 = performance.now();
     if (now0 - b[0] > 80 || b[0] - a[0] < 10) return;
     var v = (b[1] - a[1]) / (b[0] - a[0]), last = now0;
@@ -6050,6 +6112,7 @@
       markerInWindow();
       v *= Math.pow(0.95, dt / 16.7);
       if (Math.abs(v) > 0.02 && tl.start > FIRST_T && tl.start + tl.span < lastT()) glide = requestAnimationFrame(step);
+      else if (Math.abs(v) > 0.15) bounce(rubber(v * 120));
     });
   }
   $("track").addEventListener("pointerup", endSwipe);
@@ -9336,6 +9399,62 @@
   setKeyOpen(keyOpen, false);
   keyBtn.addEventListener("click", function () { setKeyOpen(keyList.hidden, true); });
 
+  // The scale bar. It wakes whenever the map moves (nudge) and fades SCALE_MS after the last move. It measures at the
+  // centre of the screen: on the flat map (equirectangular) along the parallel there, R cos φ / k km a pixel; on the
+  // globe, where the scale is true only near the centre, R / r. It shows only once a region is in view, since across a
+  // whole world the scale changes too much for one bar to mean anything: on the flat map while the screen spans under
+  // SCALE_SPAN degrees of latitude, on the globe while the screen's corners are within SCALE_REACH degrees of its centre.
+  var SCALE_MS = 3000, SCALE_SPAN = 90, SCALE_REACH = 60, EARTH_KM = 6371.0088, MI_KM = 1.609344;
+  var scaleBox = $("scale"), scaleTimer = 0, scaleRaf = 0;
+  function niceUnder(v) {
+    var p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+    return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
+  }
+  function scaleRow(id, units, perPx, most) {
+    var n = niceUnder(perPx * most), w = n / perPx, m = n / Math.pow(10, Math.floor(Math.log10(n)));
+    // Five squares for a 5, four for a 2 or a 1, so each square is a round share.
+    var bar = $(id);
+    bar.style.width = w.toFixed(1) + "px";
+    bar.style.setProperty("--seg", (w / (m === 5 ? 5 : 4)).toFixed(2) + "px");
+    $(id + "-n").textContent = n.toLocaleString(LANG || "en") + " " + units;
+  }
+  function scaleKmPerPx() {
+    if (flat) {
+      if ((freeB - freeT) / FB.k / D2R > SCALE_SPAN) return 0;
+      var phi = FB.yc - ((freeT + freeB) / 2 - cy) / FB.k;
+      return EARTH_KM * Math.cos(phi) / FB.k;
+    }
+    var reach = Math.max(Math.hypot(cx, freeT - cy), Math.hypot(W - cx, freeB - cy));
+    if (reach >= B.r || Math.asin(reach / B.r) / D2R > SCALE_REACH) return 0;
+    return EARTH_KM / B.r;
+  }
+  function placeScale() {
+    var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ch-gap")) || 10;
+    var ch = $("changes"), anchor = ch && !ch.hidden ? ch.getBoundingClientRect() : $("side").getBoundingClientRect();
+    var sw = scaleBox.offsetWidth, sh = scaleBox.offsetHeight, kr = $("key").getBoundingClientRect();
+    var right = innerWidth - anchor.left + gap, bottom = innerHeight - anchor.bottom;
+    // Beside Changes, on its bottom line; where the key (or anything else on that line) leaves no room, above Changes.
+    var left = anchor.left - gap - sw;
+    if (left < kr.right + gap && kr.bottom > anchor.bottom - sh) { right = innerWidth - anchor.right; bottom = innerHeight - anchor.top + gap; }
+    scaleBox.style.right = Math.max(0, right).toFixed(0) + "px";
+    scaleBox.style.bottom = Math.max(0, bottom).toFixed(0) + "px";
+  }
+  function scaleNow() {
+    scaleRaf = 0;
+    var kpp = scaleKmPerPx();
+    if (!kpp || !isFinite(kpp)) { scaleBox.classList.remove("is-on"); return; }
+    var most = phoneQuery.matches ? 80 : 110;
+    scaleRow("scale-km", "km", kpp, most);
+    scaleRow("scale-mi", "mi", kpp / MI_KM, most);
+    placeScale();
+    scaleBox.classList.add("is-on");
+  }
+  function scaleWake() {
+    if (!scaleBox || !ready) return;
+    if (!scaleRaf) scaleRaf = requestAnimationFrame(scaleNow);
+    clearTimeout(scaleTimer);
+    scaleTimer = setTimeout(function () { scaleBox.classList.remove("is-on"); }, SCALE_MS);
+  }
   var hoverTip = $("hover-tip"), tipTimer = 0;
 
   // The wars on the map at the date, with their sides' flags, while the zones of control are on (#wars).
@@ -10770,6 +10889,8 @@
     turn: function (deg) { rollBy(deg); writeHash(); },
     roll: function () { return view.roll; },
     lonLatAt: function (x, y) { return lonLatAt(x, y); },
+    // The scale bar: km a pixel at the centre (0 where it isn't shown), and whether it is showing; wake() as a move would.
+    scale: function (wake) { if (wake) scaleWake(); return { kmPerPx: scaleKmPerPx(), on: scaleBox.classList.contains("is-on"), km: $("scale-km-n").textContent, mi: $("scale-mi-n").textContent }; },
     project: function (lon, lat) { return projectLL(lon, lat); },
     prepareFrame: function (t) { var t0 = performance.now(), ok = prepareFrame(t); return ok ? performance.now() - t0 : -1; },
     loadingJSON: function () { return jsonLoading; },

@@ -5033,3 +5033,60 @@ select.ch-save-input {
     transform: translateY(calc(-1 * var(--ch-kb, 0px)));
   }
 }
+
+/* The scale bar (scaleWake in app.js): kilometres over miles on a small paper plate, beside the Changes button. It shows
+   while the map moves, once a region rather than the whole world is in view, and fades 3 seconds after it stops. The
+   kilometres are a chequered bar in ink, as on an engraved map; the miles a ruled line with ends. Placed by script. */
+.ch-scale {
+  position: fixed;
+  z-index: 21;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 2px;
+  padding: 4px 7px 3px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.2);
+  color: var(--ink);
+  font-family: var(--ch-num);
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: oldstyle-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+}
+.ch-scale.is-on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s ease;
+}
+.ch-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 12px;
+}
+.ch-scale-bar {
+  box-sizing: border-box;
+  height: 5px;
+  border: 1px solid var(--ink);
+  background: repeating-linear-gradient(90deg, var(--ink) 0 var(--seg, 10px), transparent var(--seg, 10px) calc(2 * var(--seg, 10px)));
+}
+.ch-scale-mi .ch-scale-bar {
+  height: 6px;
+  border-width: 0 1px;
+  background: linear-gradient(var(--ink), var(--ink)) 0 50% / 100% 1px no-repeat;
+}
+@media (max-width: 640px) {
+  .ch-scale {
+    font-size: 10px;
+    padding: 3px 6px 2px;
+  }
+}
